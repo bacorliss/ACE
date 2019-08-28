@@ -15,11 +15,40 @@ set.seed(0)
 
 
 
+# Plot 2 distributions
+p9 <- ggplot(data.frame(x = c(-4, 4)), aes(x = x)) +
+  stat_function(fun = dt, args = list(df = 8))
+p9
+
+
+pdf_tbl = rbind(
+  tibble(group="X1", x=seq(-5,5,.01) ,
+         y=dnorm(seq(-5,5,.01), mean = 0, sd = 1, log = FALSE)),
+  tibble(group="X2", x=seq(-5,5,.01) ,
+         y=dnorm(seq(-5,5,.01), mean = 2, sd = 1, log = FALSE)))
+p <- ggplot(pdf_tbl, aes(x=x,y=y,fill=group)) +
+  geom_area(aes(fill=aes(group))) +
+  geom_smooth(method="auto") 
+p
+
+
+p9 <- ggplot(data.frame(x = c(0, 1)), aes(x = x)) +
+  stat_function(fun = dnorm, args = list(0.2, 0.1),
+                colour = color_pal[1]) +
+  stat_function(fun = dnorm, args = list(0.7, 0.05),
+                colour = color_pal[2]) +
+  scale_x_continuous(name = "Probability",
+                     breaks = seq(0, 1, 0.2),
+                     limits=c(0, 1)) +
+  scale_y_continuous(name = "Frequency") +
+  ggtitle("Normal function curves of probabilities")
+p9
+
+
+
 # Sample two null distributions
 null_dist = tibble(group = factor(c(rep("x1",nsamples), rep("x2",nsamples))),
                    y = rnorm(ngroups*nsamples, 0, 1)+1)
-
-
 
 # Basic box plot
 p <- ggplot(null_dist, aes(x=group,y=y,fill=group)) + 
