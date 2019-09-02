@@ -165,6 +165,11 @@ gt <- arrangeGrob(grobs = gs, layout_matrix = rbind(c(1,2,3,4),
                                                c(9,10,11,12),
                                                c(13,14,15,16)))
 
+gt <- gtable::gtable_add_grob(gt, 
+                             grobs = rectGrob(gp=gpar(fill=NA, 
+                                                      lwd=2)), 
+                             t = 1, b = 1, l = 1, r = ncol(gt))
+
 # Change relative height of gtable rows
 gt$heights <- unit(c(.05, .3, .3, .3), "npc")
 # Render new figure
