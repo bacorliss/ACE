@@ -126,31 +126,43 @@ p3_2 <-ggplot(data3_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3]
 ## Assign objects to GROB table
 # Column names
 gs[[1]] <- textGrob("Distribution", x = unit(0.45, "npc"), 
-                    y = unit(0.5, "npc"), just = "centre",
+                    y = unit(0.4, "npc"), just = "centre",
                     gp=gpar(fontface="bold"))
 gs[[2]] <- textGrob("Effect", x = unit(0.5, "npc"), 
-                    y = unit(0.5, "npc"), just = "centre",
+                    y = unit(0.4, "npc"), just = "centre",
                     gp=gpar(fontface="bold"))
 gs[[3]] <- textGrob("MAXEL", x = unit(0.5, "npc"), 
-                    y = unit(0.5, "npc"), just = "centre",
+                    y = unit(0.4, "npc"), just = "centre",
                     gp=gpar(fontface="bold"))
 gs[[4]] <- textGrob("Rel. MAXEL", x = unit(0.5, "npc"), 
-                    y = unit(0.5, "npc"), just = "centre",
+                    y = unit(0.4, "npc"), just = "centre",
                     gp=gpar(fontface="bold"))
 
+
+maxel_1s = expression(MAXEL==italic(max)(phantom(.)*
+                             abs(phantom(.)*italic(bar(x)[1]) - beta %+-% 
+                             1.96~s[1]*phantom(.))*phantom(.)))
+
+
+maxel_2s_paired = expression(MAXEL==italic(max)(phantom(.)*
+                             abs(phantom(.)*italic(bar(d)) %+-% 
+                             1.96~s[diff]*phantom(.))*phantom(.)))
+rmaxel_2s_paired = expression(MAXEL==frac(italic(max)(phantom(.)*
+                             abs(phantom(.)*italic(bar(d)) %+-% 
+                             1.96~s[diff]*phantom(.))*phantom(.)),bar(x)[1]))
 # One sample test
 gs[[5]] <- p1_1
 gs[[6]] <- p1_2
-gs[[7]] <- textGrob("d == bar(X[A]) + bar(X[B])", x = unit(0.5, "npc"), 
+gs[[7]] <- textGrob(maxel_1s, x = unit(0.5, "npc"), 
                     y = unit(0.5, "npc"), just = "centre")
-gs[[8]] <- textGrob("d == bar(X[A]) + bar(X[B])", x = unit(0.5, "npc"), 
+gs[[8]] <- textGrob(expression(""), x = unit(0.5, "npc"), 
                        y = unit(0.5, "npc"), just = "centre")
 # Two sample test, paired
 gs[[9]] <- p2_1
 gs[[10]] <- p2_2
-gs[[11]] <- textGrob("d == bar(X[A]) + bar(X[B])", x = unit(0.5, "npc"), 
-                        y = unit(0.5, "npc"), just = "centre")
-gs[[12]] <- textGrob("d == bar(X[A]) + bar(X[B])", x = unit(0.5, "npc"), 
+gs[[11]] <- textGrob(maxel_2s_paired, 
+                     x = unit(0.5, "npc"),y = unit(0.5, "npc"), just = "centre")
+gs[[12]] <- textGrob(rmaxel_2s_paired , x = unit(0.5, "npc"), 
                      y = unit(0.5, "npc"), just = "centre")
 # Two sample test, unpaired
 gs[[13]] <- p3_1
@@ -165,9 +177,7 @@ gt <- arrangeGrob(grobs = gs, layout_matrix = rbind(c(1,2,3,4),
                                                c(9,10,11,12),
                                                c(13,14,15,16)))
 
-gt <- gtable::gtable_add_grob(gt, 
-                             grobs = rectGrob(gp=gpar(fill=NA, 
-                                                      lwd=2)), 
+gt <- gtable::gtable_add_grob(gt, grobs = rectGrob(gp=gpar(fill=NA, lwd=2)), 
                              t = 1, b = 1, l = 1, r = ncol(gt))
 
 # Change relative height of gtable rows
