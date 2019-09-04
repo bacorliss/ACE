@@ -10,7 +10,6 @@ library(RColorBrewer)
 library(broom)
 library(gridExtra)
 library(grid)
-
 library(rlang)
 
 setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
@@ -55,7 +54,7 @@ p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
   geom_line(size = 1, color = color_pal[3]) + 
   geom_ribbon(data = data1_2, aes(x = x,ymax = y),ymin = 0, alpha=0.3, 
               color = color_pal[3], fill = color_pal[3]) +
-  annotate("text",x=max(data1_2$x)*.9, y=max(data1_2$y), label = "d",
+  annotate("text",x=max(data1_2$x)*.9, y=max(data1_2$y), label = "D",
            parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) + 
   theme(plot.title = element_text(hjust = 1, size = title_font_size)) +
   geom_vline(xintercept=-2*sd) +
@@ -90,7 +89,7 @@ data2_2 = tibble(group=factor("1"), x=x3_2,
 p2_2 <-ggplot(data2_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3])) +
   geom_line(size=1,color=color_pal[3]) + 
   geom_ribbon(ymax = data2_2$y,aes(ymin=0), alpha = 0.3, fill=color_pal[3],color=color_pal[3]) +
-  annotate("text",x=max(data2_2$x)*.95, y=max(data2_2$y), label = "d",
+  annotate("text",x=max(data2_2$x)*.95, y=max(data2_2$y), label = "D",
            parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) +
   geom_vline(xintercept=mu[2]-mu[1]-2*sd[1]) +
   geom_vline(xintercept=mu[2]-mu[1]+2*sd[2]) +
@@ -123,7 +122,7 @@ data3_2 = tibble(group=factor("1"), x=x3_2,
 p3_2 <-ggplot(data3_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3])) +
   geom_line(size=1,color=color_pal[3]) + 
   geom_ribbon(ymax = data3_2$y,aes(ymin=0), alpha = 0.3, fill=color_pal[3],color=color_pal[3]) +
-  annotate("text",x=max(data3_2$x)*.9, y=max(data3_2$y), label = "d",
+  annotate("text",x=max(data3_2$x)*.9, y=max(data3_2$y), label = "D",
            parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) +
   geom_vline(xintercept=mu[2]-mu[1]-2*sd[1]) +
   geom_vline(xintercept=mu[2]-mu[1]+2*sd[2]) +
@@ -149,26 +148,26 @@ gs[[13]] <- textGrob("2-Sample, Unpaired", rot = 90, just = "centre", gp = gpar(
 
 
 df_1s <- data.frame(equations = c(
-  "A==N(mu[A]==2,sigma[A]==1)",
-  "C[0]==1",
-  "italic(d) == N(mu[A]-C[0],{sigma^2}[A])",
-  "MXL==max*({}~abs({}~italic(bar(x)[1])-beta%+-%1.96~s[1]~{})~{})"
+  "list(A==N(mu[A],sigma[A]),~~C[0]==1)",
+  "list(italic(bar(x)[D])==bar(x)[A]-C[0],~s[D]^2==s[A]^2)",
+  "MXL==max*({}~abs({}~italic(bar(x)[1])-C[0]%+-%italic(t)[alpha/2]~s[1]~{})~{})"
   ))
 
 df_2s_p <- data.frame(equations = c(
-  "A==N(mu[A]==1,sigma[A]==1)",
-  "B==N(mu[B]==2,sigma[B]==1)",
-  "d[i]==x[i,a]-x[i,b]",
-  "MXL==max*({}~abs({}~italic(bar(d))%+-%1.96~s[diff]~{})~{})",
-  "Rel~MXL==frac(max*({}~abs({}~italic(bar(d))%+-%1.96~s[diff]~{})~{}),min*({}~abs({}~italic(bar(d))%+-%italic(t)[list(0.975,n-1)]~frac(s[diff],sqrt(n))~{})~{}))"
+  "list(A==N(mu[A],sigma[A]),B==N(mu[B],sigma[B]))",
+  "italic(bar(x)[D])==frac(1,n)*phantom(0)*sum({}~(x[list(i,A)]-x[list(i,B)])~{},i==1,n)",
+  "s[D]== sqrt(frac(1,n)*phantom(0)*sum((x[list(i,A)]-x[list(i,B)]-italic(bar(x)[D])),i==1,n)^2)",
+  "MXL==max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]/sqrt(n)~{})~{})",
+  "Rel~MXL==frac(max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]~{})~{}),
+     min*({}~abs({}~italic(bar(x)[A])%+-%italic(t)[alpha/2]~s[A]/sqrt(n)~{})~{}))"
 ))
 
 df_2s_unp <- data.frame(equations = c(
-  "A==N(mu[A]==1,sigma[A]==1)",
-  "B==N(mu[B]==1,sigma[B]==1)",
-  "d==N(mu[A]-mu[B],sigma[A]^2+sigma[B]^2)",
-  "MXL==max*({}~abs({}~italic(bar(d))%+-%1.96~s[diff]~{})~{})",
-  "Rel~MXL==frac(max*({}~abs({}~italic(bar(d))%+-%1.96~s[diff]~{})~{}),min*({}~abs({}~italic(bar(d))%+-%italic(t)[list(0.975,n-1)]~frac(s[diff],sqrt(n))~{})~{}))"
+  "list(A==N(mu[A],sigma[A]),B==N(mu[B],sigma[B]))",
+  "list(italic(bar(x)[A])==sum(frac(italic(bar(x)[A]),n),i==1,n)~~-sum(frac(italic(bar(x)[B]),n),i==1,n),s[D]==sqrt(s[A]^2/n + s[B]^2/n))",
+  "MXL==max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]/sqrt(n)~{})~{})",
+  "Rel~MXL==frac(max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]~{})~{}),
+    min*({}~abs({}~italic(bar(x)[A])%+-%italic(t)[alpha/2]~s[A]/sqrt(n)~{})~{}))"
 ))
 
 tt = ttheme_minimal(core=list(fg_params=list(hjust=0,x=0.02,fontsize=10,fontfamily="serif",parse=TRUE)))
