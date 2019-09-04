@@ -23,7 +23,7 @@ color_pal = brewer.pal(3, "Set1")
 nsamples = 15
 ngroups = 2
 set.seed(0)
-dist_text_size=5;
+dist_text_size=3;
 title_font_size=7;
 equ_font_size=8;
 
@@ -38,26 +38,25 @@ C0 <- 1;
 p1_1 <- ggplot(data1_1, aes(x = x, y = y, group = group, fill = color_pal[2])) +
   geom_line(size = 1, color = color_pal[2]) + 
   geom_ribbon(data = data1_1, aes(x = x,ymax = y),ymin = 0, alpha=0.3, color = color_pal[2], fill = color_pal[2]) +
-  annotate("text", x = 5, y = 0.4 + 0.02, label = "A",
-           parse=TRUE,color=color_pal[2],size = dist_text_size) + 
+  annotate("text",x=max(data1_1$x)*.9, y=c(max(data1_1$y), max(data1_1$y)-.03),
+           label = c("A","C[0]"), parse=TRUE,color=color_pal[c(1,2)],
+           size = dist_text_size,hjust = c(.5,.5)) + 
   geom_vline(xintercept=C0, color = color_pal[1]) + 
-  annotate("text", x = 5, y = 0.4 + 0.02, label = "C[0]",
-           parse=TRUE,color=color_pal[1],size = dist_text_size) +
+#  annotateText = c("A","C[0]", hjustvar = c(0,0), justvar = c(1,1)) +
+#  annotate("text", x = 5, y = 0.4 + 0.02, label = "C[0]",
+#           parse=TRUE,color=color_pal[1],size = dist_text_size) +
   theme(plot.title = element_text(hjust = 1,size = title_font_size),legend.position = "none") 
 
 
 ### 1.2: difference with one-sample
-data2_1 <- data1_1
-data2_1$x <- data1_1$x-C0
-p1_2 <- ggplot(data2_1, aes(x = x, y = y, group = group, fill = color_pal[3])) +
+data1_2 <- data1_1
+data1_2$x <- data1_1$x-C0
+p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
   geom_line(size = 1, color = color_pal[3]) + 
-  geom_ribbon(data = data2_1, aes(x = x,ymax = y),ymin = 0, alpha=0.3, 
-              color = color_pal[2], fill = color_pal[3]) +
-  annotate("text", x = 4, y = 0.4 + 0.02, label = "d",
-           parse=TRUE,color=color_pal[3],size = dist_text_size) + 
-#  geom_vline(xintercept=C0, color = color_pal[1]) + 
-#  annotate("text", x = C0 - .3, y = 0.4 + 0.02, label = "C[0]",
-#           parse=TRUE,color=color_pal[1],size = dist_text_size) +
+  geom_ribbon(data = data1_2, aes(x = x,ymax = y),ymin = 0, alpha=0.3, 
+              color = color_pal[3], fill = color_pal[3]) +
+  annotate("text",x=max(data1_2$x)*.9, y=max(data1_2$y), label = "d",
+           parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) + 
   theme(plot.title = element_text(hjust = 1, size = title_font_size)) +
   geom_vline(xintercept=-2*sd) +
   geom_vline(xintercept=+2*sd)
@@ -78,10 +77,9 @@ p2_1 <- ggplot(data2_1, aes(x=x, y=y, group=group, fill=group)) +
   geom_line(size=1,aes(color=group)) + 
   geom_ribbon(data=data2_1, 
               aes(x=x,ymax=y),ymin=0,alpha=0.3) +
-  annotate("text", x=mu[1], y=0.4+.02, label= "mu[1]",
-           parse=TRUE,color=color_pal[1],size=dist_text_size) +
-  annotate("text", x=mu[2], y=0.4+.02, label= "mu[2]",
-           parse=TRUE,color=color_pal[2],size=dist_text_size) +
+  annotate("text",x=max(data2_1$x)*.9, y=c(max(data2_1$y), max(data1_1$y)-.03),
+           label = c("A","B"), parse=TRUE,color=color_pal[c(1,2)],
+           size = dist_text_size,hjust = c(.5,.5)) + 
   theme(plot.title = element_text(hjust = 1, size = title_font_size),legend.position = "none") 
 
 
@@ -92,8 +90,8 @@ data2_2 = tibble(group=factor("1"), x=x3_2,
 p2_2 <-ggplot(data2_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3])) +
   geom_line(size=1,color=color_pal[3]) + 
   geom_ribbon(ymax = data2_2$y,aes(ymin=0), alpha = 0.3, fill=color_pal[3],color=color_pal[3]) +
-  annotate("text", x=mu[2]-mu[1], y=0.4+.03, label = "d",
-           parse=TRUE,color=color_pal[3],size=dist_text_size) +
+  annotate("text",x=max(data2_2$x)*.95, y=max(data2_2$y), label = "d",
+           parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) +
   geom_vline(xintercept=mu[2]-mu[1]-2*sd[1]) +
   geom_vline(xintercept=mu[2]-mu[1]+2*sd[2]) +
   theme(plot.title = element_text(hjust = 1, size = title_font_size)) 
@@ -111,12 +109,10 @@ data3_1 = rbind(
 
 p3_1 <- ggplot(data3_1, aes(x=x, y=y, group=group, fill=group)) +
   geom_line(size=1,aes(color=group)) + 
-  geom_ribbon(data=data3_1, 
-              aes(x=x,ymax=y),ymin=0,alpha=0.3) +
-  annotate("text", x=mu[1], y=0.4+.02, label= "mu[1]",
-           parse=TRUE,color=color_pal[1],size=dist_text_size) +
-  annotate("text", x=mu[2], y=0.4+.02, label= "mu[2]",
-           parse=TRUE,color=color_pal[2],size=dist_text_size) + 
+  geom_ribbon(data=data3_1, aes(x=x,ymax=y),ymin=0,alpha=0.3) +
+  annotate("text",x=max(data3_1$x)*.9, y=c(max(data3_1$y), max(data1_1$y)-.03),
+           label = c("A","B"), parse=TRUE,color=color_pal[c(1,2)],
+           size = dist_text_size,hjust = c(.5,.5)) +  
   theme(plot.title = element_text(hjust = 1, size = title_font_size),legend.position = "none") 
 
 
@@ -127,8 +123,8 @@ data3_2 = tibble(group=factor("1"), x=x3_2,
 p3_2 <-ggplot(data3_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3])) +
   geom_line(size=1,color=color_pal[3]) + 
   geom_ribbon(ymax = data3_2$y,aes(ymin=0), alpha = 0.3, fill=color_pal[3],color=color_pal[3]) +
-  annotate("text", x=mu[2]-mu[1], y=0.4+.03, label= 
-             "d",parse=TRUE,color=color_pal[3],size=dist_text_size) +
+  annotate("text",x=max(data3_2$x)*.9, y=max(data3_2$y), label = "d",
+           parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) +
   geom_vline(xintercept=mu[2]-mu[1]-2*sd[1]) +
   geom_vline(xintercept=mu[2]-mu[1]+2*sd[2]) +
   theme(plot.title = element_text(hjust = 1, size = 10)) 
