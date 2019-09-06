@@ -59,6 +59,7 @@ p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
   theme(plot.title = element_text(hjust = 1, size = title_font_size)) +
   geom_vline(xintercept=-2*sd) +
   geom_vline(xintercept=+2*sd)
+#  ggtitle(parse("MXL==max(({}~list(abs({}~CL[list(U,x)]~{}),abs({}~CL[list(L,x)]~{}))))"))
 
 
 ### Case 2: two sample paired
@@ -79,7 +80,7 @@ p2_1 <- ggplot(data2_1, aes(x=x, y=y, group=group, fill=group)) +
   annotate("text",x=max(data2_1$x)*.9, y=c(max(data2_1$y), max(data1_1$y)-.03),
            label = c("A","B"), parse=TRUE,color=color_pal[c(1,2)],
            size = dist_text_size,hjust = c(.5,.5)) + 
-  theme(plot.title = element_text(hjust = 1, size = title_font_size),legend.position = "none") 
+  theme(plot.title = element_text(hjust = 1, size = title_font_size),legend.position = "none")
 
 
 ### 2.2: difference two sample paired
@@ -150,23 +151,23 @@ gs[[13]] <- textGrob("2-Sample, Unpaired", rot = 90, just = "centre", gp = gpar(
 df_1s <- data.frame(equations = c(
   "list(A==N(mu[A],sigma[A]),~~C[0]==1)",
   "list(italic(bar(x)[D])==bar(x)[A]-C[0],~s[D]^2==s[A]^2)",
-  "MXL==max*({}~abs({}~italic(bar(x)[1])-C[0]%+-%italic(t)[alpha/2]~s[1]~{})~{})"
+  "CL[x]==italic(bar(x))-C[0]%+-%italic(t)[alpha/2]~s/sqrt(n)",
+  "MXL==max(({}~list(abs({}~CL[list(U,x)]~{}),abs({}~CL[list(L,x)]~{}))))"
   ))
 
 df_2s_p <- data.frame(equations = c(
   "list(A==N(mu[A],sigma[A]),B==N(mu[B],sigma[B]))",
-  "italic(bar(x)[D])==frac(1,n)*phantom(0)*sum({}~(x[list(i,A)]-x[list(i,B)])~{},i==1,n)",
-  "s[D]== sqrt(frac(1,n)*phantom(0)*sum((x[list(i,A)]-x[list(i,B)]-italic(bar(x)[D])),i==1,n)^2)",
-  "MXL==max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]/sqrt(n)~{})~{})",
+  "italic(d[i])==italic(x[list(i,A)]) - italic(x[list(i,B)])",
+  "MXL==max(({}~list(abs({}~CL[list(U,x)]~{}),abs({}~CL[list(L,x)]~{}))))",
   "Rel~MXL==frac(max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]~{})~{}),
      min*({}~abs({}~italic(bar(x)[A])%+-%italic(t)[alpha/2]~s[A]/sqrt(n)~{})~{}))"
 ))
 
 df_2s_unp <- data.frame(equations = c(
   "list(A==N(mu[A],sigma[A]),B==N(mu[B],sigma[B]))",
-  "list(italic(bar(x)[A])==sum(frac(italic(bar(x)[A]),n),i==1,n)~~-sum(frac(italic(bar(x)[B]),n),i==1,n),s[D]==sqrt(s[A]^2/n + s[B]^2/n))",
-  "MXL==max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]/sqrt(n)~{})~{})",
-  "Rel~MXL==frac(max*({}~abs({}~italic(bar(x)[D])%+-%italic(t)[alpha/2]~s[D]~{})~{}),
+  "CL[x]==italic(bar(x)) %+-% italic(t[alpha/2])~s/sqrt(n)",
+  "MXL==max((list({}~abs({}~CL[list(U,x1)]-CL[list(L,x2)]~{}),abs({}~CL[list(L,x1)]-CL[list(U,x2)]~{}))))",
+  "Rel~MXL==frac(MXL,
     min*({}~abs({}~italic(bar(x)[A])%+-%italic(t)[alpha/2]~s[A]/sqrt(n)~{})~{}))"
 ))
 
