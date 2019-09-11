@@ -56,8 +56,8 @@ ttest_a_1_2 = tidy(t.test(x=rnorm(n=nsamples, mean = mu-C0, sd = sd[1]), y=NULL,
                         var.equal = FALSE, conf.level = 0.95))
 df_mxl_range_1_2 = data.frame(x1 = 0, x2 = ttest_a_1_2$conf.high, y1 = .5, y2 = .5)
 p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
-  ggtitle(parse(text = paste0("MXL==max(({}~list(abs({}~CL[list(U,x)]~{}),
-                              abs({}~CL[list(L,x)]~{}))))"))) +
+  ggtitle(parse(text = paste0("MXL==max(({}~list(abs({}~UCL[A]~{}),
+                              abs({}~LCL[A]~{}))))"))) +
   theme(plot.title = element_text(hjust = 0.5, size = title_font_size,family="serif")) +
   annotate("text",x=max(data1_2$x)*.9, y=max(data1_2$y), label = "D",
            parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) + 
@@ -110,7 +110,7 @@ ttest_a_2_2 = tidy(t.test(x=rnorm(n=nsamples, mean = mu[2]-mu[1], sd = 1), y=NUL
                         var.equal = FALSE, conf.level = 0.95))
 df_mxl_range_2_2 = data.frame(x1 = 0, x2 = ttest_a_2_2$conf.high, y1 = 0.5, y2 = 0.5)
 p2_2 <-ggplot(data2_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3])) +
-  ggtitle(parse(text = paste0("MXL==max(({}~list(abs({}~CL[list(U,x)]~{}),abs({}~CL[list(L,x)]~{}))))")))+
+  ggtitle(parse(text = paste0("MXL==max(({}~list(abs({}~UCL[A]~{}),abs({}~LCL[A]~{}))))")))+
   theme(plot.title = element_text(hjust = 0.5, size = title_font_size,family="serif")) +
   annotate("text",x=max(data2_2$x)*.95, y=max(data2_2$y), label = "D",
            parse=TRUE,color=color_pal[3],size = dist_text_size,hjust = .5) +
@@ -128,7 +128,7 @@ p2_2 <-ggplot(data2_2, aes(x=x, y=y, group=group, fill=group, color=color_pal[3]
                data = df_mxl_range_2_2,inherit.aes = F, size=1, color="black",lineend="square") +
   geom_line(size=1,color=color_pal[3]) + 
   geom_ribbon(ymax = data2_2$y,aes(ymin=0), alpha = 0.3, fill=color_pal[3],color=color_pal[3])
-# p2_2
+p2_2
   
   
 ### Case 3: Unpaired two-sample
@@ -170,8 +170,8 @@ df_mxl_range_3_1 = data.frame(x1 = ttest_a_3_2$conf.low, x2 = ttest_b_3_2$conf.h
 p3_2 <- ggplot(data3_2, aes(x=x, y=y, group=group, fill=group)) +
   annotate("text",x = max(data3_2$x)*.9, y = c(max(data3_2$y), max(data1_1$y)-.03), label = c("A","B"), 
            parse = TRUE,color = color_pal[c(1,2)], size = dist_text_size,hjust = c(.5,.5)) +  
-  ggtitle(parse(text = paste0("MXL==max((list({}~abs({}~CL[list(U,A)]-CL[list(L,B)]~{}),
-                              abs({}~CL[list(L,A)]-CL[list(U,B)]~{}))))"))) +
+  ggtitle(parse(text = paste0("MXL==max((list({}~abs({}~UCL[A]-LCL[B]~{}),
+                              abs({}~LCL[A]-UCL[B]~{}))))"))) +
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5, 
         size = title_font_size,family="serif")) +
   geom_segment(aes(x = ttest_a_3_2$conf.low, y = predict(spline_a_3_2, ttest_a_3_2$conf.low)$y, 
