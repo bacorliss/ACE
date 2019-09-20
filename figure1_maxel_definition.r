@@ -150,7 +150,7 @@ p3_1 <- ggplot(data3_1, aes(x=x, y=y, group=group, fill=group)) +
            label = c("A","B"), parse=TRUE,color=color_pal[c(1,2)],
            size = dist_text_size,hjust = c(.5,.5)) +  
   theme(plot.title = element_text(hjust = 1, size = title_font_size),legend.position = "none")  +
-  ggtitle(parse(text = paste0("list(A==N(mu[A],sigma[A]),B==N(mu[B],sigma[B]))"))) 
+  ggtitle(parse(text = paste0("list(A==P(mu[A],sigma[A]),B==N(mu[B],sigma[B]))"))) 
 
 
 ### 3.2: difference of Unpaired two-sample
@@ -213,14 +213,14 @@ df_2s_p <- data.frame(equations = c(
   "list(italic(bar(x)[D])==frac(sum(italic(x[list(i,D)])),2), 
   italic(s[D]^2)==frac(sum((italic(x[list(i,D)])-italic(bar(x)[D])))^2,2))",
   "CL[D]==italic(bar(x)[D]) %+-% italic(t[alpha/2])~s[D]/sqrt(n)",
-  "Rel~MXL==frac(MXL,min((list(abs(~UCL[D]) , abs(~LCL[D])))))"
+  "Rel~MXL==frac(MXL,min((list(abs(~UCL[A]) , abs(~LCL[A])))))"
 ))
 # sum(x[i], i==1, n)
 
 df_2s_unp <- data.frame(equations = c(
   "list(italic(bar(x)[D])==italic(bar(x)[A]) - italic(bar(x)[B]),phantom(0)*italic(s[D]^2)==s[A]^2 + s[B]^2)",
   "CL[D]==italic(bar(x)[D]) %+-% italic(t[alpha/2])~s[D]/sqrt(n)",
-    "Rel~MXL==frac(MXL,min((list(abs(~LCL[D]) , abs(~UCL[D])))))"
+    "Rel~MXL==frac(MXL,min((list(abs(~LCL[A]) , abs(~UCL[A])))))"
 ))
 
 tt = ttheme_minimal(core=list(fg_params=list(hjust=0,x=0.04,fontsize=10,
