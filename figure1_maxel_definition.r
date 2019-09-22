@@ -12,6 +12,7 @@ library(gridExtra)
 library(grid)
 library(rlang)
 library(colorspace)
+library(VGAM)
 
 setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
 setSessionTimeLimit(cpu = Inf, elapsed = Inf)
@@ -51,10 +52,17 @@ p1_1
 data1_2 <- data1_1
 data1_2$x <- data1_1$x-C0
 
+
 spline_a_2_2 <- smooth.spline(data1_2$x,dnorm(data1_2$x, mean = mu-C0, sd = 1, log = FALSE))
+
+spline_fnorm_2_2  <- smooth.spline(data1_2$x,dfoldnorm(data1_2$x, mean = mu-C0, 
+                                                       sd = 1, a1 = 1,a2 = 1, log = FALSE))
+
 ttest_a_1_2 = tidy(t.test(x=rnorm(n=nsamples, mean = mu-C0, sd = sd[1]), y=NULL,
                         alternative ="two.sided", mu = 0, paired = FALSE, 
                         var.equal = FALSE, conf.level = 0.95))
+
+
 df_mxl_range_1_2 = data.frame(x1 = 0, x2 = ttest_a_1_2$conf.high, y1 = .5, y2 = .5)
 p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
   ggtitle(parse(text = paste0("MXL==max(({}~list(abs({}~UCL[D]~{}),
@@ -75,10 +83,10 @@ p1_2 <- ggplot(data1_2, aes(x = x, y = y, group = group, fill = color_pal[3])) +
   geom_segment(aes(x = x1, y = y1-.01, xend = x1, yend = y2, colour = "segment"), 
                data = df_mxl_range_1_2,inherit.aes = F, size=1, color="black",lineend="square") +
   geom_segment(aes(x = x2, y = y1-.01, xend = x2, yend = y2, colour = "segment"), 
-               data = df_mxl_range_1_2,inherit.aes = F, size=1, color="black", lineend="square") +
-  geom_ribbon(data = data1_2, aes(x = x,ymax = y),ymin = 0, alpha=0.3, color = color_pal[3], 
-             fill = color_pal[3])
-#p1_2
+               data = df_mxl_range_1_2,inherit.aes = F, size=1, color="black", lineend="square")
+#  geom_ribbon(data = data1_2, aes(x = x,ymax = y),ymin = 0, alpha=0.3, color = color_pal[3], 
+#             fill = color_pal[3])
+p1_2
 
 
 ### Case 2: two sample paired
