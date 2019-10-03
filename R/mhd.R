@@ -1,37 +1,80 @@
-#(broom)
 
-
-# MHD: Most Hidden Difference
-# Calculates the upper bounds of effecct size from a single distribution
+# MHD: pakage: Most Hidden Difference
+#  Calculates the upper bounds of the mean of the effect size from a single distribution
 # or difference between two distributions.
 
 
 
-
-t_dist_2s_unpaired <- function(x, y, alpha = 0.05) {
-  nx = length(x)
-  ny = length(y)
-  d_bar_ppoled = mean(x)-mean(y)
-  df_pooled = nx+ny-2
-  sd_pooled = ((nx-1)*sx^2 + (ny-1)*sy^2)/(nx+ny-2)
+mhd_2sample_unpaired <- function(x, y, alpha = 0.05, dist_type=NULL) {
+  #  Calculates MHD for two unpaired samples, defined as the upper confidence limit of the mean
+  # based on a folded t-distibution
+  # Input
+  #   x: sample of observations
+  #   y: sample of observations
+  #   alpha: confidence level
+  #   dist_type: distribution dist_type, either t-distribution or z-distribution, with NULL 
+  #              it is chosen based on whether df > 30.
+  # Output
+  #   ucl: upper confidence limit of the mean of folded distribution
   
-  ucl = t_dist(x_bar = d_bar_ppoled, sx = sd_pooled, nx = nx, dfx = dfx, alpha = 0.05)
+  nx <- length(x)
+  ny <- length(y)
+  # Pooled mean, degrees of freedom, and standard deviation
+  d_bar_pooled <- mean(x)-mean(y)
+  dfd_pooled <- nx+ny-2
+  sd_pooled <- ((nx-1)*sx^2 + (ny-1)*sy^2)/df
+  
+  #  Standard error of the mean of d: sd multipled by sqrt of the sum of 
+  # reciprocal squares of n for each group
+  semd_pooled <- sd_pooled * sqrt((1 / nx^2) + (1 / ny^2))
+  
+  # Determine distribution if not specified
+  if (dfd_pooled<30-2 & is.nulll(NULL)) {dist_type<-'t_ditribution'} else {dist_type<-'z_ditribution'}
+  
+  if (dist_type=='t_distribution'){
+    # Calculate upper confidence limit of mean of folded normal
+    ucl = ucl_mean_folded_tdist(x_bar = d_bar_pooled, sx = sd_pooled, 
+                     semx = semd_pooled, dfx = dfd, alpha = 0.05)
+  } elseif (dist_type=='z_distribution') {
+    # Calculate upper confidence limit of mean of folded normal
+    ucl = ucl_mean_folded_zdist(x_bar = d_bar_pooled, sx = sd_pooled, 
+                       semx = semd_pooled, dfx = dfd, alpha = 0.05)
+  }
   
   return(ucl)
 }
 
 
-t_dist_2s_paired <- function(x, y, alpha = 0.05) {
-  # Pairwise difference between observations
+mhd_2sample_paired <- function(x, y, alpha = 0.05,dist_type=NULL) {
+  #  Calculates MHD for two paired samples, defined as the upper confidence limit of the mean
+  # based on a folded t-distibution
+  # Input
+  #   x: sample of observations
+  #   y: sample of observations
+  #   alpha: confidence level
+  #   dist_type: distribution dist_type, either t-distribution or z-distribution, with NULL 
+  #              it is chosen based on whether df > 30.
+  # Output
+  #   ucl: upper confidence limit of the mean of folded distribution
+  # Effect distribution is sample by sample different between x and y
   d = x-y
-  ucl = t_dist_1s(d, alpha)
+    
+  # Two sample paired is equivalent to 1 sample
+  ucl = mhd_1sample(d, alpha, dist_type=dist_type)
   return(ucl)
 }
 
 
-t_dist_1s <- function(x, alpha = 0.05) {
-# Calculates upper bounds of mean of folded t-distribution based on pre-folded 
-# central t-distribution
+mhd_1sample <- function(x, alpha = 0.05, dist_type=NULL) {
+  #  Calculates MHD for 1 sample, defined as the upper confidence limit of mean for 1 sample 
+  # based on a folded t-distibution
+  # Input
+  #   x: sample of observations
+  #   alpha: confidence level
+  #   dist_type: distribution dist_type, either t-distribution or z-distribution, with NULL
+  #              it is chosen based on whether df > 30.
+  # Output
+  #   ucl: upper confidence limit of the mean of folded distribution
   
   # Sample statistics
   x_bar <- mean(x)
@@ -39,33 +82,24 @@ t_dist_1s <- function(x, alpha = 0.05) {
   nx <- length(x)
   dfx <- n - 1
   
-  ucl = folded_t_dist(x_bar = x_bar, sx = sx, nx = nx, dfx = dfx, alpha = 0.05)
-  
+  # Determine distribution if not specified
+  if (dfd_pooled<30-1 & is.nulll(NULL)) {dist_type<-'t_ditribution'} else {dist_type<-'z_ditribution'}
+
+  if (dist_type=='t_distribution'){
+    # Calculate upper confidence limit of mean of folded normal
+    ucl = ucl_mean_folded_tdist(x_bar = x_bar, sx = sx, nx = nx, dfx = dfx, alpha = 0.05)
+  } elseif (dist_type=='z_distribution') {
+    # Calculate upper confidence limit of mean of folded normal
+    ucl = ucl_mean_folded_zdist(x_bar = x_bar, sx = sx, nx = nx, dfx = dfx, alpha = 0.05)
+  }
+
   return(ucl)
 }
 
 
-z_dist_1s <- function(x, alpha = 0.05) {
-  # Calculates most hidden difference from a 1-sample z-distribution
-  # Inputs
-  #  x: sample of observations
-  # Outputs
-  #  ucl: upper confidence limit of mean of folded absolute value z distribution
-  # Sample statistics
-  x_bar <- mean(x)
-  sx <- sd(x)
-  nx <- length(x)
-  dfx <- n - 1
-  
-  # Calculate upper confidence limit of mean of folded distribition
-  ucl = folded_z_dist(x_bar, sx, nx, dfx, alpha)
-  
-  return(ucl)
-}
 
-
-folded_t_dist <- function(x_bar, sx, nx, dfx, alpha = 0.05) {
-  #  Caclulate t statistic from integrating a central normal pdf shifted by -x_bar
+ucl_mean_folded_zdist <- function(x_bar, sx, nx, dfx, semx=NULL, alpha = 0.05) {
+  #  Calculate t statistic from integrating a central normal pdf shifted by -x_bar
   # Using minimization function to integrate using a normal CDF setting the area 
   # under the curve to (1-a)
   # Inputs
@@ -92,17 +126,19 @@ folded_t_dist <- function(x_bar, sx, nx, dfx, alpha = 0.05) {
     warning("mhd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
   }
   
+  
+  # If SEM is not specified, calculate
+  if (isnull(semx)) { semx = sx/sqrt(nx)}
+  
   # CI_mean - x_bar +- t_star * s/sqrt(n)
-  ucl = x_bar + t_star$minimum * s/sqrt(n)
+  ucl = x_bar + t_star$minimum * semx
   
   return(ucl)
 }
 
 
- 
-
-folded_z_dist <- function(x_bar, sx, nx, dfx, alpha = 0.05) { 
-  #  Caclulate z statistic from integrating a central t-distribution pdf shifted by -x_bar
+ucl_mean_folded_zdist <- function(x_bar, sx, nx, dfx, alpha = 0.05) { 
+  #  Calculate z statistic from integrating a central t-distribution pdf shifted by -x_bar
   # Using minimization function to integrate using a t-distribution CDF setting the area 
   # under the curve to (1-a)
   # Inputs
