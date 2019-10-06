@@ -147,7 +147,7 @@ ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   #   dfx: sample degrees of freedom
   # Output
   #   ucl: upper confidence limit of the mean of folded distribution
-  print("tdist")
+  
   # Estimate multiplier for bounds of search interval
   sd_mult <- qt(1 - alpha, dfx)
   
@@ -159,9 +159,11 @@ ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   
   # Minimization
   t_star = optimize(t_star_function, search_bounds, maximum = FALSE)
-  print(t_star$minimum)
   
-  if (t_star$minimum == search_bounds[2]) {
+  
+  print(sprintf("x_bar: %.2f, t_star: %.2f",x_bar, t_star$minimum))
+  
+         if (t_star$minimum == search_bounds[2]) {
     warning("mhd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
   }
 
@@ -169,7 +171,7 @@ ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   if (is.null(semx)) { semx = sx / sqrt(nx)}
   
   # CI_mean - x_bar +- t_star * s/sqrt(n)
-  ucl = abs(x_bar) + (t_star$minimum - x_bar/sx) * semx
+  ucl = abs(x_bar) + (t_star$minimum - abs(x_bar/sx)) * semx
   
   return(ucl)
 }
