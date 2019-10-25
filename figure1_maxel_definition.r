@@ -252,7 +252,8 @@ tt = ttheme_minimal(core=list(fg_params=list(hjust=0,x=0.04,fontsize=10,
 # One sample test
 gs[[6]] <-  p1_1 + labs(tag = expression(bold(A)))
 gs[[7]] <-  p1_2 + labs(tag = expression(bold(B)))
-gs[[8]] <-  tableGrob(d = df_1s, rows=NULL, cols=NULL, theme=modifyList(tt, list(core=list(fg_params=list(x=.05)))))
+gs[[8]] <-  tableGrob(d = df_1s, rows=NULL, cols=NULL, 
+                      theme=modifyList(tt, list(core=list(fg_params=list(x=.05)))))
 # Two sample, paired
 gs[[10]] <- p2_1+ labs(tag = expression(bold(C)))
 gs[[11]] <- p2_2+ labs(tag = expression(bold(D)))

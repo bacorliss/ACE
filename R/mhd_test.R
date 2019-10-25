@@ -5,6 +5,8 @@ library(broom)
 library(scales)
 library(ggplot2)
 library(dplyr)
+library(grid)
+library(gridExtra)
 library(colorspace)
 library("RColorBrewer")
 clr_set = brewer.pal(n = 8, name = "Set1")
@@ -49,7 +51,7 @@ y <- rnorm(n_obs, mean = mu, sd = std)
 y <- y - mean(y)
 
 # Define sweep for shift in sample mean from zero
-df = tibble(x = seq(from = -1*std, to = 1*std, by = 0.01))
+df = tibble(x = seq(from = -1.2*std, to = 1.2*std, by = 0.1),grp=1)
 
 # Replicate samples so each of the x offsets can be applied to a seprate row
 y_expanded <- matrix(y, nrow = length(df$x),ncol = length(y), byrow = TRUE)
@@ -67,48 +69,70 @@ df$mcl_975  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.0
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
 
 
-x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.95)
+x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 
+## Subplot A,B: MHD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
 # plot
 p1_1 = ggplot(data=df,mapping = aes(x=x,y=mhd_95))
-p1_1 <- p1_1 +
-  geom_rect(aes(xmin=x_critical[1], xmax=x_critical[2], ymin=-Inf, ymax=Inf,fill = "Noncrit. Region")) +
-  geom_point(shape=21, aes(col="MHD[alpha]")) + 
-  geom_line(aes(x=x,y=mcl_95 , col="Max(|CI[2*alpha]|)"), linetype=2, lwd = 1) +
-  geom_line(aes(x=x,y=mcl_975, col="Max(|CI[2*alpha]|)"), linetype=1, lwd = 1) +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
-  xlab(expression('bar(x)')) + ylab("f(x)") +
-  scale_linetype_manual(values=c("twodash", "dotted")) +
-  scale_color_manual(values=c('blue','blue','black')) +  
-  scale_fill_manual("", values = lighten('red',.8), guide = guide_legend(override.aes = list(alpha = 1))) 
-  #scale_color_manual(labels = c("MHD[alpha]", "Max(|CI[2*alpha]|)", "Max(|CI[alpha]|)"))
+p1_1 <- p1_1 + theme_classic() +
+  geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
+  geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
+  geom_line(aes(x=x,y=mcl_95, linetype = "CI_97.5"), col=lighten("blue",0.6), size=.8) +
+  geom_line(aes(x=x,y=mcl_975, linetype = "CI_95"), col=lighten("blue",0.6), size=.8) +
+  geom_point( aes(shape="MHD_95"), col="black",size = 1) +
+  xlab("") + ylab("f(x)") +
+  scale_shape_manual("", values = 1) +
+  scale_linetype_manual("", labels=c(
+    expression(max((~abs(CI[97.5])))),
+    expression(max((~abs(CI[95])))),
+    expression(MHD[95])),
+    values=c("solid", "dotted", "solid")) +  
+  scale_fill_manual("", values = lighten('black',0.9), guide = guide_legend(override.aes = list(alpha = 1))) +  
+  theme(
+    axis.title.x=element_blank(), axis.text.x=element_blank(),legend.position = "right",
+    legend.justification = c(0, 0.5), legend.title = element_blank(), legend.margin = margin(c(0, 0, 0, 0)),
+    plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical", legend.text=element_text(size=8))
 p1_1
-legend(1, 1, legend=c("MHD_95", "UCL_95", "UCL_90", "- UCL_95", "- UCL_90"),
-       col=c("black", alpha(c("blue","red","blue","red"),0.25)), lty=c(NA, 1, 1, 2, 2), 
-       lwd=c(1,2,2,2,2),cex=0.8,pch = c(1, NA, NA, NA, NA))
 
 # Plot p value of sample sweep
 p1_2 = ggplot(data=df,mapping = aes(x=x,y=ttest_p_val))
 p1_2 <- p1_2 +
-  geom_rect(aes(xmin=x_critical[1], xmax=x_critical[2], ymin=-Inf, ymax=Inf), fill = lighten('red',.8)) +
-  geom_point(shape=21) +
+  geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
+  geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
+  geom_point(aes(col="t-test "), shape=1) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
-  xlab(expression('bar(x)')) + ylab('p value')
+  geom_hline(aes(yintercept=0.05, col="Conf. Level")) + 
+  xlab(expression(bar(x))) + ylab("p value") + 
+  scale_shape_manual("", values = c(2,2)) +
+  scale_linetype_manual("",values=c("dotted", "dotted"))+
+  scale_color_manual("", labels = c("Conf. Level","t-test "),values=c('red','black'))+
+  scale_fill_manual("",values = lighten('black',0.9), guide = guide_legend(override.aes = list(alpha = 1))) + 
+  theme(
+    legend.position = "right", legend.justification = c(0, 0.5), legend.title = element_blank(),
+    legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical",
+    legend.text=element_text(size=8))
 p1_2
 
-# x_critical = RootSpline1(x=x,y=ttest_p_val,y0 = 0.95)
-# plot(x, ttest_p_val,panel.first = rect(x_critical[1], -1e6, x_critical[2], 1e6, col=lighten('red',.8), 
-#                                        border=NA), xlab=expression("bar(x)"), ylab="p value")
-# lines(c(x[1], tail(x,n=1)),c(0.95,0.95),col='black',lty=2)
+# Assemble grid for plotting
+gs <- lapply(1:2, function(ii) grobTree(rectGrob(gp = gpar(alpha = 0.5))))
+gs[[1]] = p1_1 #+ labs(tag = expression(bold(A)))
+gs[[2]] = p1_2 #+ labs(tag = expression(bold(B)))
+  
+# Arrange grob obejcts into grid
+gt <- arrangeGrob(grobs = gs, layout_matrix = rbind(c(1),
+                                                      c(2)))
+# Change relative height of gtable rows and columns
+gt$heights <- unit(c(.6, .4), "npc")
+# gt$widths <- unit(c(.5,.5), "npc")
+# Apply row and column heights to gtable
+gt_pad <- gtable::gtable_add_padding(gt, unit(0, "inch"))
 
-
-
-
-legend(1, 1, legend=c("MHD_95", "UCL_95", "UCL_90", "- UCL_95", "- UCL_90"),
-       col=c("black", alpha(c("blue","red","blue","red"),0.25)), lty=c(NA, 1, 1, 2, 2), 
-       lwd=c(1,2,2,2,2),cex=0.8,pch = c(1, NA, NA, NA, NA))
+# Export figure to disk
+ggsave("figure/figure_2AB_MHD_vs_CI95.pdf", gt_pad, device = "pdf", path = NULL,
+       scale = 1, width = 7, height = 3, units = "in",
+       dpi = 300, limitsize = TRUE,paper="letter")
+  
 
 
 
