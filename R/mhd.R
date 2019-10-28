@@ -152,26 +152,40 @@ ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   sd_mult <- qt(1 - alpha, dfx)
   
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_function <- function(x) {abs(pt(-x_bar/sx + x,dfx) - pt(-x_bar/sx - x, dfx) - (1 - alpha))}
+  t_star_function <- function(x) {abs(pt(-x_bar / (sx/sqrt(nx)) + x, dfx) - 
+                                      pt(-x_bar / (sx/sqrt(nx)) - x, dfx) - (1 - alpha))}
   
   # Calculate roughly the extext of search space
-  search_bounds = c(0, x_bar + 4*sd_mult * sx)
+  search_bounds = c(abs(x_bar) / (sx/sqrt(nx)), abs(x_bar) / (sx/sqrt(nx)) + 5*sd_mult)
+  #print(sprintf('USL:%f',abs(x_bar) / (sx/sqrt(nx)) + 4*sd_mult*sx))
+  
+  
+  x <- seq(search_bounds[1], search_bounds[2], diff(search_bounds)/100)
+  y <- lapply(x,t_star_function)
+  plot(x,y)
+  
   
   # Minimization
-  t_star = optimize(t_star_function, search_bounds, maximum = FALSE)
-  
-  
+  t_star = optimize(t_star_function, search_bounds, maximum = FALSE, tol=.Machine$double.eps^(1/2))
+  # t_star2 = uniroot(t_star_function, search_bounds, check.conv = FALSE,
+  #         tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
+  # print(t_star2)
+  # 
   print(sprintf("x_bar: %.2f, t_star: %.2f",x_bar, t_star$minimum))
   
-         if (t_star$minimum == search_bounds[2]) {
-    warning("mhd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
+  if (abs(t_star$minimum - search_bounds[2]) < diff(search_bounds)/1000 ) {
+    warning("mhd: minimized point equal to max bounds of search space- results unreliable.")
+  }
+
+  if (abs(t_star$minimum - search_bounds[1]) < sx/2 ) {
+    warning("mhd: minimized point minimization equal to min bounds of search space- results unreliable.")
   }
 
   # If SEM is not specified, calculate
   if (is.null(semx)) { semx = sx / sqrt(nx)}
   
   # CI_mean - x_bar +- t_star * s/sqrt(n)
-  ucl = abs(x_bar) + (t_star$minimum - abs(x_bar/sx)) * semx
+  ucl = abs(x_bar) + (t_star$minimum - abs(x_bar)/(sx/sqrt(nx))) * semx
   
   return(ucl)
 }
@@ -204,7 +218,6 @@ ucl_mean_folded_zdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   if (z_star$minimum == search_bounds[2]) {
     warning("mhd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
   }
-  
   
   # If SEM is not specified, calculate
   if (is.null(semx)) { semx = sx / sqrt(nx)}
