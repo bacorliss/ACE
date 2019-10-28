@@ -79,7 +79,6 @@ g1A <- g1A + theme_classic() +
   scale_linetype_manual("", labels=c( expression(max((~abs(CI[97.5])))),
     expression(max((~abs(CI[95])))), expression(MHD[95]) ),
     values=c("solid", "dotted", "solid")) +  
-  #scale_fill_manual("", values = lighten('black',0.9), guide = guide_legend(override.aes = list(alpha = 1))) +  
   theme(
     axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(),
     legend.position = "right",legend.justification = c(0, 0.5), legend.title = element_blank(),
@@ -148,7 +147,7 @@ ggsave("figure/figure_2AB_MHD_vs_CI95.pdf", gt_pad, device = "pdf", path = NULL,
 #--------------------------------------------------------------------------------------#
 # Generate 1000 samples, loop through different shifts, and quantify MHD, UCL_95, UCL_90
 source("R/mhd.R")
-mu = c(NA, -10,-1, -.5, 0, .5, 1, 10)
+mu = c(-10,-1, -0.5, -0.05, NA, 0.05, 0.5, 1, 10)
 sigma = 1
 n_samples = 100
 n_obs = 5
@@ -204,22 +203,32 @@ df <- ldply(df_list, rbind)
 # revalue(df, c(="Centered"))
 
 g1C <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) + 
-  geom_hline(yintercept=1, col=lighten("blue",0.6), linetype = "solid", size=0.8) + 
-  geom_hline(yintercept=0, col=lighten("blue",0.6), linetype = "dashed", size=0.8) +
+  geom_hline(aes(yintercept=1, linetype="CI_97.5"), col=lighten("blue",0.6), size=0.8) + 
+  geom_hline(aes(yintercept=0, linetype="CI_95"), col=lighten("blue",0.6), size=0.8) +
   geom_boxplot(aes(group=n)) + 
-  facet_grid(. ~ n, scales = "free",switch = "y")
+  theme_minimal() +
+  facet_grid(. ~ mu, scales = "free",switch = "y") + 
+  theme(strip.background = element_blank(), strip.text.y = element_blank(),
+        strip.text = element_blank(),strip.text.x = element_blank(),
+        axis.title.y = element_text(size = 8),
+        axis.title.x = element_text(size = 10)) +
+  ylab('Norm. Units') + xlab(expression(mu)) +
+  scale_linetype_manual("", labels=c( expression(max((~abs(CI[97.5])))),
+                                      expression(max((~abs(CI[95]))))),
+                        values=c("dotted", "solid"))
+
+
+expression(max((~abs(CI[97.5]))))
+
 
 gg1C <- ggplotGrob(g1C)
 
-gg1C$widths[6] = 6*gg1C$widths[6]
+# gg1C$widths[6] = 6*gg1C$widths[6]
 grid.draw(gg1C)
 
 # Export figure to disk
-ggsave("figure/figure_2C_MHD_vs_CI95.tif", gg1C, device = "tif", path = NULL,
-       scale = 1, width = 5, height = 1.5, units = "in",
-       dpi = 300, limitsize = TRUE,)
-
-
+save_plot("figure/figure_2AB_MHD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 
 
 sample_data %>%
