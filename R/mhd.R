@@ -63,7 +63,8 @@ mhd_1sample <- function(x, alpha = 0.05, dist_type = NULL) {
   
   # Determine distribution if not specified
   if (dfx<30-1 & is.null(dist_type)) {dist_type <- 't_dist'} else {dist_type<-'z_dist'}
-
+  dist_type <- 't_dist'
+  
   if (dist_type=='t_dist'){
     # Calculate upper confidence limit of mean of folded normal
     ucl = ucl_mean_folded_tdist(x_bar = x_bar, sx = sx, nx = nx, dfx = dfx, alpha = 0.05)
@@ -120,7 +121,8 @@ mhd_2sample_unpaired <- function(x, y, alpha = 0.05, dist_type = NULL) {
   semd_pooled <- sd_pooled * sqrt((1 / nx^2) + (1 / ny^2))
   
   # Determine distribution if not specified
-  if (dfd_pooled<30-2 & is.null(dist_type)) {dist_type<-'t_dist'} else {dist_type<-'z_dist'}
+  # if (dfd_pooled<30-2 & is.null(dist_type)) {dist_type<-'t_dist'} else {dist_type<-'z_dist'}
+  dist_type<-'t_dist'
   
   if (dist_type=='t_dist'){
     # Calculate upper confidence limit of mean of folded normal
@@ -136,7 +138,7 @@ mhd_2sample_unpaired <- function(x, y, alpha = 0.05, dist_type = NULL) {
 }
 
 
-ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05) {
+ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05,verbose=FALSE) {
   #  Calculate t statistic from integrating a central normal pdf shifted by -x_bar
   # Using minimization function to integrate using a normal CDF setting the area 
   # under the curve to (1-a)
@@ -152,40 +154,45 @@ ucl_mean_folded_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   sd_mult <- qt(1 - alpha, dfx)
   
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_function <- function(x) {abs(pt(-x_bar / (sx/sqrt(nx)) + x, dfx) - 
-                                      pt(-x_bar / (sx/sqrt(nx)) - x, dfx) - (1 - alpha))}
+  # t_star_function <- function(x) {abs(pt(-x_bar / (sx/sqrt(nx)) + x, dfx) - 
+  #                                     pt(-x_bar / (sx/sqrt(nx)) - x, dfx) - (1 - alpha))}
+  # Integration of folded t-distribution can be calculate from standard central t-distribution
+  t_star_function <- function(x) {pt(-x_bar / (sx/sqrt(nx)) + x, dfx) - 
+                                        pt(-x_bar / (sx/sqrt(nx)) - x, dfx) - (1 - alpha)}
   
   # Calculate roughly the extext of search space
   search_bounds = c(abs(x_bar) / (sx/sqrt(nx)), abs(x_bar) / (sx/sqrt(nx)) + 5*sd_mult)
+
   #print(sprintf('USL:%f',abs(x_bar) / (sx/sqrt(nx)) + 4*sd_mult*sx))
   
+ 
   
-  x <- seq(search_bounds[1], search_bounds[2], diff(search_bounds)/100)
-  y <- lapply(x,t_star_function)
-  plot(x,y)
+  # Solve for t star with root finding
+  t_star = uniroot(t_star_function, search_bounds, check.conv = TRUE,
+                         tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
+  
+  # Plot root finding data and root if verbose mode on
+  if (verbose) {
+    x <- seq(search_bounds[1], search_bounds[2], diff(search_bounds)/100)
+    y <- lapply(x,t_star_function)
+    plot(x,y)
+    print(sprintf("x_bar: %.2f, t_star: %.2f",x_bar, t_star$root))
+  }
   
   
-  # Minimization
-  t_star = optimize(t_star_function, search_bounds, maximum = FALSE, tol=.Machine$double.eps^(1/2))
-  # t_star2 = uniroot(t_star_function, search_bounds, check.conv = FALSE,
-  #         tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
-  # print(t_star2)
-  # 
-  print(sprintf("x_bar: %.2f, t_star: %.2f",x_bar, t_star$minimum))
-  
-  if (abs(t_star$minimum - search_bounds[2]) < diff(search_bounds)/1000 ) {
-    warning("mhd: minimized point equal to max bounds of search space- results unreliable.")
+  if (abs(t_star$root - search_bounds[2]) < diff(search_bounds)/1000 ) {
+    warning("mhd: minimized point equal to upper bounds of search space- results unreliable.")
   }
 
-  if (abs(t_star$minimum - search_bounds[1]) < sx/2 ) {
-    warning("mhd: minimized point minimization equal to min bounds of search space- results unreliable.")
+  if (abs(t_star$root - search_bounds[1]) < sx/2 ) {
+    warning("mhd: minimized point minimization equal to lower bounds of search space- results unreliable.")
   }
 
   # If SEM is not specified, calculate
   if (is.null(semx)) { semx = sx / sqrt(nx)}
   
   # CI_mean - x_bar +- t_star * s/sqrt(n)
-  ucl = abs(x_bar) + (t_star$minimum - abs(x_bar)/(sx/sqrt(nx))) * semx
+  ucl = abs(x_bar) + (t_star$root - abs(x_bar)/(sx/sqrt(nx))) * semx
   
   return(ucl)
 }
@@ -210,10 +217,11 @@ ucl_mean_folded_zdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   z_star_function <- function(x) {abs(pnorm(-x_bar/sx + x,sx) - pnorm(-x_bar/sx - x, sx) - (1 - alpha))}
   
   # Calculate roughly the extext of search space
-  search_bounds = c(0, x_bar + 4*sd_mult * sx)
+  search_bounds = c(abs(x_bar)/sx, abs(x_bar)/sx + 5*sd_mult)
   
-  # Minimization
-  z_star = optimize(z_star_function, search_bounds, maximum = FALSE)
+  # Solve for t star with root finding
+  t_star = uniroot(t_star_function, search_bounds, check.conv = TRUE,
+                   tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
   
   if (z_star$minimum == search_bounds[2]) {
     warning("mhd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
@@ -223,7 +231,7 @@ ucl_mean_folded_zdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05)
   if (is.null(semx)) { semx = sx / sqrt(nx)}
   
   # CI_mean - x_bar +- z_star * s/sqrt(n)
-  ucl = z_star$minimum * x/sqrt(n)
+  ucl = z_star$minimum * x/sqrt(x)
 
   return(ucl)  
 }

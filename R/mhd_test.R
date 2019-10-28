@@ -4,6 +4,7 @@
 library(broom)
 library(scales)
 library(ggplot2)
+library(plyr)
 library(dplyr)
 library(grid)
 library(gridExtra)
@@ -36,7 +37,7 @@ RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
 mu = 0
 sigma = 1
 sigma_range = 1.2
-n_obs = 10
+n_obs = 5
 set.seed(0)
 y <- rnorm(n_obs, mean = mu, sd = sigma)
 
@@ -132,10 +133,10 @@ ggsave("figure/figure_2AB_MHD_vs_CI95.pdf", gt_pad, device = "pdf", path = NULL,
 #--------------------------------------------------------------------------------------#
 # Generate 1000 samples, loop through different shifts, and quantify MHD, UCL_95, UCL_90
 source("R/mhd.R")
-mu = c(-100, 1, 0, 1, 100)
-sigma = .01
-n_samples = 1000
-n_obs = 10
+mu = c(-10,-1, -.5, 0, .5, 1, 10)
+sigma = 1
+n_samples = 100
+n_obs = 5
 set.seed(0)
 # Sample around mean
 y_samples <- matrix(rnorm(n_samples*n_obs,0,sigma), nrow = n_samples, byrow = TRUE)
@@ -150,21 +151,8 @@ conf_range_fcn = function(x, alpha)  c(qt(1-(alpha/2), df = length(x)-1) * sd(x)
 df_list <- list()
 
 for (n in seq(1,length(mu),1)) {
-  
-  y_sweep = y_samples+mu[5]
-  
-  
-  
-
-  mhd_1sample( y_sweep[1,] )
-  max(abs( conf_interval_fcn(y_sweep[1,], 0.10) ))
-  max(abs( conf_interval_fcn(y_sweep[1,], 0.05) )) 
-
-  
-  max(abs( conf_range_fcn(y_sweep[1,], 0.10) ))
-  
-  
-  
+  shift = mu[n]
+  y_sweep = y_samples+mu[n]
   
   
   # Calcualte most hidden difference
@@ -178,41 +166,37 @@ for (n in seq(1,length(mu),1)) {
   
   mhd_diff <- mhd_95 - mcl_95
   ci_diff <- mcl_975 - mcl_95
-  norm_mhd <- mhd_diff/ci_diff
-  mcl_975 -mhd_95
-  plot(norm_mhd)
+  normalized_mhd_95 <- mhd_diff/ci_diff
+  
+  df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), normalized_mhd_95 = normalized_mhd_95, 
+                        mhd_95 = mhd_95, mcl_95 = mcl_95, mcl_975 = mcl_975)
+  print(df_list[[n]]$mu)
+  # print()
+  #print(mean(normalized_mhd_95))
 }
 
+df <- ldply(df_list, rbind)
 
 
-# 
-# ucl_95    <- apply(y_samples, 1, mhd_1sample)
-# if (mu<0) {
-#   uci_95  <- apply(y_samples, 1, function (x)  mean(x) - qt(0.950, df = length(x)-1) 
-#                    * sd(x)/sqrt(length(x)))
-#   uci_975  <- apply(y_samples, 1, function (x)  mean(x) - qt(0.975, df = length(x)-1) 
-#                     * sd(x)/sqrt(length(x)))
-# }else {
-#   uci_95  <- apply(y_samples, 1, function (x)  mean(x) + qt(0.950, df = length(x)-1) 
-#                          * sd(x)/sqrt(length(x)))
-#   uci_975  <- apply(y_samples, 1, function (x)  mean(x) + qt(0.975, df = length(x)-1) 
-#                           * sd(x)/sqrt(length(x)))
-# }
+h1 <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) + 
+  geom_boxplot(aes(group=n))+ facet_grid(. ~ n, scales = "free_y")
+
+h1
+
+sample_data %>%
+  group_by(Location) %>%                       
+  summarise(res = list(tidy(t.test(temp, mu=35)))) %>%
+  unnest()
+
+library(tidyr)
+library(broom)
+dt_res <- df %>%
+  group_by(mu) %>%                      
+  summarise_each(funs(mean, sd, pvalue = t.test(normalized_mhd_95,mu=0)$p.value),normalized_mhd_95) %>%
+  unnest()
 
 
-ci_df = data.frame(mu=mu,ci_type = c(rep('MHD 95',n_samples), rep('UCI 95',n_samples), 
-                                       rep('UCI 95.7',n_samples)), 
-                     ci_value=c(ucl_95, uci_95, uci_975))
 
 
-ci_df %>% group_by(ci_type) %>% summarise_each(list(mean=mean,sd=sd, 
-                                                    std.err= function(x) sd(x)/sqrt(n_obs)))
+bp
 
-
-p <- ggplot(data=ci_df, aes(x=ci_type, y=ci_value)) + 
-  geom_errorbar(aes(ymin=mean(x)-sd(x),ymax=mean(x)+sd(x)))
-p
-
-p <- ggplot(data=ci_df, aes(x=ci_type, y=ci_value)) + 
-  geom_boxplot()
-p
