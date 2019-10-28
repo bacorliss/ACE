@@ -37,7 +37,7 @@ RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
 # Generate repeatable sample of random normal numbers
 mu = 0
 sigma = 1
-sigma_range = 1.2
+sigma_range = 1
 n_obs = 5
 set.seed(0)
 y <- rnorm(n_obs, mean = mu, sd = sigma)
@@ -59,87 +59,76 @@ df$mhd_95    <- apply(y_sweep, 1, mhd_1sample)
 # Most confidence limit: max(abs( confident limits() ))
 conf_interval_fcn = function(x, alpha) mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)), 
                                               qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
-df$mcl_95   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) ))) 
-df$mcl_975  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
+df$mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) ))) 
+df$mcl_96  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
-# df$mhd_95 - df$mcl_95 
+# df$mhd_95 - df$mcl_90 
 
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 
+
+
+
+ci_labels = c(bquote(max((~abs(CI[95])))~" "),
+              bquote(max((~abs(CI[90])))), 
+              bquote(MHD[95]))
+                            
 ## Subplot A,B: MHD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
 g1A = ggplot(data=df,mapping = aes(x=x,y=mhd_95))
 g1A <- g1A + theme_classic() +
   geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
-  geom_line(aes(x=x,y=mcl_95, linetype = "CI_97.5"), col=lighten("blue",0.6), size=.8) +
-  geom_line(aes(x=x,y=mcl_975, linetype = "CI_95"), col=lighten("blue",0.6), size=.8) +
-  geom_point( aes(shape="MHD_95"), col="black",size = 1) +
+  geom_line(aes(x=x,y=mcl_90, col="CI_97.5"), size=.8, linetype="dotted") +
+  geom_line(aes(x=x,y=mcl_96, col="CI_95"), size=.8, linetype="dotted") +
+  geom_point(aes(col="MHD_95"), shape = 1,size = 1) +
   xlab("") + ylab("f(x)") +
-  scale_shape_manual("", values = 1) +
-  scale_linetype_manual("", labels=c( expression(max((~abs(CI[97.5])))),
-    expression(max((~abs(CI[95])))), expression(MHD[95]) ),
-    values=c("solid", "dotted", "solid")) +  
+  scale_shape_manual("", labels=ci_labels,values=c(NA,NA,1)) +   
+  scale_linetype_manual("", labels=ci_labels, values=c("solid","solid","blank")) +
+  scale_color_manual("",labels=ci_labels, values = c(lighten("blue",0.6),lighten("red",0.6),"black")) +
+  guides(color = guide_legend(override.aes = list(
+    linetype = c("solid","solid","blank"),
+    shape = c(NA,NA,1), color = c(lighten("blue",0.6),lighten("red",0.6),"black"))))   + 
   theme(
     axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(),
     legend.position = "right",legend.justification = c(0, 0.5), legend.title = element_blank(),
-    legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical", 
-    legend.text=element_text(size=8)) + 
+    legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical",
+    legend.text=element_text(size=8),legend.key.size = unit(.5,"line"), legend.text.align=0,
+    axis.title.y = element_text(size = 8)) + 
   scale_y_continuous(labels=function(x) sprintf("%.1f", x))
-g1A
+g1A 
 
 # Plot p value of sample sweep
+g1B_labels = c("Conf. Level  ","t-test","Crit. Region")
+
 g1B = ggplot(data=df,mapping = aes(x=x,y=ttest_p_val))
 g1B <- g1B +
-  geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
-  geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf,fill = "Crit. Region")) +
+  geom_rect(aes(xmin=-Inf, xmax = x_critical[1], ymin = -Inf, ymax = Inf, fill = "Crit. Region")) +
+  geom_rect(aes(xmin = x_critical[2], xmax = Inf, ymin = -Inf, ymax = Inf, fill = "Crit. Region")) +
   geom_hline(aes(yintercept=0.05, col="Conf. Level")) + 
   geom_point(aes(col="t-test "), shape = 16, size = 1) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
   xlab(expression(bar(x))) +
-  scale_y_continuous(name="p value", limits=c(0, 1.1),breaks=seq(0, 1, .5)) +
-  scale_shape_manual("", values = c(2,2)) +
-  scale_linetype_manual("",values=c("dotted", "dotted"))+
-  scale_color_manual("", labels = c("Conf. Level   ","t-test "),values=c('red','black'))+
+  scale_y_continuous(name="p value", limits=c(-.1, 1.1),breaks=seq(0, 1, .5)) +
+  scale_shape_manual("Legend", labels=g1B_labels, values = c(2,2,NA)) +
+  scale_linetype_manual("Legend", labels = g1B_labels, values=c("dotted", "dotted",NA))+
+  scale_color_manual("Legend", labels = g1B_labels,values=c('red','black',"grey")) +
   scale_fill_manual("",values = lighten('black',0.9), guide = guide_legend(override.aes = list(alpha = 1))) + 
   theme(
     legend.position = "right", legend.justification = c(0, 0.5), legend.title = element_blank(),
     legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical",
-    legend.text=element_text(size=8))
+    legend.text=element_text(size=8),legend.key.size = unit(.5,"line"),
+    legend.spacing.y = unit(0, "cm"),axis.title.y = element_text(size = 8),
+    axis.title.x = element_text(size = 10))
 g1B
 
 
-
+# Use cowplot to align subplots
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
+cg
+save_plot("figure/figure_2AB_MHD_vs_CI95.tiff", cg, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 
-save_plot("figure/figure_2AB_MHD_vs_CI95.pdf", cg, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 6, dpi = 300) # paper="letter"
-
-
-# Assemble grid for plotting
-gs <- lapply(1:2, function(ii) grobTree(rectGrob(gp = gpar(alpha = 0.5))))
-gs[[1]] = g1A #+ labs(tag = expression(bold(A)))
-gs[[2]] = g1B #+ labs(tag = expression(bold(B)))
-  
-# Arrange grob obejcts into grid
-gt <- arrangeGrob(grobs = gs, layout_matrix = rbind(c(1),
-                                                      c(2)))
-# Change relative height of gtable rows and columns
-gt$heights <- unit(c(.6, .4), "npc")
-# gt$widths <- unit(c(.5,.5), "npc")
-# Apply row and column heights to gtable
-gt_pad <- gtable::gtable_add_padding(gt, unit(0, "inch"))
-
-maxWidth = grid::unit.pmax(g1B$widths[2:5], g1B$widths[2:5])
-gg1A$widths[2:5] <- as.list(maxWidth)
-gg1B$widths[2:5] <- as.list(maxWidth)
-grid.arrange(g1A, g1B, ncol=1)
-
-# Export figure to disk
-ggsave("figure/figure_2AB_MHD_vs_CI95.pdf", gt_pad, device = "pdf", path = NULL,
-       scale = 1, width = 7, height = 2.5, units = "in",
-       dpi = 300, limitsize = TRUE,)
-  
 
 
 
@@ -165,11 +154,10 @@ conf_range_fcn = function(x, alpha)  c(qt(1-(alpha/2), df = length(x)-1) * sd(x)
 df_list <- list()
 
 for (n in seq(1,length(mu),1)) {
-  
   shift = mu[n]
   
   if (is.na(shift)) {
-    y_sweep = y_samples - rowMeans( y_samples)
+    y_sweep = y_samples - rowMeans(y_samples) + runif(n_samples, min=-.00001, max=.00001)
     shift <- "Centered"
   }else {
     y_sweep = y_samples+shift
@@ -177,20 +165,17 @@ for (n in seq(1,length(mu),1)) {
   
   # Calcualte most hidden difference
   mhd_95    <- apply(y_sweep, 1, mhd_1sample)
-  
-
-  mcl_95   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) )))
-  mcl_975  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) )))
+  mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) )))
+  mcl_96  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) )))
   # ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
   
-  
-  mhd_diff <- mhd_95 - mcl_95
-  ci_diff <- mcl_975 - mcl_95
+  mhd_diff <- mhd_95 - mcl_90
+  ci_diff <- mcl_96 - mcl_90
   normalized_mhd_95 <- mhd_diff/ci_diff
   
   df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), normalized_mhd_95 = normalized_mhd_95, 
-                        mhd_95 = mhd_95, mcl_95 = mcl_95, mcl_975 = mcl_975)
-  print(df_list[[n]]$mu)
+                        mhd_95 = mhd_95, mcl_90 = mcl_90, mcl_96 = mcl_96)
+  #print(df_list[[n]]$mu)
   # print()
   #print(mean(normalized_mhd_95))
 }
@@ -200,34 +185,31 @@ df <- ldply(df_list, rbind)
 
 
 
-# revalue(df, c(="Centered"))
 
 g1C <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) + 
-  geom_hline(aes(yintercept=1, linetype="CI_97.5"), col=lighten("blue",0.6), size=0.8) + 
-  geom_hline(aes(yintercept=0, linetype="CI_95"), col=lighten("blue",0.6), size=0.8) +
-  geom_boxplot(aes(group=n)) + 
+  geom_hline(aes(yintercept=1, col="CI_97.5"), linetype="dotted", size=0.8) + 
+  geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
+  geom_boxplot(group=n) + 
   theme_minimal() +
-  facet_grid(. ~ mu, scales = "free",switch = "y") + 
-  theme(strip.background = element_blank(), strip.text.y = element_blank(),
-        strip.text = element_blank(),strip.text.x = element_blank(),
-        axis.title.y = element_text(size = 8),
-        axis.title.x = element_text(size = 10)) +
-  ylab('Norm. Units') + xlab(expression(mu)) +
-  scale_linetype_manual("", labels=c( expression(max((~abs(CI[97.5])))),
-                                      expression(max((~abs(CI[95]))))),
-                        values=c("dotted", "solid"))
-
-
-expression(max((~abs(CI[97.5]))))
-
-
+  facet_grid(.~mu, scales = "free",switch = "y") + 
+  theme(strip.background = element_blank(), strip.text.y = element_blank(),legend.text.align=0,
+       strip.text = element_blank(),strip.text.x = element_blank(),
+       axis.title.y = element_text(size = 8), axis.title.x = element_text(size = 10),
+       legend.key.size = unit(.5,"line"), legend.spacing.y = unit(0, "cm"),
+       legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
+ ylab('Norm. Units') + xlab(expression(mu)) +
+  scale_color_manual("", labels=c( expression(max((~abs(CI[95])))), expression(max((~abs(CI[90]))))), 
+                     values=c(lighten("blue",0.6), lighten("red",0.6))) + 
+  guides(color = guide_legend(override.aes = list(
+    linetype = c("solid","solid"))))
+g1C
 gg1C <- ggplotGrob(g1C)
 
 # gg1C$widths[6] = 6*gg1C$widths[6]
 grid.draw(gg1C)
 
 # Export figure to disk
-save_plot("figure/figure_2AB_MHD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot("figure/figure_2C_MHD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 
 
