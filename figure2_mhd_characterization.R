@@ -63,9 +63,7 @@ df$mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.1
 df$mcl_96  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
 # df$mhd_95 - df$mcl_90 
-
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
-
 
 
 
@@ -134,9 +132,10 @@ save_plot("figure/figure_2AB_MHD_vs_CI95.tiff", cg, ncol = 1, nrow = 1, base_hei
 
 ## Explore trends between MHD and CI at a population level
 #--------------------------------------------------------------------------------------#
+
 # Generate 1000 samples, loop through different shifts, and quantify MHD, UCL_95, UCL_90
 source("R/mhd.R")
-mu = c(-10,-1, -0.5, -0.05, NA, 0.05, 0.5, 1, 10)
+mu = c(-10,-1, -0.5, 0, 0.5, 1, 10, NA)
 sigma = 1
 n_samples = 100
 n_obs = 5
@@ -183,11 +182,9 @@ for (n in seq(1,length(mu),1)) {
 df <- ldply(df_list, rbind)
 
 
-
-
-
+# Plotting
 g1C <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) + 
-  geom_hline(aes(yintercept=1, col="CI_97.5"), linetype="dotted", size=0.8) + 
+  geom_hline(aes(yintercept=1, col="CI_90"), linetype="dotted", size=0.8) + 
   geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
   geom_boxplot(group=n) + 
   theme_minimal() +
@@ -199,30 +196,31 @@ g1C <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) +
        legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
  ylab('Norm. Units') + xlab(expression(mu)) +
   scale_color_manual("", labels=c( expression(max((~abs(CI[95])))), expression(max((~abs(CI[90]))))), 
-                     values=c(lighten("blue",0.6), lighten("red",0.6))) + 
+                     values=c(lighten("blue",0.4), lighten("red",0.4))) + 
   guides(color = guide_legend(override.aes = list(
     linetype = c("solid","solid"))))
-g1C
+#g1C
 gg1C <- ggplotGrob(g1C)
 
-# gg1C$widths[6] = 6*gg1C$widths[6]
+gg1C$widths[18] = 6*gg1C$widths[18]
 grid.draw(gg1C)
 
 # Export figure to disk
 save_plot("figure/figure_2C_MHD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
-
-
-sample_data %>%
-  group_by(Location) %>%                       
-  summarise(res = list(tidy(t.test(temp, mu=35)))) %>%
-  unnest()
+# 
+# 
+# sample_data %>%
+#   group_by(Location) %>%                       
+#   summarise(res = list(tidy(t.test(temp, mu=35)))) %>%
+#   #unnest()
 
 library(tidyr)
 library(broom)
 dt_res <- df %>%
   group_by(mu) %>%                      
-  summarise_each(funs(mean, sd, pvalue = t.test(normalized_mhd_95,mu=0)$p.value),normalized_mhd_95) 
+  summarise_each(funs(mean, sd, p_val_0 = t.test(normalized_mhd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
+        p_val_1 = t.test(normalized_mhd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),normalized_mhd_95) 
 
 
 
