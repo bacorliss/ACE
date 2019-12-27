@@ -69,29 +69,59 @@ save_plot("figure/figure_1a_example_dists.tiff", p_1a, ncol = 1, nrow = 1, base_
 
 
 
-# Test to show that generated samples follow folded normal
+# Test to show that absolute of normal samples generated under null hypothesis follow folded normal
 #-------------------------------------------------------------------------
 
 # Randomly generate normal data for     
 #     Normal data,                      |
 #     Normal data, then apply ABS()     |   x   1000
 #     Folded normal data                |
-mus <- runif(1e4, min = -5, max = 5)
-n_obs <- 100
+mus <- rep(0, 1e4)#mrunif(1e4, min = -5, max = 5)
+n_obs <- 200
 
-
-norm <- sapply(mus, function (x) rnorm(n_obs, mean=x, sd=1),simplify = TRUE)
-abs_norm <- sapply(mus, function (x) rnorm(n_obs, mean=x, sd=1),simplify = TRUE)
-fnorm <- sapply(mus, function (x) rfoldnorm(n_obs, mean=x, sd=1),simplify = TRUE)
+# Generate random samples based on random mu values
+x_norm <- t(sapply(mus, function (x) rnorm(n_obs, mean = x, sd = 1),simplify = TRUE))
+x_abs_norm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)),simplify = TRUE))
+x_fnorm <- t(sapply(mus, function (x) rfoldnorm(n_obs, mean = x, sd = 1),simplify = TRUE))
 
 # Test if norm is different from abs_norm
-norm2fnorm <- mapply(function(x,y) ks.test(x, y, alternative = "two.sided", exact = TRUE, 
-                                           tol=1e-8, simulate.p.value=FALSE)$p.value, norm, fnorm,SIMPLIFY = TRUE)
+p_value_norm2abs_norm <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]), 
+                                as.vector(x_abs_norm[i,]), alternative = "two.sided", exact = TRUE, 
+                                tol=1e-8, simulate.p.value=FALSE)$p)
 
-# Test if abs_norm is different from fnorm
-abs_norm2fnorm <- mapply(function(x,y) ks.test(x, y, alternative = "two.sided", exact = TRUE, 
-                                           tol=1e-8, simulate.p.value=FALSE)$p.value, abs_norm, fnorm,SIMPLIFY = TRUE)
+# Test if norm is different from folded norm
+p_value_norm2fnorm <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]), 
+                             as.vector(x_fnorm[i,]), alternative = "two.sided", exact = TRUE, 
+                             tol=1e-8, simulate.p.value=FALSE)$p)
 
+
+# Test if abs_norm is different from folded norm
+p_value_abs_norm2fnorm <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_abs_norm[i,]),
+                                 as.vector(x_fnorm[i,]), alternative = "two.sided", exact = TRUE, 
+                                 tol=1e-8, simulate.p.value=FALSE)$p)
+
+
+df_1b <- rbind(tibble(d = "N : |N|", x = p_value_norm2abs_norm),
+               tibble(d = "N : F[N]", x = p_value_norm2fnorm), 
+               tibble(d = "|N| : F[N]", x = p_value_abs_norm2fnorm))
+ 
+p_1b <- ggplot(df_1b, aes(x=d, y=x)) + 
+  geom_violin(scale="width",bw=.05,kernel="gaussian") +
+  xlab("Comparison") + ylab("K.S. P Value") + geom_boxplot(width=0.1,outlier.shape = NA)
+p_1b
+
+
+a <- hist(p_value_abs_norm2fnorm, breaks=9)
+
+chisq.test(hist(p_value_abs_norm2fnorm))
+
+library(spgs)
+chisq.unif.test(hist(p_value_abs_norm2fnorm), interval=c(0,1))
+                
+                
+uniform.test(hist(p_value_abs_norm2fnorm), B = 1000)
+
+ks.test(p_value_abs_norm2fnorm,"punif",0,1,exact=TRUE, simulate.p.value=TRUE)
 
 # Plot difference between P(N) and P(F[N]) over mu
 
