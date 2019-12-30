@@ -229,7 +229,7 @@ pop_sigmas = seq(.5,5, by = .5)
 n_obs = 100
 n_samples = 1e4
 # Run Simulation, calculate mean and sd for each sample
-df_results <- rnorm_swept_param(pop_mus,pop_sigmas,n_samples = 1e4, n_obs = 100)
+df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples = 1e4, n_obs = 100)
   
 # Statistics of groups
 # Compute the analysis of variance
