@@ -21,6 +21,7 @@ library(dplyr)
 library(cowplot)
 
 source("R/stat_helper.r")
+
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
 
@@ -170,32 +171,35 @@ pop_sigmas = 1
 n_obs = 100
 n_samples = 1e4
 # Run Simulation, calculate mean and sd for each sample
-df_results <- rnorm_swept_param(pop_mus,pop_sigmas,n_samples, n_obs)
+df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples, n_obs)
 
 # Statistics of groups
 # Compute the analysis of variance
-summary(aov(sample_mean ~ pop_mu, data = df_results))
-pairwise.t.test(df_results$sample_mean, df_results$pop_mu, p.adj = "bonf")
-pairwise.t.test(df_results$sample_sd, df_results$pop_mu, p.adj = "bonf")
 
-prox_sd_sig <- rep('#', length(pop_sigmas))
-prox_mean_sig <- rep('#', length(pop_sigmas))
-prepost_sd_sig <- rep('\u2020', length(pop_sigmas))
-prepost_mean_sig <- rep('\u2020', length(pop_sigmas))
-df_mcomp = tibble(pop_sigma=pop_sigmas, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
-                  prepost_sd_sig,prepost_mean_sig)
+
+# summary(aov(sample_mean ~ pop_mu, data = df_results))
+# pairwise.t.test(df_results$sample_mean, df_results$pop_mu, p.adj = "bonf")
+# pairwise.t.test(df_results$sample_sd, df_results$pop_mu, p.adj = "bonf")
+# 
+# prox_sd_sig <- rep('#', length(pop_mus))
+# prox_mean_sig <- rep('#', length(pop_mus))
+# prepost_sd_sig <- rep('\u2020', length(pop_mus))
+# prepost_mean_sig <- rep('\u2020', length(pop_mus))
+# df_mcomp = tibble(pop_mu=pop_mus, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
+#                   prepost_sd_sig,prepost_mean_sig)
+
+# Calculate adjancent and pairwise stats of results
+df_mcomp <- norm_fnorm_stats(df_results, "pop_mu") 
 
 # Sample mean versus population mean
 p_1e <- ggplot(df_results, aes(x=pop_mu, y=sample_mean)) + 
-  geom_violin(color="blue",lwd = .2) + 
-  #annotate("text",x=factor(mus),y=4,label='*')+
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data=data.frame(), aes(x = factor(pop_mus),  
-            y = rep(gglabel_height(df_results$sample_mean,1,.1), length(pop_mus)), label=df_mcomp$prox_mean_sig), 
+            y = rep(gglabel_height(df_results$sample_mean,1,.1), length(pop_mus)), label=df_mcomp$prox_mean_sig_str), 
             size=2) +
   geom_text(data = data.frame(), size = 2, aes(x = factor(pop_mus),
-            y = rep(gglabel_height(df_results$sample_mean,3,.1), length(pop_mus)), label=df_mcomp$prepost_mean_sig)) +
-  coord_cartesian(clip = 'off') +
- # geom_boxplot(width=.2, outlier.shape = NA,lwd = .2) +
+            y = rep(gglabel_height(df_results$sample_mean,3,.1), length(pop_mus)), label=df_mcomp$prepost_mean_sig_str)) +
   xlab("Population Mean") + ylab("Sample Mean") +
   theme_classic(base_size=8)
 p_1e
@@ -204,13 +208,14 @@ save_plot("figure/figure_1e_mean_changes_sample_mean.tiff", p_1e, ncol = 1, nrow
 
 # Sample sd versus population mean
 p_1f <- ggplot(df_results, aes(x=pop_mu, y=sample_sd)) + 
-  geom_violin(color="blue", lwd = .2) + 
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data=data.frame(), aes(x = factor(pop_mus),  
-            y = rep(gglabel_height(df_results$sample_sd,1,.1), length(pop_mus)), label=df_mcomp$prox_sd_sig), 
+            y = rep(gglabel_height(df_results$sample_sd,1,.1), length(pop_mus)), label=df_mcomp$prox_sd_sig_str), 
             size=2) +
   geom_text(data = data.frame(), size = 2, aes(x = factor(pop_mus),
-            y = rep(gglabel_height(df_results$sample_sd,3,.1), length(pop_mus)), label=df_mcomp$prepost_sd_sig)) +  coord_cartesian(clip = 'off') +
- # geom_boxplot(width=.2, outlier.shape = NA, lwd = .2) +
+            y = rep(gglabel_height(df_results$sample_sd,3,.1), length(pop_mus)), label=df_mcomp$prepost_sd_sig_str)) +  
+  coord_cartesian(clip = 'off') +
   xlab("Population SD") + ylab("Sample SD") +
   theme_classic(base_size=8)
 p_1f
@@ -231,31 +236,34 @@ n_samples = 1e4
 # Run Simulation, calculate mean and sd for each sample
 df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples = 1e4, n_obs = 100)
   
-# Statistics of groups
-# Compute the analysis of variance
-summary(aov(sample_mean ~ pop_sigma, data = df_results))
-summary(aov(sample_sd ~ pop_sigma, data = df_results))
-pw_sample_mean <- pairwise.t.test(df_results$sample_mean, df_results$pop_sigma, p.adj = "bonf")
-pw_sample_sd <- pairwise.t.test(df_results$sample_sd, df_results$pop_sigma, p.adj = "bonf")
+# # Statistics of groups
+# # Compute the analysis of variance
+# summary(aov(sample_mean ~ pop_sigma, data = df_results))
+# summary(aov(sample_sd ~ pop_sigma, data = df_results))
+# pw_sample_mean <- pairwise.t.test(df_results$sample_mean, df_results$pop_sigma, p.adj = "bonf")
+# pw_sample_sd <- pairwise.t.test(df_results$sample_sd, df_results$pop_sigma, p.adj = "bonf")
+# 
+# prox_sd_sig <- rep('#', length(pop_sigmas))
+# prox_mean_sig <- rep('#', length(pop_sigmas))
+# prepost_sd_sig <- rep('\u2020', length(pop_sigmas))
+# prepost_mean_sig <- rep('\u2020', length(pop_sigmas))
+# df_mcomp = tibble(pop_sigma=pop_sigmas, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
+#                   prepost_sd_sig,prepost_mean_sig)
 
-prox_sd_sig <- rep('#', length(pop_sigmas))
-prox_mean_sig <- rep('#', length(pop_sigmas))
-prepost_sd_sig <- rep('\u2020', length(pop_sigmas))
-prepost_mean_sig <- rep('\u2020', length(pop_sigmas))
-df_mcomp = tibble(pop_sigma=pop_sigmas, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
-                  prepost_sd_sig,prepost_mean_sig)
+# Calculate adjancent and pairwise stats of results
+df_mcomp <- norm_fnorm_stats(df_results, "pop_sigma") 
+
 
 # Sample mean versus population mean
-p_1g <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean)) + 
-  geom_violin(color="blue",lwd = .2) + 
-  #annotate("text",x=factor(mus),y=4,label='*')+
+p_1g <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean))+ 
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data=data.frame(), aes(x = factor(pop_sigmas),  
-            y = rep(gglabel_height(df_results$sample_mean,1,.05), length(pop_sigmas)), label=df_mcomp$prox_mean_sig), 
+            y = rep(gglabel_height(df_results$sample_mean,1,.05), length(pop_sigmas)), label=df_mcomp$prox_mean_sig_str), 
             size=2) +
   geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
-            y = rep(gglabel_height(df_results$sample_mean,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_mean_sig)) +
+            y = rep(gglabel_height(df_results$sample_mean,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_mean_sig_str)) +
   coord_cartesian(clip = 'off') +
- # geom_boxplot(width=.2, outlier.shape = NA,lwd = .2) +
   xlab("Population SD") + ylab("Sample Mean") +
   theme_classic(base_size=8)
 p_1g
@@ -264,13 +272,13 @@ save_plot("figure/figure_1g_sd_changes_sample_mean.tiff", p_1g, ncol = 1, nrow =
 
 # Sample sd versus population mean
 p_1h <- ggplot(df_results, aes(x=pop_sigma, y=sample_sd)) + 
-  geom_violin(color="blue", lwd = .2) + 
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
-            y = rep(gglabel_height(df_results$sample_sd,1,.05), length(pop_sigmas)), label=df_mcomp$prox_sd_sig)) +
+            y = rep(gglabel_height(df_results$sample_sd,1,.05), length(pop_sigmas)), label=df_mcomp$prox_sd_sig_str)) +
   geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
-             y = rep(gglabel_height(df_results$sample_sd,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_sd_sig)) +
+             y = rep(gglabel_height(df_results$sample_sd,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_sd_sig_str)) +
   coord_cartesian(clip = 'off') +
- # geom_boxplot(width=.2, outlier.shape = NA, lwd = .2) +
   xlab("Population SD") + ylab("Sample SD") +
   theme_classic(base_size=8)
 p_1h
