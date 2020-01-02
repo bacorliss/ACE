@@ -27,22 +27,22 @@ color_pal = brewer.pal(4, "Set1")
 
 
 # Parameters
-set.seed(0)
+rand_seed <- 0
 dist_text_size=3;
 equ_font_size=8;
+
+
 
 # Initial parameters
-nsamples = 1e6
+nsamples = 1e4
 ngroups = 2
 set.seed(0)
-dist_text_size=3;
-equ_font_size=8;
-
-
-
-
+dist_text_size=3
+equ_font_size=8
+sig_char_size = 3
 
 # 1A Show examples of histograms of normals transformed into 
+set.seed(rand_seed)
 sample_1a = rnorm(nsamples, mean = 0, sd = 1)
 df_1a = rbind(tibble(group = 2, mu = "mu==0", x = sample_1a    ), tibble(group = 1, mu = "mu==0", x = abs(sample_1a)    ),
               tibble(group = 2, mu = "mu==1", x = sample_1a + 1), tibble(group = 1, mu = "mu==1", x = abs(sample_1a + 1)),
@@ -59,7 +59,7 @@ df_1a %>%
 p_1a <- ggplot(df_1a, aes(x = x)) +
   geom_histogram(aes(fill = group,y=..density..), binwidth = .2, boundary = 0, position = "identity", alpha = 0.5) + 
   facet_grid(. ~ mu, scales = "free_x", labeller=label_parsed) + ylab("Probability") +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1a
 # Export to TIF
 save_plot("figure/figure_1a_example_dists.tiff", p_1a, ncol = 1, nrow = 1, base_height = 1.5,
@@ -70,14 +70,14 @@ save_plot("figure/figure_1a_example_dists.tiff", p_1a, ncol = 1, nrow = 1, base_
 
 # Show that absolute of normal samples generated under null hypothesis follow folded normal
 #-------------------------------------------------------------------------
-
 # Randomly generate normal data for     
 #     Normal data,                      |
 #     Normal data, then apply ABS()     |   x   1000
-#     Folded normal data                |
-n_trials <- 1e3
+#     Folded normal data
+set.seed(rand_seed)
+n_trials <- 1e4
 mus <- rep(0, n_trials)#mrunif(1e4, min = -5, max = 5)
-n_obs <- 50
+n_obs <- 1000
 
 # Generate random samples based on random mu values
 x_norm <- t(sapply(mus, function (x) rnorm(n_obs, mean = x, sd = 1),simplify = TRUE))
@@ -103,15 +103,13 @@ df_1b <- rbind(tibble(d = factor("N : |N|"), x = p_value_norm2abs_norm),
                tibble(d = factor("|N| : F[N]"), x = p_value_abs_norm2fnorm))
 
 p_1b <- ggplot(df_1b, aes(x=d, y=x)) + 
-  geom_violin(scale="width",bw=.05,kernel="gaussian") +
-  xlab("Sample Comparisons") + ylab("K.S. P Value") + geom_boxplot(width=0.1,outlier.shape = NA) +
-  theme_classic(base_size=8)
+  geom_violin(scale="width", kernel="gaussian") +
+  xlab("Sample Comparisons") + ylab("K.S. P Value") + geom_boxplot(width=0.1,outlier.size=1) +
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1b
 # Export to TIF
 save_plot("figure/figure_1b_dist_comparison.tiff", p_1b, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3, dpi = 600)
-
-
 
 
 # Show % of trials that have significant p-values
@@ -130,35 +128,72 @@ p_1c <- ggplot(df_1c, aes(x=d, y=estimate)) +
   geom_hline(yintercept = 0.05, linetype="dashed", color="red", size=.5,alpha=.2) +
   geom_hline(yintercept = 1, linetype="dashed", color="black", size=.5,alpha=.2) +
   geom_point(size=.1) +
-  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.2) +
+  geom_errorbar(aes(ymin=lcl, ymax=ucl), width=.1) +
   xlab("Sample Comparisons") +  ylab("Fraction Trials p<a  ") +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1c  
 save_plot("figure/figure_1c_dist_comparison.tiff", p_1c, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
 
 
+p_1c2 <- ggplot(tibble(x=p_value_abs_norm2fnorm), aes(x=x)) +
+  geom_histogram(aes(y=stat(width*density)), bins=20, fill="grey") +
+  theme_classic(base_size=8) + theme(legend.position="none") +
+  xlab("K.S. P Val N(mu,sigma):F[N](mu,sigma)") + ylab("Probablitly") +
+  geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
+p_1c2             
+save_plot("figure/figure_1c2_dist_comparison.tiff", p_1c2, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3, dpi = 600)
+  
+ks.test(p_value_abs_norm2fnorm, "punif", 0, 1)
 
+chi_test <- chisq.test(hist(p_value_abs_norm2fnorm, breaks=20)$counts/20, simulate.p.value = TRUE)
+chi_test$p.value
+
+# p = rep(1/length(hist_p_value_abs_norm2fnorm$counts),
+#                                                length(hist_p_value_abs_norm2fnorm$counts)),simulate.p.value = TRUE)
+
+
+
+plot(rep(1,length(p_value_abs_norm2fnorm)),p_value_abs_norm2fnorm)
+
+# Plot a single line comparing output between FN and |N|
 # Plot difference between P(N) and P(F[N]) over mu
 sort_x_abs_norm = sort(x_abs_norm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
-fit <- lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)
+fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
+fit$coefficients[1]
 confint(fit,level=0.95)
 # Define data for plotting
 df_1d = tibble(x=sort_x_fnorm, y=sort_x_abs_norm)
-
 p_1d <- ggplot(df_1d, aes(x=x, y=y)) + 
   geom_point(size=0.5) + xlab("Folded Normal Sample") + ylab("Absolute Normal Sample   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1d
 save_plot("figure/figure_1d_qq_plot.tiff", p_1d, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
+# Fit a line for each of the simulations
+fits <- unname(mapply(function(x,y) lm(formula = y ~ 0 + x)$coefficients[1],
+               sort(x_fnorm), sort(x_abs_norm), SIMPLIFY = TRUE))
+mean(fits)
+cl_fits <- quantile(fits, c(.025, .975)) 
+df_fits <- tibble(x=as.factor("|N|:F[N]"),y=mean(fits))
+
+p_1d2 <- ggplot(data=df_fits, aes(x=x,y=y)) +
+  geom_point() +
+  geom_hline(yintercept=1, linetype=2, color="red", alpha=.2)+
+  geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
+  ylab("Linear Regr. Coeff.") + xlab("") +
+  theme_classic(base_size=8) + theme(legend.position="none")
+p_1d2
+save_plot("figure/figure_1d2_linear_slopes.tiff", p_1d2, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 1, dpi = 600)
 
 
 
@@ -166,27 +201,12 @@ save_plot("figure/figure_1d_qq_plot.tiff", p_1d, ncol = 1, nrow = 1, base_height
 
 # Show how mean is changed as mu increases from zero
 # With fixed sd, sweep mean from -3:.25:3, calculate folded mean and sd, show they vary
-pop_mus =  seq(-3,3, by = 1)
+pop_mus =  seq(-4.5,4.5, by = 1.5)
 pop_sigmas = 1
 n_obs = 100
-n_samples = 1e4
+n_samples = 1e3
 # Run Simulation, calculate mean and sd for each sample
 df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples, n_obs)
-
-# Statistics of groups
-# Compute the analysis of variance
-
-
-# summary(aov(sample_mean ~ pop_mu, data = df_results))
-# pairwise.t.test(df_results$sample_mean, df_results$pop_mu, p.adj = "bonf")
-# pairwise.t.test(df_results$sample_sd, df_results$pop_mu, p.adj = "bonf")
-# 
-# prox_sd_sig <- rep('#', length(pop_mus))
-# prox_mean_sig <- rep('#', length(pop_mus))
-# prepost_sd_sig <- rep('\u2020', length(pop_mus))
-# prepost_mean_sig <- rep('\u2020', length(pop_mus))
-# df_mcomp = tibble(pop_mu=pop_mus, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
-#                   prepost_sd_sig,prepost_mean_sig)
 
 # Calculate adjancent and pairwise stats of results
 df_mcomp <- norm_fnorm_stats(df_results, "pop_mu") 
@@ -197,11 +217,11 @@ p_1e <- ggplot(df_results, aes(x=pop_mu, y=sample_mean)) +
   geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data=data.frame(), aes(x = factor(pop_mus),  
             y = rep(gglabel_height(df_results$sample_mean,1,.1), length(pop_mus)), label=df_mcomp$prox_mean_sig_str), 
-            size=2) +
-  geom_text(data = data.frame(), size = 2, aes(x = factor(pop_mus),
+            size=sig_char_size) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_mus),
             y = rep(gglabel_height(df_results$sample_mean,3,.1), length(pop_mus)), label=df_mcomp$prepost_mean_sig_str)) +
   xlab("Population Mean") + ylab("Sample Mean") +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
 save_plot("figure/figure_1e_mean_changes_sample_mean.tiff", p_1e, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3, dpi = 600)
@@ -212,12 +232,12 @@ p_1f <- ggplot(df_results, aes(x=pop_mu, y=sample_sd)) +
   geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
   geom_text(data=data.frame(), aes(x = factor(pop_mus),  
             y = rep(gglabel_height(df_results$sample_sd,1,.1), length(pop_mus)), label=df_mcomp$prox_sd_sig_str), 
-            size=2) +
-  geom_text(data = data.frame(), size = 2, aes(x = factor(pop_mus),
+            size=sig_char_size) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_mus),
             y = rep(gglabel_height(df_results$sample_sd,3,.1), length(pop_mus)), label=df_mcomp$prepost_sd_sig_str)) +  
   coord_cartesian(clip = 'off') +
-  xlab("Population SD") + ylab("Sample SD") +
-  theme_classic(base_size=8)
+  xlab("Population Mean") + ylab("Sample SD") +
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1f
 save_plot("figure/figure_1f_mean_changes_sample_sd.tiff", p_1f, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3, dpi = 600)
@@ -230,42 +250,25 @@ save_plot("figure/figure_1f_mean_changes_sample_sd.tiff", p_1f, ncol = 1, nrow =
 # Show how mean is changed as mu increases from zero
 # With fixed sd, sweep mean from -3:.25:3, calculate folded mean and sd, show they vary
 pop_mus = 0
-pop_sigmas = seq(.5,5, by = .5)
+pop_sigmas = seq(.5,5.5, by = 1)
 n_obs = 100
-n_samples = 1e4
+n_samples = 1e3
 # Run Simulation, calculate mean and sd for each sample
 df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples = 1e4, n_obs = 100)
-  
-# # Statistics of groups
-# # Compute the analysis of variance
-# summary(aov(sample_mean ~ pop_sigma, data = df_results))
-# summary(aov(sample_sd ~ pop_sigma, data = df_results))
-# pw_sample_mean <- pairwise.t.test(df_results$sample_mean, df_results$pop_sigma, p.adj = "bonf")
-# pw_sample_sd <- pairwise.t.test(df_results$sample_sd, df_results$pop_sigma, p.adj = "bonf")
-# 
-# prox_sd_sig <- rep('#', length(pop_sigmas))
-# prox_mean_sig <- rep('#', length(pop_sigmas))
-# prepost_sd_sig <- rep('\u2020', length(pop_sigmas))
-# prepost_mean_sig <- rep('\u2020', length(pop_sigmas))
-# df_mcomp = tibble(pop_sigma=pop_sigmas, prox_sd_sig=prox_sd_sig, prox_mean_sig=prox_mean_sig,
-#                   prepost_sd_sig,prepost_mean_sig)
-
 # Calculate adjancent and pairwise stats of results
 df_mcomp <- norm_fnorm_stats(df_results, "pop_sigma") 
-
 
 # Sample mean versus population mean
 p_1g <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean))+ 
   geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
   geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
-  geom_text(data=data.frame(), aes(x = factor(pop_sigmas),  
-            y = rep(gglabel_height(df_results$sample_mean,1,.05), length(pop_sigmas)), label=df_mcomp$prox_mean_sig_str), 
-            size=2) +
-  geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
+  geom_text(data=data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),  
+            y = rep(gglabel_height(df_results$sample_mean,1,.05), length(pop_sigmas)), label=df_mcomp$prox_mean_sig_str)) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
             y = rep(gglabel_height(df_results$sample_mean,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_mean_sig_str)) +
   coord_cartesian(clip = 'off') +
   xlab("Population SD") + ylab("Sample Mean") +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1g
 save_plot("figure/figure_1g_sd_changes_sample_mean.tiff", p_1g, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3, dpi = 600)
@@ -274,17 +277,58 @@ save_plot("figure/figure_1g_sd_changes_sample_mean.tiff", p_1g, ncol = 1, nrow =
 p_1h <- ggplot(df_results, aes(x=pop_sigma, y=sample_sd)) + 
   geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
   geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
-  geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
             y = rep(gglabel_height(df_results$sample_sd,1,.05), length(pop_sigmas)), label=df_mcomp$prox_sd_sig_str)) +
-  geom_text(data = data.frame(), size = 2, aes(x = factor(pop_sigmas),
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
              y = rep(gglabel_height(df_results$sample_sd,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_sd_sig_str)) +
   coord_cartesian(clip = 'off') +
   xlab("Population SD") + ylab("Sample SD") +
-  theme_classic(base_size=8)
+  theme_classic(base_size=8) + theme(legend.position="none")
 p_1h
 save_plot("figure/figure_1h_sd_changes_sample_sd.tiff", p_1h, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3, dpi = 600)
 
 
+# With fixed mean, change the sd from .1:.1:2, calculated ffolded mean and sd, and show they vary
+# Show how mean is changed as mu increases from zero
+# With fixed sd, sweep mean from -3:.25:3, calculate folded mean and sd, show they vary
+pop_mus = 10
+pop_sigmas = seq(.5,5.5, by = 1)
+n_obs = 100
+n_samples = 1e3
+# Run Simulation, calculate mean and sd for each sample
+df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples = 1e4, n_obs = 100)
+# Calculate adjancent and pairwise stats of results
+df_mcomp <- norm_fnorm_stats(df_results, "pop_sigma") 
+
+# Sample mean versus population mean
+p_1h <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean))+ 
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
+  geom_text(data=data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),  
+                                                         y = rep(gglabel_height(df_results$sample_mean,1,.05), length(pop_sigmas)), label=df_mcomp$prox_mean_sig_str)) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
+                                                             y = rep(gglabel_height(df_results$sample_mean,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_mean_sig_str)) +
+  coord_cartesian(clip = 'off') +
+  xlab("Population SD") + ylab("Sample Mean") +
+  theme_classic(base_size=8) + theme(legend.position="none")
+p_1h
+save_plot("figure/figure_1h_sd_changes_sample_mean.tiff", p_1g, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3, dpi = 600)
+
+# Sample sd versus population mean
+p_1i <- ggplot(df_results, aes(x=pop_sigma, y=sample_sd)) + 
+  geom_violin(aes(fill=distr),color="black",lwd = .2, scale="width", position=position_dodge(0), alpha=0.2) + 
+  geom_boxplot(aes(fill=distr), outlier.shape = NA,lwd = .2, position=position_dodge(0), alpha=0, width=.3) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
+            y = rep(gglabel_height(df_results$sample_sd,1,.05), length(pop_sigmas)), label=df_mcomp$prox_sd_sig_str)) +
+  geom_text(data = data.frame(), size = sig_char_size, aes(x = factor(pop_sigmas),
+            y = rep(gglabel_height(df_results$sample_sd,6,.05), length(pop_sigmas)), label=df_mcomp$prepost_sd_sig_str)) +
+  coord_cartesian(clip = 'off') +
+  xlab("Population SD") + ylab("Sample SD") +
+  theme_classic(base_size=8) + theme(legend.position="none")
+p_1i
+save_plot("figure/figure_1i_sd_changes_sample_sd.tiff", p_1h, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3, dpi = 600)
 
 

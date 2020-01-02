@@ -2,7 +2,6 @@
 
 library(dplyr)
 library(tibble)
-library(gdata)
 library(broom)
 
 gglabel_height <- function (var,line_num, pad_mult) {
@@ -126,8 +125,8 @@ norm_fnorm_stats <- function (df_results, ind_varname) {
                    prepost_sd_sig_str = rep("",length(levels(df_results[[ind_varname]]))))
   
   # Calculate adjacent significance
-  df_out$prox_mean_sig_str <- adjacent_compare_str(pw_sample_mean,'*')
-  df_out$prox_sd_sig_str <- adjacent_compare_str(pw_sample_sd,'*')
+  df_out$prox_mean_sig_str <- adjacent_compare_str(pw_sample_mean,'#')
+  df_out$prox_sd_sig_str <- adjacent_compare_str(pw_sample_sd,'#')
 
   # Perform paired ttest between groups at each of the values for swept indepdent variable
   ind_var_levels <- levels(df_results[[ind_varname]])
@@ -147,10 +146,10 @@ norm_fnorm_stats <- function (df_results, ind_varname) {
     
   }
   # Add chars of significance to groups that are siginificantly different
-  df_out$prepost_mean_sig_str = rep('\u2020', length(ind_var_levels))
+  df_out$prepost_mean_sig_str = rep('\u00F8', length(ind_var_levels))
   df_out$prepost_mean_sig_str[(p.adjust(p_values_mean, method = "bonferroni") < 0.05)] <- ""
   
-  df_out$prepost_sd_sig_str = rep('\u2020',length(ind_var_levels))
+  df_out$prepost_sd_sig_str = rep('\u00F8',length(ind_var_levels))
   df_out$prepost_sd_sig_str[(p.adjust(p_values_sd, method = "bonferroni") <0.05)] <- ""
   
   return(df_out)
