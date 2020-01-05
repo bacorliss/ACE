@@ -110,9 +110,9 @@ df_1b <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
                tibble(d = factor("|N| : F[N]"), x = p_val_abs_n2fn))
 
 p_1b <- ggplot(df_1b, aes(x=d, y=x)) + 
-  geom_violin(scale="width", kernel="gaussian") +
-  xlab("") + ylab("P-Val.") + geom_boxplot(width=0.1,outlier.size=1) +
-  theme_classic(base_size=8) + theme(legend.position="none",axis.title.x=element_blank())
+  geom_violin(scale="width", kernel="gaussian", fill="grey96") +
+  xlab("") + ylab("P-Val.") + geom_boxplot(width = 0.1,outlier.size=1) +
+  theme_classic(base_size = 8) + theme(legend.position="none", axis.title.x = element_blank())
 p_1b
 # Export to TIF
 save_plot(paste("figure/", fig_basename, "b dist_comparison_violin.tiff", sep = ""),
@@ -157,7 +157,7 @@ save_plot(paste("figure/", fig_basename, "c dist_comparison_facet.tiff",sep = ""
 
 # Plot hisogram, of KS values and show that they are derived from a uniform distribution
 # Stats
-chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/20, 
+chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
                        simulate.p.value = TRUE)
 chi_test$p.value
 # Plotting
@@ -228,8 +228,8 @@ save_plot(paste("figure/", fig_basename, "f dist_comparison_qq_slope.tiff",
 #     Folded normal data
 set.seed(rand_seed)
 n_trials <- 1e4
-mus <- mrunif(1e4, min = -5, max = 5)
-sds <-  mrunif(1e4, min = .1, max = 5)
+mus <- runif(1e4, min = -5, max = 5)
+sds <-  runif(1e4, min = .1, max = 5)
 n_obs <- 1000
 
 # Generate random samples based on random mu values
@@ -257,8 +257,9 @@ df_1g <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
                tibble(d = factor("|N| : F[N]"), x = p_val_abs_n2fn))
 
 p_1g <- ggplot(df_1g, aes(x=d, y=x)) + 
-  geom_violin(scale="width", kernel="gaussian") +
-  xlab("") + ylab("P-Val.") + geom_boxplot(width=0.1,outlier.size=1) +
+  geom_violin(scale="width", kernel="gaussian", fill="grey96") +
+  geom_boxplot(width=0.1, outlier.shape=NA) +
+  xlab("") + ylab("P-Val.") + 
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.title.x=element_blank())
 p_1g
@@ -304,7 +305,7 @@ save_plot(paste("figure/", fig_basename, "h dist_comparison_facet.tiff",sep = ""
 
 # Plot hisogram, of KS values and show that they are derived from a uniform distribution
 # Stats
-chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/20, 
+chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
                        simulate.p.value = TRUE)
 chi_test$p.value
 # Plotting
