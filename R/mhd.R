@@ -44,7 +44,7 @@ ucl_mean_tdist <- function(x_bar, sx, nx, dfx, semx = NULL, alpha = 0.05) {
 }
 
 
-mhd_1sample <- function(x, alpha = 0.05, dist_type = NULL) {
+mhd_1sample_normal <- function(x, alpha = 0.05, dist_type = NULL) {
   #  Calculates MHD for 1 sample, defined as the upper confidence limit of mean for 1 sample 
   # based on a folded t-distibution
   # Input

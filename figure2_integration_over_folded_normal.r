@@ -19,8 +19,7 @@ library(cowplot)
 library(VGAM)
 
 
-fig_basename="f_2"
-
+fig_basename = "f_2"
 # dnorm: density function: proability for a specific value of x/zscore of PDF
 # pnorm: cum. probability/quantile for a given zscore
 # qnorm: return z_score for a given cum. probability/quantile
