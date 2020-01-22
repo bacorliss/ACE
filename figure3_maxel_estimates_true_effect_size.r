@@ -64,7 +64,7 @@ for (n in seq(1, length(mus), by=1)) {
            mhd_quantile_sample = mhd_quantile_sample)
   
   # Calculate summary stats
-  df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
+  #df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
   df_sum$mhd_true[n] = sum(mhd>abs(mus[n]))
   df_sum$mhd_true_ci[n,] = as.numeric(binom.confint(sum(mhd>abs(mus[n])), n_samples, 
@@ -166,7 +166,7 @@ for (n in seq(1, length(sigmas), by=1)) {
                          mhd_quantile_sample = mhd_quantile_sample)
   
   # Calculate summary stats
-  df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
+  #df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
   df_sum$mhd_true[n] = sum(mhd > abs( mus[1]))
   df_sum$mhd_true_ci[n,] = as.numeric(binom.confint(sum(mhd>abs(mus[1])), n_samples, 
@@ -251,7 +251,7 @@ for (n in seq(1, length(sigmas), by=1)) {
   
   # Calculate summary stats
   # 95% CI of the MHD estimated from observations pooled across all samples
-  df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
+  #df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
   # 95% CI of the MHD estimated from population parameters
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
   # Binary is MHD "True" (Does it contain mu?)
@@ -346,7 +346,7 @@ for (n in seq(1, length(sigmas), by=1)) {
   
   # Calculate summary stats
   # 95% CI of the MHD estimated from observations pooled across all samples
-  df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
+  #df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
   # 95% CI of the MHD estimated from population parameters
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
   # Binary is MHD "True" (Does it contain mu?)
