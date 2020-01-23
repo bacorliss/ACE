@@ -17,18 +17,117 @@ library(dplyr)
 library(cowplot)
 library(binom)
 library(VGAM)
+library(gplots)
 
 source("R/mhd.r")
+
 
 fig_basename = "f_3"
 n_samples <- 1e3
 rand_seed <-0
 
+
+# GLobal visualization of mu
+
+mus <- seq(-2.5, 2.5, by = .1)
+sigmas <- seq(.1, 5, by = .1)
+# n_samples <- 1e4
+n_obs <- 50
+
+
+# MAtric of diff
+mean_diff_mhd_mu = matrix(0L, nrow = length(sigmas), ncol = length(mus))
+mean_rdiff_mhd_mu = matrix(0L, nrow = length(sigmas), ncol = length(mus))
+mean_mhd_error = matrix(0L, nrow = length(sigmas), ncol = length(mus))
+
+
+# Generate random samples based on random mu values
+set.seed(rand_seed)
+for (c in seq(1, length(mus), by=1)) {
+  for (r in seq(1, length(sigmas), by=1)) {
+  # Get samples, where each row is a seperate sample, columns are observations
+  x1 <- matrix( rnorm( n_samples * n_obs, mus[c], sigmas[r]), nrow=n_obs )
+  
+  # Calculate the MHD
+  mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
+  
+  mean_diff_mhd_mu[r,c] <- mean(mhd)-mus[c]
+  mean_rdiff_mhd_mu[r,c] <- mean_diff_mhd_mu[r,c]/mus[c]
+  mean_mhd_error[r,c] <- sum(mhd < abs(mus[c]))/n_samples
+  
+  } 
+}
+
+
+heatmap(mean_diff_mhd_mu)
+
+as.data.frame(t(Mat1), row.names= sigmas, )
+              
+              
+heatmap.2(mean_diff_mhd_mu,Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none")
+# apply(t(mean_mhd_error),1,rev)
+
+
+# https://sebastianraschka.com/Articles/heatmaps_in_r.html
+
+
+mean_rdiff_mhd_mu[!is.finite(mean_rdiff_mhd_mu)] <- NaN
+
+png(paste("figure/", fig_basename, "a1 MHD rdiff.png"),    
+    width = 3*300, height = 3*300, res = 300, pointsize = 8)       
+
+heatmap.2(mean_rdiff_mhd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
+          labRow=rev(round(sigmas,1)), labCol= round(mus,1),
+          col =color_cull(colorpanel(n, "blue", "white","red")),
+          density.info='none', scale="none",
+          cexRow = 1, cexCol = 1,
+          denscol="black", keysize=1,
+          key.par=list(mar=c(3.5,0,3,0)),
+          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
+          lhei=c(2, 6), lwid=c(1, 10, 1),
+          key.title = "",
+          na.color = "black",
+          key.xlab = expression(Relative~Difference~(MHD~-mu)/mu),
+          main = NULL,
+          xlab(expression(mu)),
+          ylab(expression(sigma)))
+
+dev.off()
+
+
+png(paste("figure/", fig_basename, "a2 MHD error rate 2D.png"),    
+    width = 3*300, height = 3*300, res = 300, pointsize = 8)       
+
+heatmap.2(mean_mhd_error, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
+          labRow=rev(round(sigmas,1)), labCol= round(mus,1),
+          col =color_cull(colorpanel(n, "blue", "white", "red")),
+          density.info='none', scale="none",
+          cexRow = 1, cexCol = 1,
+          denscol="black", keysize=1, 
+          key.par=list(mar=c(3.5,0,3,0)),
+          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
+          lhei=c(2, 6), lwid=c(1, 10, 1),
+          key.title = "",
+          key.xlab = "Error Rate",
+          main = NULL, 
+          xlab(expression(mu)), 
+          ylab(expression(sigma)))
+
+dev.off()
+
+
+
+
+
+
+
+
+
 # Visualize T1E (mu > MHD) under the null and alt hypothesis, mu swept (sigma=1)
 #                                                                              #
 #______________________________________________________________________________#
 
-mus <- c(seq(-10, -2, by = 1), seq(-1, 1, by = 0.05), seq(2, 10, by = 1))
+mus <- seq(-10, 10, by = .1)
 sigmas <- c(1)
 # n_samples <- 1e4
 n_obs <- 50
@@ -45,18 +144,14 @@ set.seed(rand_seed)
 list_df <- list()
 for (n in seq(1, length(mus), by=1)) {
   # Get samples, where each row is a seperate sample, columns are observations
-  x1 <- sapply(rep(mus[n],n_samples), function (x)
-    rnorm(n_obs, mean = mus[n], sd = 1), simplify = TRUE)
-  # Calculat ethe MHD
+  x1 <- matrix( rnorm( n_samples*n_obs, mus[n], sigmas[1]), nrow=n_obs )
+  
+  # Calculate the MHD
   mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
   
   # Calculate the quantile of the MHD for each sample compared to population
   mhd_quantile_pop = 
     sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mus[n]),sigmas[1]/sqrt(n_obs)))
-  
-  # Calculate the quantile of the MHD for each sample compared to pooled sample
-  mhd_quantile_sample = 
-     sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
@@ -64,7 +159,6 @@ for (n in seq(1, length(mus), by=1)) {
            mhd_quantile_sample = mhd_quantile_sample)
   
   # Calculate summary stats
-  #df_sum$ci_95_sample[n,] = quantile(mhd_quantile_sample, probs = c(0.025,0.975))
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
   df_sum$mhd_true[n] = sum(mhd>abs(mus[n]))
   df_sum$mhd_true_ci[n,] = as.numeric(binom.confint(sum(mhd>abs(mus[n])), n_samples, 
@@ -126,12 +220,14 @@ save_plot(paste("figure/", fig_basename, "a4 diff_MHD_mu_over_mu_sigma_1.tiff",
           base_asp = 3, base_width = 2, dpi = 600)
 
 
+
+
 # Visualize T1E (mu<MHD) under the null hypothesis (mu=0), sigma swept
 #                                                                              #
 #______________________________________________________________________________#
 
 mus <- 0
-sigmas <- c(seq(0.05, 0.45, by = 0.5),seq(0.5, 4.5, by = 0.5), seq(5,10,1))
+sigmas <- seq(0.1, 10, by = 0.1)
 # n_samples <- 1e4
 n_obs <- 50
 # Matrix summarizing output
@@ -147,8 +243,8 @@ set.seed(rand_seed)
 list_df <- list()
 for (n in seq(1, length(sigmas), by=1)) {
   # Get samples, where each row is a seperate sample, columns are observations
-  x1 <- sapply(rep(sigmas[n],n_samples), function (x)
-    rnorm(n_obs, mean = mus[1], sd = sigmas[n]), simplify = TRUE)
+  x1 <- matrix( rnorm( n_samples*n_obs, mus[1], sigmas[n]), nrow=n_obs )
+  
   # Calculat ethe MHD
   mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
   
@@ -157,8 +253,8 @@ for (n in seq(1, length(sigmas), by=1)) {
     sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mus[1]),sigmas[n]/sqrt(n_obs)))
   
   # Calculate the quantile of the MHD for each sample compared to pooled sample
-  mhd_quantile_sample = 
-    sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
+  # mhd_quantile_sample = 
+  #   sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
   
   # Compile output data
   list_df[[n]] <- tibble(sigma = sigmas[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
@@ -231,8 +327,8 @@ set.seed(rand_seed)
 list_df <- list()
 for (n in seq(1, length(sigmas), by=1)) {
   # Get samples, where each row is a seperate sample, columns are observations
-  x1 <- sapply(rep(sigmas[n],n_samples), function (x)
-    rnorm(n_obs, mean = mus[1], sd = sigmas[n]), simplify = TRUE)
+  x1 <- matrix( rnorm( n_samples*n_obs, mus[1], sigmas[n]), nrow=n_obs )
+
   # Calculat ethe MHD
   mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
   
@@ -241,8 +337,8 @@ for (n in seq(1, length(sigmas), by=1)) {
     sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mus[1]),sigmas[n]/sqrt(n_obs)))
   
   # Calculate the quantile of the MHD for each sample compared to pooled sample
-  mhd_quantile_sample = 
-    sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
+  # mhd_quantile_sample = 
+  #   sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[1], sigma = sigmas[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
@@ -310,7 +406,7 @@ save_plot(paste("figure/", fig_basename, "c2 rel_diff_MHD_mu_over_sigma_mu_1.tif
 n_samples <- 1e4
 # Randomly generate large number of mus and sigmas (n_samples # of them)
 mus <- 1
-sigmas <- seq(1,10,0.25)
+sigmas <- seq(1,10,0.1)
 n_obs <- 50
 
 # Matrix summarizing output
@@ -326,7 +422,7 @@ set.seed(rand_seed)
 list_df <- list()
 for (n in seq(1, length(sigmas), by=1)) {
   # Get samples, where each row is a seperate sample, columns are observations
-  x1 <- matrix( rnorm( n_samples*n_obs, mus, sigmas[n]), ncol=n_samples )
+  x1 <- matrix( rnorm( n_samples*n_obs, mus[1], sigmas[n]), nrow=n_obs )
 
   # Calculate the MHD
   mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
@@ -335,9 +431,9 @@ for (n in seq(1, length(sigmas), by=1)) {
   mhd_quantile_pop = 
     sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mus[1]),sigmas[n]/sqrt(n_obs)))
   
-  # Calculate the quantile of the MHD for each sample compared to pooled sample
-  mhd_quantile_sample = 
-    sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
+  # # Calculate the quantile of the MHD for each sample compared to pooled sample
+  # mhd_quantile_sample = 
+  #   sapply(1:n_samples, function(i) pnorm(mhd[i], abs(mean(x1)), sd(x1)/ sqrt(n_obs)))
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[1], sigma = sigmas[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
@@ -362,35 +458,36 @@ df <- do.call("rbind", list_df)
 
 
 
-
-# 95% quantile of T1 error rate
-p_c1 <- ggplot(df_sum, aes(x = mu/sigma, y = 1-mhd_true_ci[,1])) + 
-  geom_hline(aes(yintercept = 0.05), color="red") + geom_line() + 
-  geom_ribbon(aes(ymin = 1-mhd_true_ci[,2], ymax = 1-mhd_true_ci[,3]),alpha = .2) +
-  xlab(expression(sigma)) + ylab("MHD Type 1 Error") +
-  theme_classic(base_size=8) + theme(legend.position="none")
-p_c1
-save_plot(paste("figure/", fig_basename, "c1 t1e_MHD_over_sigma_mu_1.tiff", 
-                sep = ""), p_c1, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 2, dpi = 600)
-
-
-
-# Difference between MHD and Mu 
+# Plot 95% quantile of MHD-mu versus mu/sigma
 p_d1 <- ggplot(df_sum, aes(x = mu/sigma, y = diff_mhd_mu[,1])) + 
   geom_hline(aes(yintercept = 0.0), color="red") + geom_line() + 
   geom_ribbon(aes(ymin = diff_mhd_mu[,2], ymax = diff_mhd_mu[,3]),alpha = .2) +
   xlab(expression(mu/sigma)) + ylab(expression(M~H~D-~mu)) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_d1
-save_plot(paste("figure/", fig_basename, "c2 diff_MHD_mu_over_sigma_mu_1.tiff", 
-                sep = ""), p_c2, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot(paste("figure/", fig_basename, "d1 diff_MHD_mu_over_sigma_mu_1.tiff", 
+                sep = ""), p_d1, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
 
-# Plot 95% quantile of T1 Error Rate versus mu/sigma
 
-# Plot 95% quantile of MHD-mu versus mu/sigma
+# Plot 95% quantile of T1 Error Rate versus mu/sigma
+p_d2 <- ggplot(df_sum, aes(x = mu/sigma, y = 1-mhd_true_ci[,1])) + 
+  geom_hline(aes(yintercept = 0.05), color="red") + geom_line() + 
+  geom_ribbon(aes(ymin = 1-mhd_true_ci[,2], ymax = 1-mhd_true_ci[,3]),alpha = .2) +
+  xlab(expression(sigma)) + ylab("MHD Type 1 Error") +
+  theme_classic(base_size=8) + theme(legend.position="none")
+p_d2
+save_plot(paste("figure/", fig_basename, "d2 t1e_MHD_over_sigma_mu_1.tiff", 
+                sep = ""), p_d2, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600)
+
+
+
+
+
+
+
 
 # plot histograms to show range of samples for mu and sigma, and mu/sigma
 
