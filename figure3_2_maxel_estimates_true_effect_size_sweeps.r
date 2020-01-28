@@ -23,147 +23,9 @@ library(RColorBrewer)
 source("R/mhd.r")
 
 
-fig_basename = "f_3"
-n_samples <- 1e3
+fig_basename = "f_3_2"
+n_samples <- 1e4
 rand_seed <-0
-
-
-# 2D visualization of MHD differecne and error rate over mu and sigma
-#                                                                              #
-#______________________________________________________________________________#
-mus <- seq(-2.5, 2.5, by = .1)
-sigmas <- seq(.1, 5, by = .1)
-# n_samples <- 1e4
-n_obs <- 50
-
-# Matrix diff and error of MHD
-df_2d <- tibble(mean_diff_mhd_mu = matrix(0L, nrow = length(sigmas), ncol = length(mus)),
-                mean_rdiff_mhd_mu = matrix(0L, nrow = length(sigmas), ncol = length(mus)),
-                mean_mhd_error = matrix(0L, nrow = length(sigmas), ncol = length(mus)))
-
-# Store results to disk since calculations are significant
-set.seed(rand_seed)
-if (!file.exists("temp/MHD_Error_2D.rds")) {
-  
-  # Generate random samples based on random mu values
-  for (c in seq(1, length(mus), by = 1)) {
-    for (r in seq(1, length(sigmas), by = 1)) {
-      # Get samples, where each row is a seperate sample, columns are observations
-      x1 <-
-        matrix(rnorm(n_samples * n_obs, mus[c], sigmas[r]), nrow = n_obs)
-      
-      # Calculate the MHD
-      mhd = apply(x1, 2, function (x)
-        mhd_1sample_normal(x, alpha = 0.05))
-      
-      # Difference MHD to mu
-      df_2d$mean_diff_mhd_mu[r, c] <- mean(mhd) - abs(mus[c])
-      # Relative difference MHD to mu
-      df_2d$mean_rdiff_mhd_mu[r, c] <- df_2d$mean_diff_mhd_mu[r, c] / sigmas[r]
-      # Error rate MHD and mu
-      df_2d$mean_mhd_error[r, c] <- sum(mhd < abs(mus[c])) / n_samples
-      
-    }
-  }
-  
-  # Replace INF with NaNs
-  df_2d$mean_rdiff_mhd_mu[!is.finite(df_2d$mean_rdiff_mhd_mu)] <- NaN
-  # Save an object to a file
-  saveRDS(df_2d, file = "temp/MHD_Error_2D.rds")
-  
-} else {
-  # Restore the object
-  df_2d <- readRDS(file = "temp/MHD_Error_2D.rds")
-}
-
-
-# https://sebastianraschka.com/Articles/heatmaps_in_r.html
-
-
-
-
-
-# Visualize difference between MHD and mu
-png(paste("figure/", fig_basename, "a1 MHD diff.png"),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("white","blue", "red"))(n = 299)
-# (optional) defines the color breaks manually for a "skewed" color transition
-col_breaks = c(seq(0, .4, length=100), seq(0.41, 0.9, length=100),seq(0.91,2,length=100))             
-
-heatmap.2(df_2d$mean_diff_mhd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow=rep("",length(sigmas)), labCol= round(mus,1),
-          col = my_palette,
-          density.info='none', scale="none",
-          cexRow = 1, cexCol = 1,
-          denscol="black", keysize=1,
-          key.par=list(mar=c(3.5,0,3,0)),
-          breaks = col_breaks,
-          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-          lhei=c(2, 6), lwid=c(1, 10, 1),
-          key.title = expression(paste("Difference",~MHD~-abs(phantom(.)*mu*phantom(.)))),
-          na.color = "black",
-          key.xlab = "",
-          main = NULL,
-          xlab(expression(mu)),
-          ylab(expression(sigma)))
-dev.off()
-
-
-
-
-# Visualize relative difference between MHD and mu
-png(paste("figure/", fig_basename, "a2 MHD rdiff.png"),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("white", "red"))(n = 199)
-# (optional) defines the color breaks manually for a "skewed" color transition
-col_breaks = c(seq(0, .3, length=100), seq(0.31, .4, length=100))             
-
-heatmap.2(df_2d$mean_rdiff_mhd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow = rep("",length(sigmas)), labCol= round(mus,1),
-          col = my_palette,
-          density.info = 'none', scale="none",
-          cexRow = 1, cexCol = 1,
-          denscol = "black", keysize=1,
-          key.par = list(mar=c(3.5,0,3,0)),
-          breaks = col_breaks,
-          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-          lhei=c(2, 6), lwid=c(1, 10, 1),
-          key.title = expression(paste("Relative Difference",~(MHD~-abs(~mu))/~sigma)),
-          na.color = "black",
-          key.xlab = "",
-          main = NULL,
-          xlab(expression(mu)),
-          ylab(expression(sigma)))
-dev.off()
-
-
-
-# Visualize error rate of MHD
-png(paste("figure/", fig_basename, "a3 MHD error rate 2D.png"),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
-# (optional) defines the color breaks manually for a "skewed" color transition
-col_breaks = c(seq(0, 0.039, length=100), seq(0.04, 0.06, length=100),seq(0.061, 0.08,length=100)) 
-
-color_cull <- function(x) x[seq(1,round(length(x)*.73), by = 1)]
-heatmap.2(df_2d$mean_mhd_error, Rowv = FALSE, Colv = FALSE, trace = "none", dendrogram = "none", 
-          labRow = rev(round(sigmas,1)), labCol = round(mus,1),
-          col = my_palette,
-          density.info='none', scale="none",
-          cexRow = 1, cexCol = 1, denscol="black", keysize=1, 
-          key.par = list( mar = c(3.5,0,3,0)),
-          lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins = c(3,0),
-          lhei = c(2, 6), lwid = c(1, 10, 1),
-          breaks = col_breaks,
-          key.title = "",
-          key.xlab = "",
-          main = NULL, 
-          xlab( expression(mu)), 
-          ylab( expression(sigma)))
-dev.off()
 
 
 
@@ -173,7 +35,7 @@ dev.off()
 #                                                                              #
 #______________________________________________________________________________#
 
-mus <- seq(-10, 10, by = .1)
+mus <- seq(-2.5, 2.5, by = .025)
 sigmas <- c(1)
 # n_samples <- 1e4
 n_obs <- 50
@@ -201,8 +63,7 @@ for (n in seq(1, length(mus), by=1)) {
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
-           mhd_quantile_pop = mhd_quantile_pop, 
-           mhd_quantile_sample = mhd_quantile_sample)
+           mhd_quantile_pop = mhd_quantile_pop)
   
   # Calculate summary stats
   df_sum$ci_95_pop[n,] = quantile(mhd_quantile_pop, probs = c(0.025,0.975))
@@ -387,8 +248,7 @@ for (n in seq(1, length(sigmas), by=1)) {
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[1], sigma = sigmas[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
-                         mhd_quantile_pop = mhd_quantile_pop, 
-                         mhd_quantile_sample = mhd_quantile_sample)
+                         mhd_quantile_pop = mhd_quantile_pop)
   
   # Calculate summary stats
   # 95% CI of the MHD estimated from observations pooled across all samples
@@ -482,8 +342,7 @@ for (n in seq(1, length(sigmas), by=1)) {
   
   # Compile output data
   list_df[[n]] <- tibble(mu = mus[1], sigma = sigmas[n],  x_bar = rowMeans(t(x1)), mhd = mhd,
-                         mhd_quantile_pop = mhd_quantile_pop, 
-                         mhd_quantile_sample = mhd_quantile_sample)
+                         mhd_quantile_pop = mhd_quantile_pop)
   
   # Calculate summary stats
   # 95% CI of the MHD estimated from observations pooled across all samples
