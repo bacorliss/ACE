@@ -251,51 +251,103 @@ dev.off()
 #                                                                              #
 #______________________________________________________________________________#
 n_obs <- 50
-sigmas <- seq(.1, 5, by = .1); mu_ov_sigmas <- seq (0.17, 0.33, by=0.001)
+sigmas <- seq(.1, 5, by = .1); mu_ov_sigmas <- seq (0.15, 0.35, by=0.001)
 # Run simulations calculating error of MHD with mu and sigma swept
-df_right <- stats_param_sweep(NULL, sigmas, n_samples, n_obs, 
-                                "temp/MHD_Error_right_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
-df_right$side <- as.factor("Right")
+df_right <- stats_param_sweep(
+  NULL, sigmas, n_samples, n_obs, "temp/MHD_Error_right_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
+# df_right$side <- as.factor("Right")
 
-sigmas <- seq(.1, 5, by = .1); mu_ov_sigmas <- seq (-0.17, -0/33, by=-0.001)
+sigmas <- seq(.1, 5, by = .1); mu_ov_sigmas <- seq (-0.15, -0.35, by=-0.001)
 # Run simulations calculating error of MHD with mu and sigma swept
-df_left <- stats_param_sweep(NULL, sigmas, n_samples, n_obs, 
-                                "temp/MHD_Error_left_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
-df_left$side <- as.factor("Left")
+df_left <- stats_param_sweep(
+  NULL, sigmas, n_samples, n_obs, "temp/MHD_Error_left_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
+# df_left$side <- as.factor("Left")
 
 
 
-# Determine what value of mu/sigma that error rates departs from 0 to alpha
-# heatmap.2(matrix(as.numeric(mc_eq_zero), nrow = dim(mc_eq_zero)[1], ncol = dim(mc_eq_zero)[1]))
-mc_eq_zero  <- df_results$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas)
-mc_eq_alpha <- df_results$p_val_mhd_eq_alpha < 0.05/length(mu_ov_sigmas)
-center_index <- (length(mu_ov_sigmas)+1)/2 
-eq_zero_ind = matrix(0L, ncol = length(sigmas), nrow = 2)
-eq_alpha_ind = matrix(0L, ncol = length(sigmas), nrow = 2)
-# For each row
-for (r in seq(1, length(sigmas), by = 1)) {
-  # Obtain last continuous match for ER equal to zero
-  # Defined as one before the first index that does not match
-  # Row 1: center to right, Row 2: center to left
-  eq_zero_ind[1,r] <- 
-    min(which(mc_eq_zero[r, seq(center_index, length(mu_ov_sigmas), by = 1)] == TRUE)) - 1
-  eq_zero_ind[2,r]  <- 
-    min(which(mc_eq_zero[r, seq(center_index, 1, by = -1)] == TRUE)) - 1
-  
-  # Row 1: left to center
-  # Row 2: right to center
-  eq_zero_ind[1,r] <-   center_index - 
-    min(which(mc_eq_zero[r, seq(1, center_index, by = 1)] == FALSE)) - 1
-  eq_zero_ind[2,r]  <-  center_index - 
-    min(which(mc_eq_zero[r, seq(length(mu_ov_sigmas), center_index, by = -1)] == FALSE)) - 1
-  
-  # Center to right
-  eq_alpha_ind[1,r] <- 
-    min(which(mc_eq_alpha[ r, seq(center_index,length(mu_ov_sigmas), by = 1)] == FALSE)) - 1
-  # Center to left
-  eq_alpha_ind[2,r]  <- 
-    min(which(mc_eq_alpha[ r, seq(center_index, 1, by = -1)] == FALSE)) - 1
+mc_eq_zero  <- df_right$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas)
+mc_eq_alpha <- df_right$p_val_mhd_eq_alpha < 0.05/length(mu_ov_sigmas)
+
+false_positive_min_threshold(df_right$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas), c(FALSE,TRUE))
+false_positive_min_threshold(df_right$p_val_mhd_eq_alpha < 0.05/length(mu_ov_sigmas), c(TRUE,FALSE))
+
+
+false_positive_min_threshold <- function(vect, vals) {
+  # For a binary vector, find a threshold that seperates TRUE and FALSE with balanced
+  # degree of false positives.
+  false_p_left <- cumsum(as.numeric(vect==vals[2]))
+  false_p_right <- rev(cumsum(as.numeric(rev(vect)==vals[1])))
+  balance <- (false_p_left - false_p_right)
+  # f(x)= ax+b
+  lm_balance <- lm(balance ~ seq(1,length(vect),by=1))
+  # 0=ax+b    x = -b/a
+  balance_ind = -lm_balance$coefficients[[1]]/lm_balance$coefficients[[2]]
+  return(balance_ind)
 }
+
+false_positive_min_threshold(mc_eq_zero[4,], c(FALSE,TRUE))
+
+
+
+a <- apply(mc_eq_zero[4,], 2, false_positive_min_threshold, vals = c(FALSE,TRUE))
+
+
+
+
+heatmap.2(
+  matrix(as.numeric(mc_eq_alpha), nrow = length(sigmas), ncol = length(mu_ov_sigmas)),
+  Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
+  labRow=rev(round(sigmas,1)), labCol= round(mu_ov_sigmas,2),
+  density.info = 'none', scale = "none", cexRow = 1, cexCol = 1,
+  denscol = "black", keysize = 1, key = FALSE,
+  lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
+  lhei = c(2, 6), lwid = c(1, 10, 1),
+  na.color = "black", main = NULL,
+  xlab(expression(mu)), ylab(expression(sigma)))
+
+dev.off()
+
+
+
+df_right_break <- mhd_error_transition(
+  df_right$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas), 
+  df_rights$p_val_mhd_eq_apha  < 0.05/length(mu_ov_sigmas)) 
+
+df_left_break <- mhd_error_transition(
+  df_left$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas), 
+  df_left$p_val_mhd_eq_apha  < 0.05/length(mu_ov_sigmas))   
+  
+# # Determine what value of mu/sigma that error rates departs from 0 to alpha
+# # heatmap.2(matrix(as.numeric(mc_eq_zero), nrow = dim(mc_eq_zero)[1], ncol = dim(mc_eq_zero)[1]))
+# mc_eq_zero  <- df_results$p_val_mhd_eq_zero  < 0.05/length(mu_ov_sigmas)
+# mc_eq_alpha <- df_results$p_val_mhd_eq_alpha < 0.05/length(mu_ov_sigmas)
+# center_index <- (length(mu_ov_sigmas)+1)/2 
+# eq_zero_ind = matrix(0L, ncol = length(sigmas), nrow = 2)
+# eq_alpha_ind = matrix(0L, ncol = length(sigmas), nrow = 2)
+# # For each row
+# for (r in seq(1, length(sigmas), by = 1)) {
+#   # Obtain last continuous match for ER equal to zero
+#   # Defined as one before the first index that does not match
+#   # Row 1: center to right, Row 2: center to left
+#   eq_zero_ind[1,r] <- 
+#     min(which(mc_eq_zero[r, seq(center_index, length(mu_ov_sigmas), by = 1)] == TRUE)) - 1
+#   eq_zero_ind[2,r]  <- 
+#     min(which(mc_eq_zero[r, seq(center_index, 1, by = -1)] == TRUE)) - 1
+#   
+#   # Row 1: left to center
+#   # Row 2: right to center
+#   eq_zero_ind[1,r] <-   center_index - 
+#     min(which(mc_eq_zero[r, seq(1, center_index, by = 1)] == FALSE)) - 1
+#   eq_zero_ind[2,r]  <-  center_index - 
+#     min(which(mc_eq_zero[r, seq(length(mu_ov_sigmas), center_index, by = -1)] == FALSE)) - 1
+#   
+#   # Center to right
+#   eq_alpha_ind[1,r] <- 
+#     min(which(mc_eq_alpha[ r, seq(center_index,length(mu_ov_sigmas), by = 1)] == FALSE)) - 1
+#   # Center to left
+#   eq_alpha_ind[2,r]  <- 
+#     min(which(mc_eq_alpha[ r, seq(center_index, 1, by = -1)] == FALSE)) - 1
+# }
 
 # Equivalence test versus middle column of same row
 break_df <- rbind(
@@ -317,5 +369,42 @@ p
 
 
 
+mhd_error_transition <- function( mc_eq_zero, mc_eq_alpha) {
+  n_mus <- dim(mc_eq_zero)[1]
+  n_sigmas <- dim(mc_eq_zero)[2]
+  eq_zero_ind = numeric(n_sigmas)
+  eq_alpha_ind = numeric(n_sigmas)
+  
+  
+  # For each row
+  for (r in seq(1, n_sigmas, by = 1)) {
+    # Obtain last continuous match for ER equal to zero
+    # Defined as one before the first index that does not match
 
+    # Row 1: left to center
+    # Row 2: right to center
+    eq_zero_ind[1,r] <-
+      min(which(mc_eq_zero[r, seq(1, n_mus, by = 1)] == FALSE)) - 1
+
+    # Center to right
+    eq_alpha_ind[1,r] <- 
+      min(which(mc_eq_alpha[ r, seq(center_index,length(mu_ov_sigmas), by = 1)] == FALSE)) - 1
+  }
+  
+  # Equivalence test versus middle column of same row
+  break_df <- rbind(
+    tibble(er = "ER = 0", side = "left", mu_over_sigma =
+             mu_ov_sigmas[center_index + eq_zero_ind[1,]-1]),
+    tibble(er = "ER = 0", side = "right", mu_over_sigma =
+             mu_ov_sigmas[center_index + eq_zero_ind[2,]-1]),
+    tibble(er = "ER = alpha", side = "left", mu_over_sigma =
+             mu_ov_sigmas[center_index + eq_alpha_ind[1,]-1]),
+    tibble(er = "ER = alpha", side = "right", mu_over_sigma =
+             mu_ov_sigmas[center_index + eq_alpha_ind[2,]-1]))
+  break_df$er <- as.factor(break_df$er)
+  break_df$side <- as.factor(break_df$side)
+  
+  
+  
+}
 
