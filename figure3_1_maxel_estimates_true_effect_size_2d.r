@@ -251,29 +251,48 @@ dev.off()
 #                                                                              #
 #______________________________________________________________________________#
 n_obs <- 50
-sigmas <- seq(.1, 5, by = .1); right_mu_ov_sigmas <- seq (0.15, 0.35, by=0.001)
+sigmas <- seq(.1, 5, by = .1); 
+
 # Run simulations calculating error of MHD with mu and sigma swept
+right_mu_ov_sigmas <- seq (0.15, 0.35, by=0.001)
 df_right <- stats_param_sweep(
   NULL, sigmas, n_samples, n_obs, "temp/MHD_Error_right_mu_over_sigma_vs_sigma.rds", right_mu_ov_sigmas) 
 df_right$side <- as.factor("Right")
 
-sigmas <- seq(.1, 5, by = .1); left_mu_ov_sigmas <- seq (-0.15, -0.35, by=-0.001)
 # Run simulations calculating error of MHD with mu and sigma swept
+left_mu_ov_sigmas <- seq (-0.15, -0.35, by=-0.001)
 df_left <- stats_param_sweep(
   NULL, sigmas, n_samples, n_obs, "temp/MHD_Error_left_mu_over_sigma_vs_sigma.rds", left_mu_ov_sigmas) 
 df_left$side <- as.factor("Left")
 
-
 false_positive_min_threshold <- function(vect, vals) {
   # For a binary vector, find a threshold that seperates TRUE and FALSE with balanced
   # degree of false positives.
-  false_p_left <- cumsum(as.numeric(vect == vals[2]))
-  false_p_right <- rev(cumsum(as.numeric(rev(vect) == vals[1])))
-  balance <- (false_p_left - false_p_right)
-  # f(x)= ax+b
-  lm_balance <- lm(balance ~ seq(1,length(vect),by=1))
-  # 0=ax+b    x = -b/a
-  balance_ind = -lm_balance$coefficients[[1]]/lm_balance$coefficients[[2]]
+  # vect is input vectors of TRUE and FALSE
+  # vals: TRUe or FALSE for each side of vector
+  # Example input
+  # vect = df_right$p_val_mhd_eq_zero[1,] < 0.05
+  # vals = c(FALSE,TRUE)
+  
+  vector_index = seq_along(vect)
+  # score each position based on  1/x distance from threshold
+  
+  for (i in seq(1, length(vect)-1)) {
+    right_index = seq(i+1, length(vect),by = 1)
+    # Get distances for all false positives to the right
+    right_false_dist <- (right_index - i)[(vect == vals[2])[right_index]]
+    # Compute score to the right of threshold
+    right_score[i] <- sum(right_false_dist ^ 2)
+    # Get distances for all false positives to the right
+    left_index = seq(1, i, by = 1)
+    left_false_dist <- (i - left_index)[(vect == vals[1])[left_index]]
+    # Compute score to the right of threshold
+    left_score[i] <- sum(left_false_dist ^ 2)
+    score[i] <- abs(right_score[i] - left_score[i])
+    
+  }
+  
+  balance_ind = which.min(score)
   return(balance_ind)
 }
 
@@ -281,14 +300,15 @@ false_positive_min_threshold <- function(vect, vals) {
 
  
 # Equivalence test versus middle column of same row
+p_threshold = 0.05 /length(right_mu_ov_sigmas)
 zero_df <- rbind(
   tibble(er = "0", side = "right", sigma = sigmas, 
          critical_ind_mu_over_sigma = apply(
-           df_right$p_val_mhd_eq_zero  < 0.05/length(right_mu_ov_sigmas), 1, 
+           df_right$p_val_mhd_eq_zero  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))),
   tibble(er = "alpha", side = "right", sigma = sigmas, 
          critical_ind_mu_over_sigma = apply(
-           df_right$p_val_mhd_eq_alpha  < 0.05/length(left_mu_ov_sigmas), 1, 
+           df_right$p_val_mhd_eq_alpha  < p_threshold,1,
            false_positive_min_threshold, vals = c(FALSE,TRUE))))
 zero_df$critical_mu_over_sigma <- 
   approx(x=seq_along(right_mu_ov_sigmas),y = abs(right_mu_ov_sigmas),
@@ -298,42 +318,48 @@ zero_df$critical_mu_over_sigma <-
 alpha_df <- rbind(
   tibble(er = "0", side = "left", sigma = sigmas, 
          critical_ind_mu_over_sigma = apply(
-           df_left$p_val_mhd_eq_zero  < 0.05/length(right_mu_ov_sigmas), 1, 
+           df_left$p_val_mhd_eq_zero  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))),
   tibble(er = "alpha", side = "left", sigma = sigmas, 
          critical_ind_mu_over_sigma = apply(
-           df_left$p_val_mhd_eq_alpha  < 0.05/length(left_mu_ov_sigmas), 1, 
+           df_left$p_val_mhd_eq_alpha  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))))
 alpha_df$critical_mu_over_sigma <- 
   approx(x=seq_along(left_mu_ov_sigmas),y = abs(left_mu_ov_sigmas),
          xout = alpha_df$critical_ind_mu_over_sigma, 
          n = length(mu_ov_sigmas)*2L-1L)$y
-
+# Concatenate right and left datafgrames of results
 crit_df <- rbind(zero_df,alpha_df)
 
 
 
-heatmap.2(
-  matrix(as.numeric(mc_eq_alpha), nrow = length(sigmas), ncol = length(mu_ov_sigmas)),
-  Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-  labRow=rev(round(sigmas,1)), labCol= round(mu_ov_sigmas,2),
-  density.info = 'none', scale = "none", cexRow = 1, cexCol = 1,
-  denscol = "black", keysize = 1, key = FALSE,
-  lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-  lhei = c(2, 6), lwid = c(1, 10, 1),
-  na.color = "black", main = NULL,
-  xlab(expression(mu)), ylab(expression(sigma)))
+# heatmap.2(
+#   matrix(as.numeric(mc_eq_alpha), nrow = length(sigmas), ncol = length(mu_ov_sigmas)),
+#   Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
+#   labRow=rev(round(sigmas,1)), labCol= round(mu_ov_sigmas,2),
+#   density.info = 'none', scale = "none", cexRow = 1, cexCol = 1,
+#   denscol = "black", keysize = 1, key = FALSE,
+#   lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
+#   lhei = c(2, 6), lwid = c(1, 10, 1),
+#   na.color = "black", main = NULL,
+#   xlab(expression(mu)), ylab(expression(sigma)))
+# dev.off()
 
-dev.off()
 
-
-dodge <- position_dodge(width = 0.9)
 
 # Basic violin plot
-p <- ggplot(crit_df, aes(x=er,  color = er,group=interaction(er, side), y = critical_mu_over_sigma)) + 
-  geom_violin(position = dodge) + geom_boxplot(width=0.2,position = dodge)
+p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side), 
+                         y = critical_mu_over_sigma)) + 
+  #geom_violin( position = position_dodge( width = 0.9)) + 
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  theme_classic(base_size = 8) + theme(legend.position="none", 
+                                       axis.title.x = element_blank()) +
+  xlab("Error Rate Null Hypothesis") + 
+  ylab(expression(mu/sigma))
 p
+save_plot(paste("figure/", fig_basename, "f MHD transition values.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600)
 
-
-res.aov2 <- aov(critical_mu_over_sigma ~ er + side, data = break_df)
+res.aov2 <- aov(critical_mu_over_sigma ~ er + side, data = crit_df)
 summary(res.aov2)
