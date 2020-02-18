@@ -28,6 +28,8 @@ library(equivalence)
 library(TOSTER)
 
 
+source("R/mhd.r")
+
 
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
@@ -60,7 +62,7 @@ is_exported <- TRUE
 
 
 
-plot_null_result <- function(xa, xa_bar, xa_sd, xb, xb_bar,xb_sd, rank_str,is_exported) {
+plot_null_result <- function(xa, xa_bar, xa_sd, xb, xb_bar,xb_sd, rank_str,is_exported, y_label="Metric") {
   
   # Transform data
   txa <- xa_sd * (xa - mean(xa)) + +mean(xa) + xa_bar
@@ -76,20 +78,24 @@ plot_null_result <- function(xa, xa_bar, xa_sd, xb, xb_bar,xb_sd, rank_str,is_ex
     geom_point(position = position_jitter(w = 0.15, h = 0), color="grey", size=0.5) +
     geom_point(data = sdf1, aes(x = grp, y = mean), size=1) +
     geom_errorbar(data = sdf1, aes(x = grp, y = mean, ymin = mean - sd, ymax = mean + sd), width = 0.5) + 
-    theme_classic(base_size=8) + theme(legend.position="none")+
-    coord_cartesian(ylim=c(0,20)) + xlab("") + ylab("Metric")
+    theme_classic(base_size=8) + theme(legend.position="none") +
+    xlab("") + ylab(y_label) #+ coord_cartesian(ylim=c(0,20)) +
   print(p_1)
   # Stats
   tt <- t.test(subset(df1, grp=="Tx")$y, subset(df1, grp=="Control")$y)
+  mhd <- mhd_2sample_paired(txa, txb, alpha = 0.05)
   
   # Print stats
   print(do.call(sprintf, c('Mean: [%.1f, %.1f]', as.list(c(mean(txa),mean(txb))))))
   print(do.call(sprintf, c('STD: [%.1f, %.1f]', as.list(c(sd(txa),sd(txb))))))
-  print(do.call(sprintf, c('DOM: %.1f', as.list(mean(txb)-mean(txa)))))
-  print(do.call(sprintf, c('SDpooled: %.1f', as.list(sqrt(sd(txa)^2+sd(txb)^2)))))
+  print(do.call(sprintf, c('u[D]: %.1f', as.list(mean(txb)-mean(txa)))))
+  print(do.call(sprintf, c('u[RD]: %.1f', as.list(mean(txb)-mean(txa)))))
+  print(do.call(sprintf, c('S[D]: %.1f', as.list(sqrt(sd(txa)^2+sd(txb)^2)))))
   print(do.call(sprintf, c('CI: [%.1f, %.1f]', as.list(unname(round(tt$conf.int,2)+10)))))
   print(do.call(sprintf, c('R-CI: [%.1f, %.1f]', as.list(unname(round(tt$conf.int/10,3)*100)))))
   print(do.call(sprintf, c('pval: %.3f', as.list(unname(tt$p.value)))))
+  print(do.call(sprintf, c('MHD: %.3f', as.list(mhd))))
+  print(do.call(sprintf, c('RMHD: %.1f', as.list(100*mhd/mean(txa)))))
   
   # Export
   if (is_exported) {
@@ -109,13 +115,20 @@ plot_null_result(xa,0, 4,xb, 0.8, 4,rank_str = "r1_2",is_exported = TRUE)
 
 
 # Hard Example
-plot_null_result(xa, 0, 5,xb, 1.5, 5, rank_str = "r2_1", is_exported = TRUE)
+plot_null_result(xa, 0, 5,xb, 1.5, 5, rank_str = "r2_1", is_exported = TRUE, y_label= "Metric 1")
 
-plot_null_result(xa, +1, 3,xb, -1, 3, rank_str = "r2_2", is_exported = TRUE)
+plot_null_result(xa, 1*10+1, 2*3,xb, 10-1, 2*3, rank_str = "r2_2", is_exported = TRUE, y_label= "Metric 2")
 
-plot_null_result(xa, -1, 2,xb, +3, 7, rank_str = "r2_3", is_exported = TRUE)
+plot_null_result(xa, 5*10-1, 6*2,xb, 5*10+3, 6*7, rank_str = "r2_3", is_exported = TRUE, y_label= "Metric 3")
 
-plot_null_result(xa, 0, 7,xb, 0.1, 7, rank_str = "r2_4", is_exported = TRUE)
+plot_null_result(xa, 2+0, 7,xb, 2+0.1, 7, rank_str = "r2_4", is_exported = TRUE, y_label= "Metric 4")
 
-plot_null_result(xa, 0, 1.5,xb, 1, 1.5, rank_str = "r2_5", is_exported = TRUE)
+plot_null_result(xa, +2, 1.5,xb, +2, 1.5, rank_str = "r2_5", is_exported = TRUE, y_label= "Metric 5")
+
+
+
+# Magnitude of effecet size example
+
+plot_null_result(xa,0, 4,xb, 2, 4,rank_str = "r3_1",is_exported = TRUE)
+plot_null_result(xa,0, 4,xb, -2, 4,rank_str = "r3_2",is_exported = TRUE)
 
