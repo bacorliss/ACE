@@ -120,17 +120,17 @@ for (n in seq(1, n_samples, by=1)) {
 
 
 
-p_2e <- ggplot(data=df, aes(y=r_FF_FN)) +
+p_2e <- ggplot(data=df, aes(x=1,y=r_FF_FN)) +
   geom_point() +
   geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Pearson r") + xlab("") +
-  xlab(expression("F[F] : F[N]")) +
+  ylab("Q-Q Slopes") + xlab("") +
+  xlab(expression("FN : FN")) +
   theme_classic(base_size=8) + theme(legend.position="none",
-                                     axis.text.x=element_blank()) +
-  geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max))
+                                     axis.text.x=element_blank()) #+
+  #geom_blank(aes(y = y_min)) +
+  #geom_blank(aes(y = y_max))
 p_2e
-save_plot(paste("figure/", fig_basename, "r equiv_integration_FF_FN.tiff", 
+save_plot(paste("figure/", fig_basename, "e equiv_integration_FF_FN.tiff", 
                 sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 1, dpi = 600)  
 
@@ -141,8 +141,8 @@ save_plot(paste("figure/", fig_basename, "r equiv_integration_FF_FN.tiff",
 p_2f <- ggplot(data=df, aes(y=r_FF_FS)) +
   geom_point() +
   geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Pearson r") + xlab("") +
-  xlab(expression("F[F] : F[S]")) +
+  ylab("Q-Q Slopes") + xlab("") +
+  xlab(expression("FN : FS")) +
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.text.x=element_blank()) +
   geom_blank(aes(y = y_min)) +

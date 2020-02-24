@@ -84,6 +84,7 @@ mus <- rep(0, n_trials)#mrunif(1e4, min = -5, max = 5)
 n_obs <- 1000
 
 # Generate random samples based on random mu values
+# row: ntrials, col: n_obs
 x_norm <- t(sapply(mus, function (x) rnorm(n_obs, mean = x, sd = 1),
                    simplify = TRUE))
 x_abs_norm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)),
@@ -106,8 +107,8 @@ p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_abs_nor
                                  as.vector(x_fnorm[i,]), alternative = "two.sided",
                                  exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 df_1b <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
-               tibble(d = factor("N : F[N]"), x = p_val_n2fn), 
-               tibble(d = factor("|N| : F[N]"), x = p_val_abs_n2fn))
+               tibble(d = factor("N : FN"), x = p_val_n2fn), 
+               tibble(d = factor("|N| : FN"), x = p_val_abs_n2fn))
 
 p_1b <- ggplot(df_1b, aes(x=d, y=x)) + 
   geom_violin(scale="width", kernel="gaussian", fill="grey96") +
@@ -121,7 +122,7 @@ save_plot(paste("figure/", fig_basename, "b dist_comparison_violin.tiff", sep = 
 
 
 # Show % of trials that have significant p-values ---------------------------------------------
-# Under null disctribution it would be expected to equal alpha
+# Under null distribution it would be expected to equal alpha
 bin_n_an <- prop.test(sum(p_val_n2abs_n<0.05), n_trials, p=0.05, 
                       conf.level=1-0.05/3, correct = FALSE)
 bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_trials, p=0.05, 
@@ -129,7 +130,7 @@ bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_trials, p=0.05,
 bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_trials, p=0.05, 
                        conf.level=1-0.05/3, correct = FALSE)
 
-comp_levels <- c("N : |N|","N : F[N]","|N| : F[N]")
+comp_levels <- c("N : |N|","N : FN","|N| : FN")
 df_1c <- tibble(d = factor(comp_levels,levels = comp_levels, ordered = TRUE), 
        estimate = c(bin_n_an$estimate,bin_n_fn$estimate,bin_an_fn$estimate),
        lcl = c(bin_n_an$conf.int[1],bin_n_fn$conf.int[1],bin_an_fn$conf.int[1]),
@@ -164,7 +165,7 @@ chi_test$p.value
 p_1d <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
   geom_histogram(aes(y=stat(width*density)), bins=20, fill="grey") +
   theme_classic(base_size=8) + theme(legend.position="none") +
-  xlab(expression("P-Values |N| : F"[N])) + ylab("Probablitly") +
+  xlab(expression("P-Values |N| : FN")) + ylab("Probablitly") +
   geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
 p_1d             
 save_plot(paste("figure/", fig_basename, "d_dist_comparison_hist.tiff", sep = ""), 
@@ -174,7 +175,7 @@ save_plot(paste("figure/", fig_basename, "d_dist_comparison_hist.tiff", sep = ""
 
 
 # Plot a single line comparing output between FN and |N|
-# Plot difference between P(N) and P(F[N]) over mu
+# Plot difference between P(N) and P(FN) over mu
 sort_x_abs_norm = sort(x_abs_norm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
@@ -183,9 +184,9 @@ sort_x_fnorm = sort(x_fnorm[1,])
 fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
 
 # Define data for plotting
-df_1e = tibble(x=sort_x_fnorm, y=sort_x_abs_norm)
+df_1e = tibble(x = sort_x_fnorm, y = sort_x_abs_norm)
 p_1e <- ggplot(df_1e, aes(x=x, y=y)) + 
-  geom_point(size=0.5) + xlab(expression("Sample from F"[N])) + ylab("Sample from |N|   ") +
+  geom_point(size=0.5) + xlab(expression("Sorted Sample FN")) + ylab("Sorted Sample |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
@@ -199,16 +200,15 @@ fits <- unname(sapply(1:dim(x_fnorm)[1],
                       function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
                       simplify = TRUE ))
 cl_fits <- quantile(fits, c(.025, .975)) 
-df_fits <- tibble(x=as.factor("|N| : F[N]"),y=mean(fits),y_min = 0.99,y_max = 1.1)
+df_fits <- tibble(x=as.factor("|N| : FN"),y=mean(fits),y_min = 0.99,y_max = 1.1)
 
 p_1f <- ggplot(data=df_fits, aes(x=x, y=y)) +
   geom_point() +
   #geom_hline(yintercept = 1, linetype = 2, color = "red", alpha = .2) +
   geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Q-Q Slope") + xlab("") +
-  xlab(expression("|N| : F"[N])) +
-  theme_classic(base_size=8) + theme(legend.position="none",
-                                     axis.text.x=element_blank()) +
+  ylab("Q-Q Slopes") + xlab("") +
+  #xlab(expression("|N| : FN")) +
+  theme_classic(base_size=8) + theme(legend.position="none") +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max))
 p_1f
@@ -253,8 +253,8 @@ p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_abs_nor
                                 as.vector(x_fnorm[i,]), alternative = "two.sided", 
                                 exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 df_1g <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
-               tibble(d = factor("N : F[N]"), x = p_val_n2fn), 
-               tibble(d = factor("|N| : F[N]"), x = p_val_abs_n2fn))
+               tibble(d = factor("N : FN"), x = p_val_n2fn), 
+               tibble(d = factor("|N| : FN"), x = p_val_abs_n2fn))
 
 p_1g <- ggplot(df_1g, aes(x=d, y=x)) + 
   geom_violin(scale="width", kernel="gaussian", fill="grey96") +
@@ -278,7 +278,7 @@ bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_trials, p=0.05,
 bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_trials, p=0.05, 
                        conf.level=1-0.05/3, correct = FALSE)
 
-comp_levels <- c("N : |N|","N : F[N]","|N| : F[N]")
+comp_levels <- c("N : |N|","N : FN","|N| : FN")
 df_1h <- tibble(d = factor(comp_levels,levels = comp_levels, ordered = TRUE), 
                 estimate = c(bin_n_an$estimate,bin_n_fn$estimate,bin_an_fn$estimate),
                 lcl = c(bin_n_an$conf.int[1],bin_n_fn$conf.int[1],bin_an_fn$conf.int[1]),
@@ -312,7 +312,7 @@ chi_test$p.value
 p_1i <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
   geom_histogram(aes(y=stat(width*density)), bins=20, fill="grey") +
   theme_classic(base_size=8) + theme(legend.position="none") +
-  xlab("KS P-Values, |N| : F[N]") + ylab("Probablitly") +
+  xlab("P-Values |N| : FN") + ylab("Probablitly") +
   geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
 p_1i            
 save_plot(paste("figure/", fig_basename, "i_dist_comparison_hist.tiff", sep = ""), 
@@ -333,7 +333,7 @@ fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
 # Define data for plotting
 df_1j = tibble(x=sort_x_fnorm, y=sort_x_abs_norm)
 p_1j <- ggplot(df_1j, aes(x=x, y=y)) + 
-  geom_point(size=0.5) + xlab("Sample from F[N]") + ylab("Sample from |N|   ") +
+  geom_point(size=0.5) + xlab("Sorted Sample FN") + ylab("Sorted Sample |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1j
@@ -347,13 +347,13 @@ fits <- unname(sapply(1:dim(x_fnorm)[1],
                       function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
                       simplify = TRUE ))
 cl_fits <- quantile(fits, c(.025, .975)) 
-df_fits <- tibble(x=as.factor("|N|:F[N]"),y=mean(fits),y_min = 0.99,y_max = 1.1)
+df_fits <- tibble(x=as.factor("|N|:FN"),y=mean(fits),y_min = 0.99,y_max = 1.1)
 
 p_1k <- ggplot(data=df_fits, aes(x=x,y=y)) +
   geom_point() +
   #geom_hline(yintercept = 1, linetype = 2, color = "red", alpha = .2) +
   geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Q-Q Slope.") + xlab("") +
+  ylab("Q-Q Slopes") + xlab("") +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max)) 
