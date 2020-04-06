@@ -1,6 +1,6 @@
 
 
-### Figure 2: MAXEL demonstrates a unique combination of properties compared to previous statistics of effect size.
+### Figure 2: MHD outperforms previous statistics of effect size.
 
 
 
@@ -16,52 +16,68 @@ library(lsr)
 # User defined libraries
 source("R/maxel.R")
 
-# USer defined functions
+## USer defined functions
 # Calculate variance by row like rowMeans or rowSums
-# sum(x-x_bar).^2/(n-1)
 rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1)}
-cohensD <- function(x,n,...) {
+# Calculate row-wise Cohens D
+rowCohensD <- function(x,n,...) {
   (rowMeans(x, (n + 1):(2 * n)) - rowMeans(x, 1 : n))
 }
 
 
-### Measure of sample effect size
+# Metrics of sample effect size
+##############################################
 #  Unstandardized measures of effect size
-#  difference of sample means
-# Standardized measures of effect size
-#  cohen's d
-#  g
-#  Maxel
+#    difference of sample means
+#    relative difference of means
+#    difference of sample variances
+#
+#  Standardized measures of effect size
+#    cohen's d
+#    hedges g
+#    glasses delta
+#    coefficient of variation
+#    MHD
 
-n_sims=1e3;
+# Simulation parameters
+# A simulation is a set of samples with a fixed set of parameters
+# n_sims = 1e3;
 n_samples = 1e4
 n_obs = 10
 
-# A simulation is a series of trials, each with 2 groups of 10 observations
 
 ### Maxel discerns experiments with lower variance
 # Generate two matrices, X1 and X2 sampled from two standard normal distributions
 set.seed(0)
-exp_1 = matrix(rnorm(2*n_samples*n_obs, mean=1,sd=1),n_samples,2*n_obs)
-exp_2 = matrix(rnorm(2*n_samples*n_obs, mean=1,sd=1),n_samples,2*n_obs)
-sim_means_coeff = runif(n_sims,-0.5,0.5)
+x1 = matrix(rnorm(2*n_samples*n_obs, mean = 0, sd = 1), n_samples, 2*n_obs)
+x2 = matrix(rnorm(2*n_samples*n_obs, mean = 0, sd = 1), n_samples, 2*n_obs)
+# Randomly generated parameters
+sim_means_coeff = runif(n_sims, -0.5, 0.5)
+sim_std_coeff = runif(n_sims, 0.01, 1)
 
-#sweep(b, 2, a, "+"
 
 # Output dataframe with altered
-df = tibble(pop_mean1 = rep(1,n_sims), pop_mean2 = 1 + sim_means_coeff,
-                    pop_var1=rep(1,n_sims),pop_var2=rep(1,n_sims));
-# Groundtruth: is sigma_2 > sigma_1 (= 1)
-df <- add_column(df, is2gt1_pop_mean= df$pop_mean1 > df$pop_mean2)
-# Groundtruth: difference of sigma2 - sigma_1 (= 1)
-df <- add_column(df, diff2m1_pop_mean= df$pop_mean2 - df$pop_mean2)
-# For each effect size, need 
-#     frac_2gt1_[es]
-#     mean_2m1_[es]
+df = tibble(pop_mean1 = rep(1, n_sims), pop_mean2 = 1 + sim_means_coeff,
+                    pop_std1=rep(1 ,n_sims), pop_std2 = rep(1, n_sims));
+# Is pop_mean2 > pop_mean1 (TRUE)
+df <- add_column(df, pop_mean_is_2gt1 = df$pop_mean2 > df$pop_mean1)
+#   pop_mean2 - pop_mean1
+df <- add_column(df, pop_mean_diff_2m1 = df$pop_mean2 - df$pop_mean1)
+# Is pop_std2 > pop_std1 (TRUE)
+df <- add_column(df, pop_std_is_2gt1 = df$pop_std2 > df$pop_std1)
+#   pop_std2 - pop_std1
+df <- add_column(df, pop_std_diff_2m1 = df$pop_std2 - df$pop_std1)
+
+
+# For each effect size metric, need 
+#     frac_2gt1_[metric]
+#     mean_2m1_[metric]
 
 # Get list of effect size types
 
 # Append effect size suffixes to all effect sizes
+
+
 
 # Add all fields to refults df initialized to 0
 df[c("mean_2m1_sample_mean", "frac_2gt1_sample_mean",
