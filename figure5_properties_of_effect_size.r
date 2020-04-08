@@ -10,19 +10,36 @@ library(RColorBrewer)
 library(broom)
 library(gridExtra)
 library(grid)
-
+library(effsize)
 library(lsr)
 
 # User defined libraries
 source("R/maxel.R")
 
-## USer defined functions
+## User defined functions
 # Calculate variance by row like rowMeans or rowSums
 rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1)}
+rowSds  <- function(x, ...) sqrt(rowVars(x))
 # Calculate row-wise Cohens D
-rowCohensD <- function(x,n,...) {
-  (rowMeans(x, (n + 1):(2 * n)) - rowMeans(x, 1 : n))
-}
+sdPooled <- function(x1,x2) sqrt( ( (length(x1)-1) * sd(x1)^2 + 
+                                    (length(x2)-1) * sd(x2)^2 ) /
+                                    (length(x1) + length(x2) - 2))
+# Effect Size Statistics
+#   d = (M2 - M1)/s_pool      s_pool = sqrt( (s1 + s2)/n)
+cohensD <- function (x1,x2) cohen.d(x1,x2,pooled=TRUE,paired=FALSE,
+                                    na.rm=FALSE, mu=0, hedges.correction=FALSE,
+                                    conf.level=0.95,noncentral=FALSE, ...)
+#   d = (M2 - M1)/s_pool      s_pool = sqrt( (s1 + s2)/n)
+hedgesG <- function (x1,x2) cohen.d(x1,x2,pooled=TRUE,paired=FALSE,
+                                    na.rm=FALSE, mu=0, hedges.correction=TRUE,
+                                    conf.level=0.95,noncentral=FALSE, ...)
+#   d = (M2 - M1)/s_1
+glassDelta <- function (x1,x2) (mean(x2)- mean(x1))/sd(x1) 
+
+# 
+# rowCohensD <- function(x,n,...) {
+#   (rowMeans(x, (n + 1):(2 * n)) - rowMeans(x, 1 : n))
+# }
 
 
 # Metrics of sample effect size
@@ -41,66 +58,97 @@ rowCohensD <- function(x,n,...) {
 
 # Simulation parameters
 # A simulation is a set of samples with a fixed set of parameters
-# n_sims = 1e3;
+# Parameters are randomnly chosen
+n_sims = 1e3;
 n_samples = 1e4
 n_obs = 10
 
 
 ### Maxel discerns experiments with lower variance
-# Generate two matrices, X1 and X2 sampled from two standard normal distributions
+# Generate two matrices, X1 and X2 sampled from two standard NORMalized distributions
+#  X1 is designated as the control sample that is used to normalize values for 
+#  relative statistical metrics
 set.seed(0)
-x1 = matrix(rnorm(2*n_samples*n_obs, mean = 0, sd = 1), n_samples, 2*n_obs)
-x2 = matrix(rnorm(2*n_samples*n_obs, mean = 0, sd = 1), n_samples, 2*n_obs)
-# Randomly generated parameters
-sim_means_coeff = runif(n_sims, -0.5, 0.5)
-sim_std_coeff = runif(n_sims, 0.01, 1)
+norm_x1 = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+norm_x2 = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 
 
 # Output dataframe with altered
-df = tibble(pop_mean1 = rep(1, n_sims), pop_mean2 = 1 + sim_means_coeff,
-                    pop_std1=rep(1 ,n_sims), pop_std2 = rep(1, n_sims));
+df = tibble(pop_mean1 = runif(n_sims, -0.5, 0.5), 
+            pop_mean2 = runif(n_sims, -0.5, 0.5),
+            pop_std1 = runif(n_sims, 0.01, 1), 
+            pop_std2 = runif(n_sims, 0.01, 1));
 # Is pop_mean2 > pop_mean1 (TRUE)
 df <- add_column(df, pop_mean_is_2gt1 = df$pop_mean2 > df$pop_mean1)
 #   pop_mean2 - pop_mean1
 df <- add_column(df, pop_mean_diff_2m1 = df$pop_mean2 - df$pop_mean1)
 # Is pop_std2 > pop_std1 (TRUE)
-df <- add_column(df, pop_std_is_2gt1 = df$pop_std2 > df$pop_std1)
+df <- add_column(df, pop_std_is_2gt1 =   df$pop_std2 > df$pop_std1)
 #   pop_std2 - pop_std1
 df <- add_column(df, pop_std_diff_2m1 = df$pop_std2 - df$pop_std1)
 
 
-# For each effect size metric, need 
+# Generate effect size columns in datatable
+#   For each effect size metric, need 
 #     frac_2gt1_[metric]
 #     mean_2m1_[metric]
-
-# Get list of effect size types
-
+effect_size_prefix = c("fract_2g1", "diff_2m1")
+effect_sizes = c("means", "stds", "rel_means","rel_stds",
+                    "cohen_d", "hedge_g", "glass_delta", "most_mean_diff", "p_value", "coeff_var")
 # Append effect size suffixes to all effect sizes
+df[paste(effect_size_prefix[1], effect_sizes, sep="_")] <- 0
+df[paste(effect_size_prefix[2], effect_sizes, sep="_")] <- 0
 
 
+# Loop through simulations, using different set of parameters
+for (n in seq(1,n_sims,1)) {
 
-# Add all fields to refults df initialized to 0
-df[c("mean_2m1_sample_mean", "frac_2gt1_sample_mean",
-      "mean_2m1_sample_var", "frac_2gt1_sample_var")] <- 0
-
-
-# Loop through simulations
-# for (n in seq(1,n_sims,1)) {}
-
-n=1
-# Multiplly half of orig_x1_2 by pop_var2
-x1_2 = sweep(orig_x1_2, MARGIN=2, c(rep(0, n_obs), rep(df$pop_var2[n], n_obs)), `*`)
-
-# Calculate mean difference of sample means
-sample_means = cbind(rowMeans(x1_2[ ,1:n_obs]), rowMeans(x1_2[ ,(n_obs+1) : (2*n_obs)]))
-# Calculate mean value and fraction of group 2 > group 1
-df$mean_2m1_sample_mean[n] = mean(sample_means[,2]-sample_means[,1])
-df$frac_2gt1_sample_mean[n] = sum(sample_means[,2] > sample_means[,1])/n_samples
-
-
-# Calculate 
-
-
+  # Transform simulated samples with normal parameteres (mean and std) for 
+  # current round of simulation
+  
+  # Multiplly half of orig_x1_2 by pop_var2
+  x1 = norm_x1 * df$pop_std1[n] + df$pop_mean1[n]
+  x2 = norm_x2 * df$pop_std2[n] + df$pop_mean2[n] 
+  means_x1 = rowMeans(x1)
+  means_x2 = rowMeans(x2)
+  sds_x1 = rowSds(x1)
+  sds_x2 = rowSds(x2)
+  
+  # Calculate mean difference of sample means
+  sample_means = cbind(rowMeans(x1_2[ ,1:n_obs]), rowMeans(x1_2[ ,(n_obs+1) : (2*n_obs)]))
+  # Basic Summary statistical comparisons
+  # Means
+  df$frac_means_2gt1[n] = sum(means_x2 > means_x1)/n_samples
+  df$diff_means_2m1[n]  = mean(means_x2 - means_x1)
+  # Stds
+  df$frac_stds_2gt1[n] = sds_x2 > sds_x1
+  df$diff_stds_2m1[n]  = sds_x2 - sds_x1
+  # Rel Means
+  df$frac1_rel_means_2gt1[n] = sum( (means_x2 - means_x1)/means_x1 > 0)/n_samples
+  df$diff_rel_means_2m1[n]  = mean((means_x2 - means_x1)/means_x1)
+  # Rel STDs
+  df$frac_stds_2gt1[n] = sds_x2 > sds_x1
+  df$diff_stds_2m1[n]  = sds_x2 - sds_x1
+  # Cohens D
+  df$frac_cohen_d_2gt1[n] = cohensD(x1, x2) > 0
+  df$cohen_d_2m1[n] =  cohensD(x1, x2)
+  # Glass delta
+  df$frac_glass_delta_2gt1[n] = cohensD(x1, x2) > 0
+  df$glass_delta_2m1_[n] =  cohensD(x1, x2)
+  # Hedges G
+  df$frac_hedges_g_2gt1[n] = cohensD(x1, x2) > 0
+  df$hedges_g_2m1 =  cohensD(x1, x2)
+  # Most Mean Diff
+  df$frac_most_mean_diff_2gt1[n] = cohensD(x1, x2) > 0
+  df$most_mean_diff_2m1[n] = 
+    # Pvalue
+  df$frac_p_value_2gt1[n] = t.test(x1, x2) > 0.05
+  df$p_value_2m1 = hedgesG(x1, x2)
+  # Coefficient of variation
+  df$frac_coeff_var_2gt1[n] = sds_x2/mean_x2 > sds_x1/mean_x1
+  df$coeff_var_2m1[n] = sds_x2/mean_x2 - sds_x1/mean_x1
+  
+}
 ### Maxel discerns results with lower bias
 
 
