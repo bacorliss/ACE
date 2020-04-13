@@ -27,7 +27,7 @@ library(TOSTER)
 
 
 # Helper Functions
-source("R/mhd.r")
+source("R/mmd.r")
 RowVar <- function(x, ...) rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
 
 # Test if a value is within an interval (inclusive)

@@ -11,55 +11,58 @@ library(broom)
 library(gridExtra)
 library(grid)
 library(effsize)
-library(lsr)
 
 # User defined libraries
-source("R/maxel.R")
+source("R/mmd.R")
 
 ## User defined functions
 # Calculate variance by row like rowMeans or rowSums
 rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1)}
 rowSds  <- function(x, ...) sqrt(rowVars(x))
-# Calculate row-wise Cohens D
-sdPooled <- function(x1,x2) sqrt( ( (length(x1)-1) * sd(x1)^2 + 
-                                    (length(x2)-1) * sd(x2)^2 ) /
-                                    (length(x1) + length(x2) - 2))
+# Pooled standard deviation, assume to matricies, 1 sample per row
+rowSdPooled <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
+# Weighted pooled standard deviation, assume to matricies, 1 sample per row
+rowSdPooledWeighted <- 
+  function(m1,m2) sqrt( ( (dim(m1)[2] - 1) * rowSds(m1)^2   + 
+                          (dim(m2)[2] - 1) * rowSds(m2)^2 ) /
+                          (dim(m1)[2] + dim(m2)[2] - 2    ) )
 # Effect Size Statistics
-#   d = (M2 - M1)/s_pool      s_pool = sqrt( (s1 + s2)/n)
-cohensD <- function (x1,x2) cohen.d(x1,x2,pooled=TRUE,paired=FALSE,
-                                    na.rm=FALSE, mu=0, hedges.correction=FALSE,
-                                    conf.level=0.95,noncentral=FALSE, ...)
-#   d = (M2 - M1)/s_pool      s_pool = sqrt( (s1 + s2)/n)
-hedgesG <- function (x1,x2) cohen.d(x1,x2,pooled=TRUE,paired=FALSE,
-                                    na.rm=FALSE, mu=0, hedges.correction=TRUE,
-                                    conf.level=0.95,noncentral=FALSE, ...)
+#   d = (M2 - M1)/s_pool
+rowCohenD <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
+#   d = (M2 - M1)/s_pool
+rowHedgeG <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooledWeighted(m1,m2)
 #   d = (M2 - M1)/s_1
-glassDelta <- function (x1,x2) (mean(x2)- mean(x1))/sd(x1) 
+rowGlassDelta <- function (m1,m2) ( rowMeans(m2) - rowMeans(m1)) / rowSds(m1) 
 
-# 
-# rowCohensD <- function(x,n,...) {
-#   (rowMeans(x, (n + 1):(2 * n)) - rowMeans(x, 1 : n))
-# }
+rowTScore <- function(m1, m2) {
+  n1<-dim(m1)[2]
+  n2<-dim(m2)[2] 
+  n<-n1+n2 
+  tstat<- sqrt(n1*n2/n) * ( rowMeans(m2) - rowMeans(m1)) /
+          sqrt( ((n1 - 1) / (n - 2)* rowVars(m1) + (n2 - 1) / (n - 2)*rowVars(m2) )) 
+}
+
+
+
+
 
 
 # Metrics of sample effect size
 ##############################################
 #  Unstandardized measures of effect size
-#    difference of sample means
-#    relative difference of means
-#    difference of sample variances
-#
+#   * difference of sample means
+#   * relative difference of means
+#   * difference of sample variances
 #  Standardized measures of effect size
-#    cohen's d
-#    hedges g
-#    glasses delta
-#    coefficient of variation
-#    MHD
+#   * cohen's d
+#   * hedges g
+#   * glasses delta
+#   * MHD
 
 # Simulation parameters
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomnly chosen
-n_sims = 1e3;
+n_sims = 1e2
 n_samples = 1e4
 n_obs = 10
 
@@ -68,36 +71,61 @@ n_obs = 10
 # Generate two matrices, X1 and X2 sampled from two standard NORMalized distributions
 #  X1 is designated as the control sample that is used to normalize values for 
 #  relative statistical metrics
+
+
+# Code structure: 
+# 1. two groups of untransformed sample sets are generated (x_a,x_b)
+# 2. Transform coefficients for experiment 1 and 2 are generated
+# 3. For each simulation, coefficients are applied
+#     1. x_a [exp_1_coeffs]-> x1a
+#     2. x_b [exp_1_coeffs]-> x1b
+#     1. x_a [exp_2_coeffs]-> x2a
+#     2. x_b [exp_2_coeffs]-> x2b
+#     
+#                   x_a                    x_b
+#                   |      \          /      |
+#                   |        \      /        |
+#                   |          \  /          |
+#                   |           /\           |
+#                   |         /    \         |
+#                ______________    ______________
+#               | exp_1_coeffs |  | exp_2 coeffs |
+#               |______________|  |______________| 
+#                   |      /           \       | 
+#                 x_1a    x_1b        x_2a    x_2b
+#                    \    /               \   /
+#                     \  /                 \ /
+#                   metric_1            metric_2
+
 set.seed(0)
-norm_x1 = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
-norm_x2 = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+x_a = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 
 
 # Output dataframe with altered
-df = tibble(pop_mean1 = runif(n_sims, -0.5, 0.5), 
-            pop_mean2 = runif(n_sims, -0.5, 0.5),
-            pop_std1 = runif(n_sims, 0.01, 1), 
-            pop_std2 = runif(n_sims, 0.01, 1));
+df = tibble(exp1_pop_mean = runif(n_sims, -0.5, 0.5), 
+            exp1_pop_std = runif(n_sims, 0.01, 1),
+            exp2_pop_mean = runif(n_sims, -0.5, 0.5), 
+            exp2_pop_std = runif(n_sims, 0.01, 1))
 # Is pop_mean2 > pop_mean1 (TRUE)
-df <- add_column(df, pop_mean_is_2gt1 = df$pop_mean2 > df$pop_mean1)
+df <- add_column(df, pop_mean_is_2gt1 = df$exp2_pop_mean > df$exp1_pop_mean)
 #   pop_mean2 - pop_mean1
-df <- add_column(df, pop_mean_diff_2m1 = df$pop_mean2 - df$pop_mean1)
+df <- add_column(df, pop_mean_diff_2m1 = df$exp2_pop_mean - df$exp1_pop_mean)
 # Is pop_std2 > pop_std1 (TRUE)
-df <- add_column(df, pop_std_is_2gt1 =   df$pop_std2 > df$pop_std1)
+df <- add_column(df, pop_std_is_2gt1 =   df$exp2_pop_std > df$exp1_pop_std)
 #   pop_std2 - pop_std1
-df <- add_column(df, pop_std_diff_2m1 = df$pop_std2 - df$pop_std1)
-
+df <- add_column(df, pop_std_diff_2m1 = df$exp2_pop_std - df$exp1_pop_std)
 
 # Generate effect size columns in datatable
 #   For each effect size metric, need 
 #     frac_2gt1_[metric]
 #     mean_2m1_[metric]
-effect_size_prefix = c("fract_2g1", "diff_2m1")
+effect_size_prefix = c("fract", "mean_diff")
 effect_sizes = c("means", "stds", "rel_means","rel_stds",
-                    "cohen_d", "hedge_g", "glass_delta", "most_mean_diff", "p_value", "coeff_var")
+                    "cohen_d", "hedge_g", "glass_delta", "most_mean_diff", "p_value")
 # Append effect size suffixes to all effect sizes
-df[paste(effect_size_prefix[1], effect_sizes, sep="_")] <- 0
-df[paste(effect_size_prefix[2], effect_sizes, sep="_")] <- 0
+df[ paste(effect_size_prefix[1], effect_sizes, "2gt1", sep="_") ] <- 0
+df[ paste(effect_size_prefix[2], effect_sizes, "2m1", sep="_") ] <- 0
 
 
 # Loop through simulations, using different set of parameters
@@ -106,68 +134,77 @@ for (n in seq(1,n_sims,1)) {
   # Transform simulated samples with normal parameteres (mean and std) for 
   # current round of simulation
   
-  # Multiplly half of orig_x1_2 by pop_var2
-  x1 = norm_x1 * df$pop_std1[n] + df$pop_mean1[n]
-  x2 = norm_x2 * df$pop_std2[n] + df$pop_mean2[n] 
-  means_x1 = rowMeans(x1)
-  means_x2 = rowMeans(x2)
-  sds_x1 = rowSds(x1)
-  sds_x2 = rowSds(x2)
+  # MUse experiment 1 and 2 transform coefficients to generate data
+  x_1a = x_a * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
+  x_1b = x_b * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
+  x_2a = x_a * df$exp2_pop_std[n] + df$exp2_pop_mean[n] 
+  x_2b = x_b * df$exp2_pop_std[n] + df$exp2_pop_mean[n] 
   
-  # Calculate mean difference of sample means
-  sample_means = cbind(rowMeans(x1_2[ ,1:n_obs]), rowMeans(x1_2[ ,(n_obs+1) : (2*n_obs)]))
+  # Calculate difference of basic statistics
+  exp1_diff_means = rowMeans(x_1b) - rowMeans(x_1a)
+  exp2_diff_means = rowMeans(x_2b) - rowMeans(x_2a)
+  exp1_diff_sds = rowSds(x_1b) -rowSds(x_1a)
+  exp2_diff_sds = rowSds(x_2b) -rowSds(x_2b)
+
   # Basic Summary statistical comparisons
   # Means
-  df$frac_means_2gt1[n] = sum(means_x2 > means_x1)/n_samples
-  df$diff_means_2m1[n]  = mean(means_x2 - means_x1)
+  df$fract_means_2gt1[n] = sum(exp2_diff_means > exp1_diff_means)/n_samples
+  df$mean_diff_means_2m1[n]  = mean(exp2_diff_means - exp1_diff_means)
   # Stds
-  df$frac_stds_2gt1[n] = sds_x2 > sds_x1
-  df$diff_stds_2m1[n]  = sds_x2 - sds_x1
-  # Rel Means
-  df$frac1_rel_means_2gt1[n] = sum( (means_x2 - means_x1)/means_x1 > 0)/n_samples
-  df$diff_rel_means_2m1[n]  = mean((means_x2 - means_x1)/means_x1)
-  # Rel STDs
-  df$frac_stds_2gt1[n] = sds_x2 > sds_x1
-  df$diff_stds_2m1[n]  = sds_x2 - sds_x1
+  df$fract_stds_2gt1[n] = sum(exp2_diff_sds > exp1_diff_sds)/n_samples
+  df$mean_diff_stds_2m1[n]  = mean(exp2_diff_sds - exp1_diff_sds)
+  # Rel Means: mean divided by control mean
+  diff_rel_mean_diff = exp2_diff_means/rowMeans(x_2a) - exp1_diff_means/rowMeans(x_1a)
+  df$fract_rel_means_2gt1[n] = sum( diff_rel_mean_diff > 0) / n_samples
+  df$mean_diff_rel_means_2m1[n]  =  mean(diff_rel_mean_diff)
+  # Rel STDs: sd divided by control mean
+  diff_rel_sds_diff = exp2_diff_sds/rowMeans(x_2a) - exp1_diff_sds/rowMeans(x_1a)
+  df$fract_stds_2gt1[n] = sum( diff_rel_sds_diff > 0) / n_samples
+  df$mean_diff_stds_2m1[n]  = mean(diff_rel_sds_diff)
+
+  # Delta Family of effect size
   # Cohens D
-  df$frac_cohen_d_2gt1[n] = cohensD(x1, x2) > 0
-  df$cohen_d_2m1[n] =  cohensD(x1, x2)
+  diff_cohen_d = rowCohenD(x_2a, x_2b) - rowCohenD(x_1a, x_1b)
+  df$fract_cohen_d_2gt1[n] = sum(diff_cohen_d >0) / n_samples
+  df$mean_diff_cohen_d_2m1[n] =  mean(diff_cohen_d)
   # Glass delta
-  df$frac_glass_delta_2gt1[n] = cohensD(x1, x2) > 0
-  df$glass_delta_2m1_[n] =  cohensD(x1, x2)
+  diff_glass_delta = rowGlassDelta(x_2a, x_2b) - rowGlassDelta(x_1a, x_1b)
+  df$fract_glass_delta_2gt1[n] = sum(diff_glass_delta >0) / n_samples
+  df$mean_diff_glass_delta_2m1[n] =  mean(diff_glass_delta)
   # Hedges G
-  df$frac_hedges_g_2gt1[n] = cohensD(x1, x2) > 0
-  df$hedges_g_2m1 =  cohensD(x1, x2)
-  # Most Mean Diff
-  df$frac_most_mean_diff_2gt1[n] = cohensD(x1, x2) > 0
-  df$most_mean_diff_2m1[n] = 
-    # Pvalue
-  df$frac_p_value_2gt1[n] = t.test(x1, x2) > 0.05
-  df$p_value_2m1 = hedgesG(x1, x2)
-  # Coefficient of variation
-  df$frac_coeff_var_2gt1[n] = sds_x2/mean_x2 > sds_x1/mean_x1
-  df$coeff_var_2m1[n] = sds_x2/mean_x2 - sds_x1/mean_x1
+  diff_hedge_g = rowHedgeG(x_2a, x_2b) - rowHedgeG(x_1a, x_1b)
+  df$fract_hedge_g_2gt1[n] = sum(diff_hedge_g >0) / n_samples
+  df$mean_diff_hedge_g_2m1[n] =  mean(diff_hedge_g)
   
+  # R Squared
+  
+  
+  # Most Mean Diff
+  source("R/mmd.R")
+  mapply(function(a,b) mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05), x_1b)
+  most_mean_diff_1 = mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05)
+  most_mean_diff_2 = mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05)
+  df$fract_most_mean_diff_2gt1[n] = sum(diff_most_mean_diff >0) / n_samples
+  df$mean_diff_most_mean_diff_2m1[n] =mean(diff_most_mean_diff)
+    
+  # t score
+  t_score_1 <- rowTScore(x_1a, x_1b)
+  t_score_2 <- rowTScore(x_2a, x_2b)
+  df$fract_t_score_2gt1[n] = sum( (t_score_2 - t_score_1) > 0) / n_samples
+  df$mean_diff_most_mean_diff_2m1[n] = mean( (t_score_2 - t_score_1))
+    
+  # Pvalue
+  diff_p_value <- pt(t_score_2, df = pmin(n_obs, n_obs) - 1) - 
+    pt(t_score_1, df = pmin(n_obs, n_obs) - 1)
+  df$fract_p_value_2gt1[n] = sum(diff_p_value > 0) / n_samples
+  df$mean_diff_p_value_2m1 = mean(diff_p_value)
+  
+  # Pearson Correlation
+  # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
 }
 ### Maxel discerns results with lower bias
 
 
-df$mean_maxel = mean(apply(x1_2, 2, function(x) 
-  maxel.normal_unpairedt(x=x1_2[1:n_obs],y=x1_2[(n_obs+1):(2*n_obs)]) ))
-
-# Compute effect sizes on a row by row basis
-temp_df = compute_effect_size(x = x1_2[, 1:n_obs],y = x1_2[(n_obs+1):(2*n_obs)]) 
-# Extract measures of effect size
-df$mean_diff_of_means[n] = mean(temp_df$difference_of_means)
-df$frac_gt0_diff_of_means[n] = sum(temp_df$difference_of_means > 0)/ n_samples
-df$mean_diff_of_variances[n] = mean(temp_df$difference_of_variances)
-df$frac_gt0_diff_of_variances[n] = sum(temp_df$difference_of_variances > 0)/ n_samples
-df$mean_cohens_d[n] = mean(temp_df$cohens_d)
-df$frac_gt0_cohens_d[n] = sum(temp_df$cohens_d > 0)/ n_samples
-df$mean_glass_delta[n] = mean(temp_df$glass_delta) 
-df$frac_gt0_glass_delta[n] = sum(temp_df$glass_delta > 0)/ n_samples
-df$mean_hedges_g[n] = mean(temp_df$hedges_g)
-df$frac_gt0_hedges_g[n] = sum(temp_df$hedges_g > 0)/ n_samples
 
 
 ### Maxel reflects the true effect size between population means
