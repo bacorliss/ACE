@@ -109,10 +109,11 @@ mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   
   # Calculate MMD with root finding optmization
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_function <- function(x) {pt(-d_bar / sem_d + x, df_d) - 
-                                  pt(-d_bar / sem_d - x, df_d) - conf.level}
-  # Solve for t star with root finding where t_star_function equals (1 - alpha)
-  t_star = uniroot(t_star_function, search_bounds, check.conv = TRUE,
+  t_star_standard <- function(x) {pt( (-d_bar + x) / sem_d, df_d) - 
+                                  pt( (-d_bar - x) / sem_d, df_d) - conf.level}
+  
+  # Solve for t star with root finding where t_star_standard equals (1 - alpha)
+  t_star = uniroot(t_star_standard, search_bounds, check.conv = TRUE,
                          tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
   # The optimized root should fall entirely within the earch bounds 
   search_bounds_check <- function(t_star, search_bounds, verbose = FALSE, range_tol=1000)
@@ -140,8 +141,8 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_zdist(x)
   #' @usage mmd_normal_zdist(x, y)
   #' @usage mmd_normal_zdist(x, y, conf.level = 0.95)
-  #' x <- rnorm(50,0,1); y <- rnorm(50,0,1); 
-  #' mmd_normal_zdist(x,y+0)
+  #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
+  #' mmd_normal_zdist(x,y)
   
   # Calculate basic stats of input samples defined by distribution d, the 
   # difference distribution (or the distirbution of the sampel for 1 sample)
@@ -159,43 +160,46 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
     # 2-sample stats
     df_d <- n_x + n_y - 2
     d_bar <- mean(y) - mean(x)
-    sd_d <- sqrt( (( n_x-1)*sd_x^2 + (n_y - 1) * sd_y^2 ) / df_d)
+    sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
     sem_d = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
     
   }
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   alpha = (1 - conf.level)
-  ci_mean_alpha <- qnorm(  c(  alpha/2, 1 -   alpha/2  ), d_bar, sd_d)
-  ci_mean_2alpha <- qnorm( c(2*alpha/2, 1 - 2*alpha/2  ), d_bar, sd_d)
+  ci_mean_alpha  <- qnorm( c(  alpha/2, 1 -   alpha/2), mean = d_bar, sd = sd_d)
+  ci_mean_2alpha <- qnorm( c(2*alpha/2, 1 - 2*alpha/2), mean = d_bar, sd = sd_d)
   lower_bounds =  max(abs(ci_mean_2alpha))
   upper_bounds = max(abs(ci_mean_alpha))
+  # Add extra padding around search bounds so root finding not done on boundary
   bounds_range = upper_bounds - lower_bounds
-  search_bounds = c(max(c(lower_bounds - search_pad_percent * bounds_range, 0)),
+  search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
                     upper_bounds + search_pad_percent * bounds_range)
   
   # Integration of folded z-distribution from standard central z-distribution
-  z_star_function <- function(x) {
-      pnorm( (-d_bar + x)/sd_d, mean = d_bar, sd = sd_d) - 
-      pnorm( (-d_bar - x)/sd_d, mean = d_bar, sd = sd_d) - 
-      conf.level}
+  z_star_noncentral <- function(x) {pnorm( +x, mean = d_bar, sd = sd_d) - 
+    pnorm( -x, mean = d_bar, sd = sd_d) - conf.level}
+  # Note: d_bar and x do not need to be in z_score units because they are z 
+  # normalized after insertion into function
+  z_star_standard <- function(x) { pnorm( (-d_bar + x)/sd_d, mean = 0, sd = 1) - 
+    pnorm( (-d_bar - x)/sd_d, mean = 0, sd = 1) - conf.level}
   
   if (verbose) {
-    z = seq(from = search_bounds[1], to = 1.5*search_bounds[2], by = diff(search_bounds)/100)
-    f_z = lapply(z, z_star_function)
+    z = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)
+    f_z = lapply(z, z_star_standard)
     plot(z,f_z)
   }
   
   # Solve for t star with root finding
-  z_star = uniroot(z_star_function, search_bounds, check.conv = TRUE,
+  z_star = uniroot(z_star_standard, search_bounds, check.conv = TRUE,
                    tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
   # The optimized root should fall entirely within the earch bounds 
   search_bounds_check(z_star, search_bounds, verbose = FALSE, range_tol=1000)
   
   # CI_mean - x_bar +- z_star * s/sqrt(n)
-  ucl = d_bar + z_star$root
+  mmd = z_star$root
   
-  return(ucl)  
+  return(mmd)  
 }
 
 
