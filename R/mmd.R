@@ -74,7 +74,10 @@ mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_tdist(x)
   #' @usage mmd_normal_tdist(x, y)
   #' @usage mmd_normal_tdist(x, y, conf.level = 0.95)
-  
+  #' @example  
+  #' x <- rnorm(n=8,mean=0,sd=1); y <- rnorm(n=8,mean=0,sd=1); 
+  #' mmd_normal_tdist(x,y)
+
   # Calculate basic stats of input samples defined by distribution d, the 
   # difference distribution (or the distirbution of the sampel for 1 sample)
   n_x <- length(x); n_y <- length(y)
@@ -89,39 +92,54 @@ mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
     
   } else { 
     # 2-sample stats
-    d_bar <- mean(x) - mean(y)
+    d_bar <- mean(y) - mean(x)
     df_d <- n_x + n_y - 2
     sd_d <- sqrt( (( n_x-1)*sd_x^2 + (n_y - 1) * sd_y^2 ) / df_d)
     sem_d = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-      
+    if (verbose) print(sprintf("d_bar: %.3f", d_bar))  
   }
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
-  ci_mean_alpha <- t.test(x,y, conf.level = conf.level, paired = FALSE, 
+  #alpha = (1 - conf.level)
+  #ci_mean_alpha  <- qt( c(  alpha/2, 1 -   alpha/2), ncp = d_bar, sd = sd_d)
+  #ci_mean_2alpha <- qt( c(2*alpha/2, 1 - 2*alpha/2), ncp = d_bar, sd = sd_d)
+  
+  # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
+  ci_mean_alpha  <- t.test(x,y, conf.level = conf.level, paired = FALSE, 
                        var.equal = FALSE, alternative = "two.sided")$conf.int
   ci_mean_2alpha <- t.test(x,y, conf.level = 1-2*(1-conf.level), paired = FALSE, 
                        var.equal = FALSE, alternative = "two.sided")$conf.int
-  lower_bounds =  min(abs(ci_mean_alpha))
-  upper_bounds = max(abs(ci_mean_2alpha))
+  lower_bounds =  max(abs(ci_mean_2alpha))
+  upper_bounds = max(abs(ci_mean_alpha))
+  # Add extra padding around search bounds so root finding not done on boundary
   bounds_range = upper_bounds - lower_bounds
-  search_bounds = c(max(c(lower_bounds - search_pad_percent * bounds_range, 0)),
-                          upper_bounds + search_pad_percent * bounds_range)
+  search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
+                    upper_bounds + search_pad_percent * bounds_range)
+  if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
   
   # Calculate MMD with root finding optmization
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_standard <- function(x) {pt( (-d_bar + x) / sem_d, df_d) - 
-                                  pt( (-d_bar - x) / sem_d, df_d) - conf.level}
+  t_star_standard <- function(x) {pt(q = (-d_bar + x) / sem_d, df = df_d) - 
+                                  pt(q = (-d_bar - x) / sem_d, df = df_d) - conf.level}
   
+  # Debugging search bounds are correct
+  if (verbose) {
+    t = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)
+    f_t = sapply(t, t_star_standard)
+    plot(t,f_t)
+  }
+   
   # Solve for t star with root finding where t_star_standard equals (1 - alpha)
   t_star = uniroot(t_star_standard, search_bounds, check.conv = TRUE,
                          tol = .Machine$double.eps^0.25, maxiter = 1000, trace = 0)
   # The optimized root should fall entirely within the earch bounds 
-  search_bounds_check <- function(t_star, search_bounds, verbose = FALSE, range_tol=1000)
+  search_bounds_check(t_star, search_bounds, verbose = verbose, range_tol = 1000)
     
-  # CI_mean - x_bar +- t_star * s/sqrt(n)
-  ucl = abs(x_bar) + (t_star$root - abs(x_bar) / sem_d) * sem_d
+  # MMD is root location added to difference of means
+  if (verbose) print(sprintf("t_star: %.3f", t_star$root))
+  mmd = t_star$root 
   
-  return(ucl)
+  return(mmd)
 }
 
 mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE, 
@@ -141,6 +159,7 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_zdist(x)
   #' @usage mmd_normal_zdist(x, y)
   #' @usage mmd_normal_zdist(x, y, conf.level = 0.95)
+  #' @example  
   #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
   #' mmd_normal_zdist(x,y)
   
@@ -206,13 +225,6 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
 
 search_bounds_check <- function(t_star, search_bounds, verbose = FALSE, range_tol=1000) {
   
-  # Plot root finding data and root if verbose mode on
-  if (verbose) {
-    x <- seq(search_bounds[1], search_bounds[2], diff(search_bounds)/100)
-    y <- lapply(x,t_star_function)
-    plot(x,y)
-    print(sprintf("x_bar: %.2f, t_star: %.2f",x_bar, t_star$root))
-  }
   
   if (abs(t_star$root - search_bounds[2]) < abs(diff(search_bounds)/range_tol) ) {
     warning("mmd: equation root equal to upper bounds of search space: 
