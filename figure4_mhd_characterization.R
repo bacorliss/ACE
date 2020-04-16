@@ -13,14 +13,14 @@ library("RColorBrewer")
 library(cowplot)
 clr_set = brewer.pal(n = 8, name = "Set1")
 # Calculate conifdence intervals
-source("R/mhd.R")
+source("R/mmd.R")
 
 # Custom functions
 RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
-  ## Custom functions## given (x, y) data, find x where the linear interpolation crosses y = y0
-  ## the default value y0 = 0 implies root finding
-  ## since linear interpolation is just a linear spline interpolation
-  ## the function is named RootSpline1
+  #' Given (x, y) data, find x where the linear interpolation crosses y = y0
+  #' the default value y0 = 0 implies root finding
+  #' since linear interpolation is just a linear spline interpolation
+  #' the function is named RootSpline1
   if (is.unsorted(x)) { ind <- order(x); x <- x[ind]; y <- y[ind] }
   z <- y - y0
   ## which piecewise linear segment crosses zero?
@@ -37,8 +37,8 @@ RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
 # Generate repeatable sample of random normal numbers
 mu = 0
 sigma = 1
-sigma_range = 1
-n_obs = 5
+sigma_range = 0.5
+n_obs = 30
 set.seed(0)
 y <- rnorm(n_obs, mean = mu, sd = sigma)
 
@@ -54,31 +54,36 @@ y_expanded + dim(df$x[row(y_expanded)])
 y_sweep <- sweep(y_expanded,1, df$x,'+')
 
 # Calcualte most hidden difference
-df$mhd_95    <- apply(y_sweep, 1, mhd_1sample)
+df$mmd_95    <- apply(y_sweep, 1, mmd_normal_tdist)
 
 # Most confidence limit: max(abs( confident limits() ))
-conf_interval_fcn = function(x, alpha) mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)), 
-                                              qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
+conf_interval_fcn = function(x, alpha) {
+  mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)), 
+              qt(   alpha/2,  df = length(x)-1) * sd(x)/sqrt(length(x)))
+  }
+
+
+
 df$mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) ))) 
-df$mcl_96  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
+df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
-# df$mhd_95 - df$mcl_90 
+# df$mmd_95 - df$mcl_90 
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 
 
 
 ci_labels = c(bquote(max((~abs(CI[95])))~" "),
               bquote(max((~abs(CI[90])))), 
-              bquote(MHD[95]))
+              bquote(MMD[95]))
                             
-## Subplot A,B: MHD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
-g1A = ggplot(data=df,mapping = aes(x=x,y=mhd_95))
+## Subplot A,B: MMD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
+g1A = ggplot(data=df,mapping = aes(x=x,y=mmd_95))
 g1A <- g1A + theme_classic() +
   geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_line(aes(x=x,y=mcl_90, col="CI_97.5"), size=.8, linetype="dotted") +
-  geom_line(aes(x=x,y=mcl_96, col="CI_95"), size=.8, linetype="dotted") +
-  geom_point(aes(col="MHD_95"), shape = 1,size = 1) +
+  geom_line(aes(x=x,y=mcl_95, col="CI_95"), size=.8, linetype="dotted") +
+  geom_point(aes(col="MMD_95"), shape = 1,size = 1) +
   xlab("") + ylab("f(x)") +
   scale_shape_manual("", labels=ci_labels,values=c(NA,NA,1)) +   
   scale_linetype_manual("", labels=ci_labels, values=c("solid","solid","blank")) +
@@ -124,17 +129,17 @@ g1B
 # Use cowplot to align subplots
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
 cg
-save_plot("figure/figure_2AB_MHD_vs_CI95.tiff", cg, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot("figure/figure_2AB_MMD_vs_CI95.tiff", cg, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
+graphics.off()
 
 
 
-
-## Explore trends between MHD and CI at a population level
+## Explore trends between MMD and CI at a population level
 #--------------------------------------------------------------------------------------#
 
-# Generate 1000 samples, loop through different shifts, and quantify MHD, UCL_95, UCL_90
-source("R/mhd.R")
+# Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
+source("R/mmd.R")
 mu = c(-10,-1, -0.5, 0, 0.5, 1, 10, NA)
 sigma = 1
 n_samples = 100
@@ -163,27 +168,27 @@ for (n in seq(1,length(mu),1)) {
   }
   
   # Calcualte most hidden difference
-  mhd_95    <- apply(y_sweep, 1, mhd_1sample)
+  mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
   mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) )))
-  mcl_96  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) )))
+  mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) )))
   # ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
   
-  mhd_diff <- mhd_95 - mcl_90
-  ci_diff <- mcl_96 - mcl_90
-  normalized_mhd_95 <- mhd_diff/ci_diff
+  mmd_diff <- mmd_95 - mcl_90
+  ci_diff <- mcl_95 - mcl_90
+  normalized_mmd_95 <- mmd_diff/ci_diff
   
-  df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), normalized_mhd_95 = normalized_mhd_95, 
-                        mhd_95 = mhd_95, mcl_90 = mcl_90, mcl_96 = mcl_96)
+  df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), normalized_mmd_95 = normalized_mmd_95, 
+                        mmd_95 = mmd_95, mcl_90 = mcl_90, mcl_95 = mcl_95)
   #print(df_list[[n]]$mu)
   # print()
-  #print(mean(normalized_mhd_95))
+  #print(mean(normalized_mmd_95))
 }
 
 df <- ldply(df_list, rbind)
 
 
 # Plotting
-g1C <- ggplot(df, aes(x=mu, y=normalized_mhd_95)) + 
+g1C <- ggplot(df, aes(x=mu, y=normalized_mmd_95)) + 
   geom_hline(aes(yintercept=1, col="CI_90"), linetype="dotted", size=0.8) + 
   geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
   geom_boxplot(group=n) + 
@@ -206,9 +211,9 @@ gg1C$widths[18] = 6*gg1C$widths[18]
 grid.draw(gg1C)
 
 # Export figure to disk
-save_plot("figure/figure_2C_MHD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot("figure/figure_2C_MMD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
-# 
+graphics.off()
 # 
 # sample_data %>%
 #   group_by(Location) %>%                       
@@ -219,8 +224,8 @@ library(tidyr)
 library(broom)
 dt_res <- df %>%
   group_by(mu) %>%                      
-  summarise_each(funs(mean, sd, p_val_0 = t.test(normalized_mhd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
-        p_val_1 = t.test(normalized_mhd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),normalized_mhd_95) 
+  summarise_each(funs(mean, sd, p_val_0 = t.test(normalized_mmd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
+        p_val_1 = t.test(normalized_mmd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),normalized_mmd_95) 
 
 
 

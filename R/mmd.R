@@ -3,15 +3,22 @@
 #  Calculates the upper bounds of the mean of the effect size from a single distribution
 # or difference between two distributions.
 
+# TODO var.equal = TRUE not coded yet
+
 library(docstring)
 
 
 
 mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
            verbose = FALSE, distribution = NULL) {
-  #' Calculate most mean difference assuming a normal distribution (z or t), 
-  #' accomplished by integrating a central normal pdf shifted by sample mean and
-  #' Using a root finding function.Most mean difference is the largest 
+  #' Calculate Most Mean Difference using a normal distribution (z or t)
+  #'
+  #' @description  Most mean difference is the largest 
+  #' difference than could exist between group(s) in the data.
+  #' 
+  #' Calculates most mean difference assuming a normal distribution
+  #' (z or t) by integrating a central normal pdf shifted by sample mean and
+  #' Using a root finding function. Most mean difference is the largest 
   #' difference than could exist between group(s) in the data.
   #'
   #' @param x measurements from first group
@@ -39,6 +46,7 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   # Determine Distribution if not specified, n=30 threshold between z and t dist.
   if (is.null(distribution) & df<30) {distribution <- 't_dist'} 
   else {distribution<-'z_dist'}
+  if (verbose) print(sprintf('Distribution: %s', distribution))
   
   # Calculate MMD with specified distribution
   if (distribution=='t_dist'){
@@ -56,13 +64,15 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
 }
 
 
-mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE, 
+mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.25) {
-  #' Calculate most mean difference statistic from integrating a central normal 
-  #' t-distribution pdf shifted by -x_bar Using a root finding function to 
-  #' integrate over a normal CDF with area  under the curve equal to (1-a). 
-  #' Calculate stats of the difference in means distribution for two samples, 
-  #' or keeps same distribution for one sample case.
+  #' Calculate Most Mean Difference using t distribution
+  #'
+  #' @description  Calculate most mean difference statistic from integrating a
+  #' central normal t-distribution pdf shifted by -x_bar Using a root finding 
+  #' function to integrate over a normal CDF with area  under the curve equal 
+  #' to (1-a). Calculate stats of the difference in means distribution for two 
+  #' samples, or keeps same distribution for one sample case.
   #'
   #' @param x measurements from first group
   #' @param y measurements from second group (optional)
@@ -74,8 +84,9 @@ mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_tdist(x)
   #' @usage mmd_normal_tdist(x, y)
   #' @usage mmd_normal_tdist(x, y, conf.level = 0.95)
-  #' @example  
-  #' x <- rnorm(n=8,mean=0,sd=1); y <- rnorm(n=8,mean=0,sd=1); 
+  #' @examples 
+  #' x <- rnorm(n=8,mean=0,sd=1); 
+  #' y <- rnorm(n=8,mean=0,sd=1); 
   #' mmd_normal_tdist(x,y)
 
   # Calculate basic stats of input samples defined by distribution d, the 
@@ -142,12 +153,15 @@ mmd_normal_tdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   return(mmd)
 }
 
-mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE, 
+mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.1) {
-  #' Calculate z statistic from integrating a central normal pdf shifted by -x_bar
-  #' Using root finding function to integrate over a normal CDF with area 
-  #' under the curve equal to (1-a). Calculate stats of the difference in means 
-  #' distribution for two samples, or keeps same distribution for one sample.
+  #' Calculate Most Mean DIfference using z distribution
+  #'
+  #' @description Calculate most mean difference statistic from integrating a 
+  #' central normal pdf shifted by -x_bar Using root finding function to 
+  #' integrate over a normal CDF with area under the curve equal to (1-a). 
+  #' Calculated from the difference in means distribution for two samples, 
+  #' or keeps same distribution for one sample.
   #'
   #' @param x measurements from first group
   #' @param y measurements from second group (optional)
@@ -159,8 +173,9 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_zdist(x)
   #' @usage mmd_normal_zdist(x, y)
   #' @usage mmd_normal_zdist(x, y, conf.level = 0.95)
-  #' @example  
-  #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
+  #' @examples
+  #' x <- rnorm(n=50,mean=0,sd=1); 
+  #' y <- rnorm(n=50,mean=0,sd=1); 
   #' mmd_normal_zdist(x,y)
   
   # Calculate basic stats of input samples defined by distribution d, the 
@@ -181,7 +196,7 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
     d_bar <- mean(y) - mean(x)
     sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
     sem_d = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    
+    if (verbose) print(sprintf("d_bar: %.3f", d_bar))  
   }
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
@@ -194,6 +209,7 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   bounds_range = upper_bounds - lower_bounds
   search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
                     upper_bounds + search_pad_percent * bounds_range)
+  if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
   
   # Integration of folded z-distribution from standard central z-distribution
   z_star_noncentral <- function(x) {pnorm( +x, mean = d_bar, sd = sd_d) - 
@@ -215,7 +231,8 @@ mmd_normal_zdist <- function(x,y, conf.level = 0.95, verbose = FALSE,
   # The optimized root should fall entirely within the earch bounds 
   search_bounds_check(z_star, search_bounds, verbose = FALSE, range_tol=1000)
   
-  # CI_mean - x_bar +- z_star * s/sqrt(n)
+  # MMD is root of integration
+  if (verbose) print(sprintf("t_star: %.3f", z_star$root))
   mmd = z_star$root
   
   return(mmd)  
@@ -254,7 +271,7 @@ ucl_tdist_mean <- function(x_bar, sx, n_x, dfx, semx = NULL, alpha = 0.05) {
   sd_mult <- qt(1 - alpha, dfx)
   
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_function <- function(x) { abs( (pt(x,dfx) - pt(-x, dfx))  - (1 - alpha))}
+  t_star_function <- function(x) { abs( (pt(x,df = dfx) - pt(-x, df = dfx))  - (1 - alpha))}
   
   # Calculate roughly the extext of search space
   search_bounds = c(0, x_bar + 4*sd_mult * sx)
