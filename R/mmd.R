@@ -167,6 +167,8 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   #' @param y measurements from second group (optional)
   #' @param conf.level confidence level for statistics (default 0.95)
   #' @param verbose function prints out extra input during execution
+  #' @param var.equal boolean assume variance qual between groups (TODO: not 
+  #' implemented for TRUE)
   #' @param search_pad_percent for calculating statistic, specifies how outside 
   #' the theoretical search window the root finding can look.
   #' @return Returns most mean difference (single value)
@@ -174,8 +176,7 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   #' @usage mmd_normal_zdist(x, y)
   #' @usage mmd_normal_zdist(x, y, conf.level = 0.95)
   #' @examples
-  #' x <- rnorm(n=50,mean=0,sd=1); 
-  #' y <- rnorm(n=50,mean=0,sd=1); 
+  #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
   #' mmd_normal_zdist(x,y)
   
   # Calculate basic stats of input samples defined by distribution d, the 
@@ -201,8 +202,8 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   alpha = (1 - conf.level)
-  ci_mean_alpha  <- qnorm( c(  alpha/2, 1 -   alpha/2), mean = d_bar, sd = sd_d)
-  ci_mean_2alpha <- qnorm( c(2*alpha/2, 1 - 2*alpha/2), mean = d_bar, sd = sd_d)
+  ci_mean_alpha  <- qnorm( c(  alpha/2, 1 -   alpha/2), mean = d_bar, sd = sem_d)
+  ci_mean_2alpha <- qnorm( c(2*alpha/2, 1 - 2*alpha/2), mean = d_bar, sd = sem_d)
   lower_bounds =  max(abs(ci_mean_2alpha))
   upper_bounds = max(abs(ci_mean_alpha))
   # Add extra padding around search bounds so root finding not done on boundary
@@ -212,12 +213,12 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
   
   # Integration of folded z-distribution from standard central z-distribution
-  z_star_noncentral <- function(x) {pnorm( +x, mean = d_bar, sd = sd_d) - 
-    pnorm( -x, mean = d_bar, sd = sd_d) - conf.level}
+  z_star_noncentral <- function(x) {pnorm( +x, mean = d_bar, sd = sem_d) - 
+    pnorm( -x, mean = d_bar, sd = sem_d) - conf.level}
   # Note: d_bar and x do not need to be in z_score units because they are z 
   # normalized after insertion into function
-  z_star_standard <- function(x) { pnorm( (-d_bar + x)/sd_d, mean = 0, sd = 1) - 
-    pnorm( (-d_bar - x)/sd_d, mean = 0, sd = 1) - conf.level}
+  z_star_standard <- function(x) { pnorm( (-d_bar + x)/sem_d, mean = 0, sd = 1) - 
+    pnorm( (-d_bar - x)/sem_d, mean = 0, sd = 1) - conf.level}
   
   if (verbose) {
     z = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)

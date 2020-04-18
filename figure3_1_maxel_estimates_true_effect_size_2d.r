@@ -139,29 +139,25 @@ rand_seed <- 0
 
 
 
-x1 <- matrix(rnorm(1e6, mean = 10, sd = 1), ncol = 100, nrow = 1e6/100)
-x_bar = rowMeans(x1)
-s_x = sqrt(RowVar(x1))
-  
-mmd <-   apply(x1, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
-
-ci_t90 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.90)$conf.int)))
-ci_t95 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.95)$conf.int)))
-
-ci_90 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.950), mean = mean(x), sd = sd(x)/sqrt(100)))))
-ci_95 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.975), mean = mean(x), sd = sd(x)/sqrt(100)))))
-
-# ci_90 <-  x_bar + qnorm(0.950)*s_x/sqrt(100)
-# ci_95 <-  x_bar + qnorm(0.975)*s_x/sqrt(100)
-
-
-10+qnorm(0.950)*s_x/sqrt(100)
-sum(x_bar<10)
-sum(s_x<1)
-sum(ci_t90<10)
-sum(mmd<10)/(1e6/100)
-sum(ci_90<10)/(1e6/100)
-sum(ci_95<10)/(1e6/100)
+# x1 <- matrix(rnorm(1e6, mean = 10, sd = 1), ncol = 100, nrow = 1e6/100)
+# x_bar = rowMeans(x1)
+# s_x = sqrt(RowVar(x1))
+#   
+# mmd <-   apply(x1, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
+# 
+# ci_t90 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.90)$conf.int)))
+# ci_t95 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.95)$conf.int)))
+# ci_90 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.950), mean = mean(x), sd = sd(x)/sqrt(100)))))
+# ci_95 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.975), mean = mean(x), sd = sd(x)/sqrt(100)))))
+# # ci_90 <-  x_bar + qnorm(0.950)*s_x/sqrt(100)
+# # ci_95 <-  x_bar + qnorm(0.975)*s_x/sqrt(100)
+# 10+qnorm(0.950)*s_x/sqrt(100)
+# sum(x_bar<10)
+# sum(s_x<1)
+# sum(ci_t90<10)
+# sum(mmd<10)/(1e6/100)
+# sum(ci_90<10)/(1e6/100)
+# sum(ci_95<10)/(1e6/100)
 
 
 # 2D visualization of mmd difference and error rate over mu and sigma
@@ -223,7 +219,9 @@ png(paste("figure/", fig_basename, "a3 mmd error rate 2D.png"),
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
 # (optional) defines the color breaks manually for a "skewed" color transition
-col_breaks = NULL #c(seq(0, 0.039, length=100), seq(0.04, 0.06, length=100),seq(0.061, 0.08,length=100)) 
+max_val = ceiling(max(df_results$mean_mmd_error))
+min_val = floor(max(df_results$mean_mmd_error))
+col_breaks = c(seq(0, 0.039, length=100), seq(0.04, 0.06, length=100),seq(0.061, 0.08,length=100)) 
 color_cull <- function(x) x[seq(1,round(length(x)*.73), by = 1)]
 heatmap.2(df_results$mean_mmd_error, Rowv = FALSE, Colv = FALSE, trace = "none", dendrogram = "none", 
           labRow = rev(round(sigmas,1)), labCol = round(mus,1),
@@ -243,8 +241,8 @@ png(paste("figure/", fig_basename, "a4 mmd error test.png"),
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("white","blue", "red", "purple"))(n = 399)
-col_breaks = NULL # c(seq(0, .5, length=100), seq(0.6, 1.5, length=100), 
-               # seq(1.6,2.5,length=100), seq(2.6,3.5,length=100))    
+col_breaks = c(seq(0, .5, length=100), seq(0.6, 1.5, length=100), 
+               seq(1.6,2.5,length=100), seq(2.6,3.5,length=100))    
 heatmap.2(error_test_codes(df_results$p_val_mmd_eq_zero > 0.05, df_results$p_val_mmd_eq_alpha > 0.05),
           Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
           labRow=rev(round(sigmas,1)), labCol= round(mus,1),
@@ -325,6 +323,9 @@ false_positive_min_threshold <- function(vect, vals) {
   
   vector_index = seq_along(vect)
   # score each position based on  1/x distance from threshold
+  right_score = rep(NaN,length(vector_index))
+  left_score = rep(NaN,length(vector_index))
+  score = rep(NaN,length(vector_index))
   
   for (i in seq(1, length(vect)-1)) {
     right_index = seq(i+1, length(vect),by = 1)
@@ -345,37 +346,39 @@ false_positive_min_threshold <- function(vect, vals) {
   return(balance_ind)
 }
 
-
+# false_positive_min_threshold(df_right$p_val_mmd_eq_zero[1,]  < p_threshold,vals = c(FALSE,TRUE))
 
  
 # Equivalence test versus middle column of same row
 p_threshold = 0.05 /length(right_mu_ov_sigmas)
 zero_df <- rbind(
   tibble(er = "0", side = "right", sigma = sigmas, 
-         critical_ind_mu_over_sigma = apply(
+         critical_mu_over_sigma_ind = apply(
            df_right$p_val_mmd_eq_zero  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))),
   tibble(er = "alpha", side = "right", sigma = sigmas, 
-         critical_ind_mu_over_sigma = apply(
+         critical_mu_over_sigma_ind = apply(
            df_right$p_val_mmd_eq_alpha  < p_threshold,1,
            false_positive_min_threshold, vals = c(FALSE,TRUE))))
+# COnvert index of error rate transition to mu/sigma value
 zero_df$critical_mu_over_sigma <- 
   approx(x=seq_along(right_mu_ov_sigmas),y = abs(right_mu_ov_sigmas),
-         xout = zero_df$critical_ind_mu_over_sigma, 
+         xout = zero_df$critical_mu_over_sigma_ind, 
          n = length(mu_ov_sigmas)*2L-1L)$y
 
 alpha_df <- rbind(
   tibble(er = "0", side = "left", sigma = sigmas, 
-         critical_ind_mu_over_sigma = apply(
+         critical_mu_over_sigma_ind = apply(
            df_left$p_val_mmd_eq_zero  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))),
   tibble(er = "alpha", side = "left", sigma = sigmas, 
-         critical_ind_mu_over_sigma = apply(
+         critical_mu_over_sigma_ind = apply(
            df_left$p_val_mmd_eq_alpha  < p_threshold, 1, 
            false_positive_min_threshold, vals = c(FALSE,TRUE))))
+# COnvert index of error rate transition to mu/sigma value
 alpha_df$critical_mu_over_sigma <- 
   approx(x=seq_along(left_mu_ov_sigmas),y = abs(left_mu_ov_sigmas),
-         xout = alpha_df$critical_ind_mu_over_sigma, 
+         xout = alpha_df$critical_mu_over_sigma_ind, 
          n = length(mu_ov_sigmas)*2L-1L)$y
 # Concatenate right and left datafgrames of results
 crit_df <- rbind(zero_df,alpha_df)
