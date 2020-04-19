@@ -34,7 +34,10 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   #' @usage mmd_normal_tdist(x)
   #' @usage mmd_normal_tdist(x, y)
   #' @usage mmd_normal_tdist(x, y, conf.level = 0.95)
-  
+  #' @examples
+  #' x <- rnorm(n=10,mean=0,sd=1); 
+  #' y <- rnorm(n=10,mean=0,sd=1); 
+  #' mmd_normal(x,y)
   # Quick error check 
   if (is.null(x)) errorCondition('input argument x must be specified.')
   
@@ -44,8 +47,8 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   # Calculate degrees of freedom and 
   if (is.null(y)) df <- length(x)-1 else df <- length(x) + length(y) - 2
   # Determine Distribution if not specified, n=30 threshold between z and t dist.
-  if (is.null(distribution) & df<30) {distribution <- 't_dist'} 
-  else {distribution<-'z_dist'}
+  if (is.null(distribution) & df<=30) {
+    distribution <- 't_dist' } else {distribution<-'z_dist'}
   if (verbose) print(sprintf('Distribution: %s', distribution))
   
   # Calculate MMD with specified distribution

@@ -10,7 +10,7 @@ library(RColorBrewer)
 library(broom)
 library(gridExtra)
 library(grid)
-library(effsize)
+# library(effsize)
 
 # User defined libraries
 source("R/mmd.R")
@@ -46,8 +46,9 @@ rowTScore <- function(m1, m2) {
 
 
 
-
+#
 # Metrics of sample effect size
+#
 ##############################################
 #  Unstandardized measures of effect size
 #   * difference of sample means
@@ -64,8 +65,8 @@ rowTScore <- function(m1, m2) {
 # Parameters are randomnly chosen
 n_sims = 1e2
 n_samples = 1e4
-n_obs = 10
-
+n_obs = 50
+rand.seed = 0
 
 ### Maxel discerns experiments with lower variance
 # Generate two matrices, X1 and X2 sampled from two standard NORMalized distributions
@@ -82,31 +83,32 @@ n_obs = 10
 #     1. x_a [exp_2_coeffs]-> x2a
 #     2. x_b [exp_2_coeffs]-> x2b
 #     
-#                   x_a                    x_b
-#                   |      \          /      |
-#                   |        \      /        |
-#                   |          \  /          |
-#                   |           /\           |
-#                   |         /    \         |
+#                     x_a                  x_b
+#                   |       \           /        |
+#                   |         \       /          |
+#                   |           \   /            |
+#                   |            / \             |
+#                   |          /     \           |
 #                ______________    ______________
 #               | exp_1_coeffs |  | exp_2 coeffs |
 #               |______________|  |______________| 
-#                   |      /           \       | 
+#                   |       /           \      | 
 #                 x_1a    x_1b        x_2a    x_2b
 #                    \    /               \   /
 #                     \  /                 \ /
 #                   metric_1            metric_2
 
-set.seed(0)
+set.seed(rand.seed)
 x_a = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 
 
 # Output dataframe with altered
+set.seed(rand.seed +1)
 df = tibble(exp1_pop_mean = runif(n_sims, -0.5, 0.5), 
-            exp1_pop_std = runif(n_sims, 0.01, 1),
+            exp1_pop_std = runif(n_sims, 0.1, 1),
             exp2_pop_mean = runif(n_sims, -0.5, 0.5), 
-            exp2_pop_std = runif(n_sims, 0.01, 1))
+            exp2_pop_std = runif(n_sims, 0.1, 1))
 # Is pop_mean2 > pop_mean1 (TRUE)
 df <- add_column(df, pop_mean_is_2gt1 = df$exp2_pop_mean > df$exp1_pop_mean)
 #   pop_mean2 - pop_mean1
@@ -121,7 +123,7 @@ df <- add_column(df, pop_std_diff_2m1 = df$exp2_pop_std - df$exp1_pop_std)
 #     frac_2gt1_[metric]
 #     mean_2m1_[metric]
 effect_size_prefix = c("fract", "mean_diff")
-effect_sizes = c("means", "stds", "rel_means","rel_stds",
+effect_sizes = c("means", "stds", "rel_means","rel_stds", "t_score",
                     "cohen_d", "hedge_g", "glass_delta", "most_mean_diff", "p_value")
 # Append effect size suffixes to all effect sizes
 df[ paste(effect_size_prefix[1], effect_sizes, "2gt1", sep="_") ] <- 0
@@ -134,7 +136,7 @@ for (n in seq(1,n_sims,1)) {
   # Transform simulated samples with normal parameteres (mean and std) for 
   # current round of simulation
   
-  # MUse experiment 1 and 2 transform coefficients to generate data
+  # Use Exp 1 and 2 coefficients to generate data
   x_1a = x_a * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
   x_1b = x_b * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
   x_2a = x_a * df$exp2_pop_std[n] + df$exp2_pop_mean[n] 
@@ -180,12 +182,11 @@ for (n in seq(1,n_sims,1)) {
   
   
   # Most Mean Diff
-  source("R/mmd.R")
-  mapply(function(a,b) mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05), x_1b)
-  most_mean_diff_1 = mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05)
-  most_mean_diff_2 = mmd_2sample_unpaired(x_1a, x_1b, alpha = 0.05)
+  most_mean_diff_1 = sapply(1:n_samples, function(i) mmd_normal(x_1a[i,], x_1b[i,]))
+  most_mean_diff_2 = sapply(1:n_samples, function(i) mmd_normal(x_2a[i,], x_2b[i,]))
+  diff_most_mean_diff = most_mean_diff_2 - most_mean_diff_1
   df$fract_most_mean_diff_2gt1[n] = sum(diff_most_mean_diff >0) / n_samples
-  df$mean_diff_most_mean_diff_2m1[n] =mean(diff_most_mean_diff)
+  df$mean_diff_most_mean_diff_2m1[n] = mean(diff_most_mean_diff)
     
   # t score
   t_score_1 <- rowTScore(x_1a, x_1b)

@@ -313,13 +313,13 @@ df_left <- stats_param_sweep(
 df_left$side <- as.factor("Left")
 
 false_positive_min_threshold <- function(vect, vals) {
-  # For a binary vector, find a threshold that seperates TRUE and FALSE with balanced
-  # degree of false positives.
-  # vect is input vectors of TRUE and FALSE
-  # vals: TRUe or FALSE for each side of vector
-  # Example input
-  # vect = df_right$p_val_mmd_eq_zero[1,] < 0.05
-  # vals = c(FALSE,TRUE)
+  #' For a binary vector, find a threshold that seperates TRUE and FALSE with balanced
+  #' degree of false positives.
+  #' vect is input vectors of TRUE and FALSE
+  #' vals: TRUe or FALSE for each side of vector
+  #' Example input
+  #' vect = df_right$p_val_mmd_eq_zero[1,] < 0.05
+  #' vals = c(FALSE,TRUE)
   
   vector_index = seq_along(vect)
   # score each position based on  1/x distance from threshold
@@ -345,8 +345,6 @@ false_positive_min_threshold <- function(vect, vals) {
   balance_ind = which.min(score)
   return(balance_ind)
 }
-
-# false_positive_min_threshold(df_right$p_val_mmd_eq_zero[1,]  < p_threshold,vals = c(FALSE,TRUE))
 
  
 # Equivalence test versus middle column of same row
