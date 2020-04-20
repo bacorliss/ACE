@@ -152,6 +152,7 @@ for (n in seq(1,n_sims,1)) {
   # Means
   df$fract_means_2gt1[n] = sum(exp2_diff_means > exp1_diff_means)/n_samples
   df$mean_diff_means_2m1[n]  = mean(exp2_diff_means - exp1_diff_means)
+  
   # Stds
   df$fract_stds_2gt1[n] = sum(exp2_diff_sds > exp1_diff_sds)/n_samples
   df$mean_diff_stds_2m1[n]  = mean(exp2_diff_sds - exp1_diff_sds)
@@ -204,6 +205,33 @@ for (n in seq(1,n_sims,1)) {
   # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
 }
 ### Maxel discerns results with lower bias
+
+# Basic violin plot
+p <- ggplot(df, aes(x=er,  color = er, group = interaction(er, side), 
+                         y = critical_mu_over_sigma)) + 
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  theme_classic(base_size = 8) + theme(legend.position="none", 
+                                       axis.title.x = element_blank()) +
+  xlab("Error Rate Null Hypothesis") + 
+  ylab(expression(mu/sigma))
+p
+save_plot(paste("figure/", fig_basename, "f mmd transition values.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600)
+
+
+
+# Compare which metric is better at discerining exp. with lower mean difference in means
+
+
+# Compare which metric better at discerning experiments with lower std of difference in means
+
+# Compare diff of metrics between experiments
+
+
+
+
+
 
 
 
