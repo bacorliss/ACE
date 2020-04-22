@@ -109,10 +109,10 @@ effect_size_dict[[3]] <- c("2gt1","2m1")
 
 
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed, 
-                                    mus1  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas1 = runif(n_sims,  0.1, 1), 
-                                    mus2  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas2 = runif(n_sims,  0.1, 1),
+                                    mus_1  = runif(n_sims, -0.5, 0.5), 
+                                    sigmas_1 = runif(n_sims,  0.1, 1), 
+                                    mus_2  = runif(n_sims, -0.5, 0.5), 
+                                    sigmas_2 = runif(n_sims,  0.1, 1),
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -125,36 +125,37 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   #' @param n_sims number of simulations run, which are sets of experiments with
   #'  a single set of parameters for each (mu, sigma, n_obs)
   #' @param rand.seed seed number of generating consistent random numbers
-  #' @param mus_1 vector specifying distribution for population mean for
+  #' @param mus1 vector specifying distribution for population mean for
   #'  experiment 1
-  #' @param sigmas_1 vector specifying distribution for population standard deviation for
+  #' @param sigmas1 vector specifying distribution for population standard deviation for
   #'  experiment 1
-  #' @param mus_2 vector specifying distribution for population mean for
+  #' @param mus2 vector specifying distribution for population mean for
   #'  experiment 2
-  #' @param sigmas_2 vector specifying distribution for population mean for
+  #' @param sigmas2 vector specifying distribution for population mean for
   #'  experiment 12
 
   # Output dataframe with altered
   set.seed(rand.seed +1)
-  df = tibble(mu1 = mus1, sigma1 = sigmas1,
-              mu2 = mus2, sigmas2 = sigmas2
+  df = tibble(mu_1 = mus_1, sigma_1 = sigmas_1,
+              mu_2 = mus_2, sigmas_2 = sigmas_2
   )
   # Is pop_mean2 > pop_mean1 (TRUE)
-  df <- add_column(df, is_mud_2gt1 =  df$exp2_pop_mean > df$exp1_pop_mean)
+  df <- add_column(df, is_mu_d2gtd1 =  df$mu_2 > df$mu_1)
   #   pop_mean2 - pop_mean1
-  df <- add_column(df, mean_diff_mud_2m1 = df$exp2_pop_mean - df$exp1_pop_mean)
+  df <- add_column(df, mean_mu_d2md1 = df$mu_2 - df$mu_1)
   # Is pop_std2 > pop_std1 (TRUE)
-  df <- add_column(df, is_sigma_2gt1 =   df$exp2_pop_std > df$exp1_pop_std)
+  df <- add_column(df, is_sigma_d2gtd1 =   df$sigma_2 > df$sigma_1)
   #   pop_std2 - pop_std1
-  df <- add_column(df, mean_diff_sigma_2m1 =  df$exp2_pop_std - df$exp1_pop_std)
+  df <- add_column(df, mean_sigma_d2md1 =  df$sigma_2 - df$sigma_1)
   
-  # Append effect size suffixes to all effect sizes
+  # Append columns for effect sizes, since multiple columns are used to analyze
+  # each effect size, a dictionary of prefix,base, and suffix variable names 
+  # are used.
   df[ paste(effect_size_dict$prefix[1], effect_size_dict$base, 
             effect_size_dict$suffix[1], sep="_") ] <- 0
   df[ paste(effect_size_dict$prefix[2], effect_size_dict$base, 
             effect_size_dict$suffix[2], sep="_") ] <- 0
   return(df)
-  # browser()
 }
 
 quantifyEffectSizes <- function(df, x_a, x_b,out_path,overwrite=FALSE){
@@ -181,47 +182,50 @@ quantifyEffectSizes <- function(df, x_a, x_b,out_path,overwrite=FALSE){
       # current round of simulation
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
-      x_1a = x_a * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
-      x_1b = x_b * df$exp1_pop_std[n] + df$exp1_pop_mean[n]
+      x_1a = x_a
+      x_1b = x_b * df$sigma_1[n] + df$mu_2[n]
       
-      x_2a = x_a * df$exp2_pop_std[n] + df$exp2_pop_mean[n] 
-      x_2b = x_b * df$exp2_pop_std[n] + df$exp2_pop_mean[n] 
+      x_2a = x_a
+      x_2b = x_b * df$sigma_2[n] + df$mu_1[n] 
       
       # Calculate difference of basic statistics
-      exp1_diff_means = rowMeans(x_1b) - rowMeans(x_1a)
-      exp2_diff_means = rowMeans(x_2b) - rowMeans(x_2a)
+      dbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
+      dbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
       
-      exp1_diff_sds = rowSds(x_1b) -rowSds(x_1a)
-      exp2_diff_sds = rowSds(x_2b) -rowSds(x_2b)
+      sd_1 = rowSds(x_1b) - rowSds(x_1a)
+      sd_2 = rowSds(x_2b) - rowSds(x_2b)
       
       # Basic Summary statistical comparisons
       # Means
-      df$fract_means_2gt1[n] = sum(exp2_diff_means > exp1_diff_means)/n_samples
-      df$mean_diff_means_2m1[n]  = mean(exp2_diff_means - exp1_diff_means)
+      df$fract_dbar_2gtd1[n] = sum(dbar_2 > dbar_1)/n_samples
+      df$mean_dbar_2md1[n]  = mean(dbar_2 - dbar_1)
       
       # Stds
-      df$fract_stds_2gt1[n] = sum(exp2_diff_sds > exp1_diff_sds)/n_samples
-      df$mean_diff_stds_2m1[n]  = mean(exp2_diff_sds - exp1_diff_sds)
+      df$fract_sd_2gtd1[n] = sum(sd_2 > sd_1)/n_samples
+      df$mean_diff_stds_2m1[n]  = mean(sd_2 - sd_1)
+      
       # Rel Means: mean divided by control mean
-      diff_rel_mean_diff = exp2_diff_means/rowMeans(x_2a) - exp1_diff_means/rowMeans(x_1a)
-      df$fract_rel_means_2gt1[n] = sum( diff_rel_mean_diff > 0) / n_samples
-      df$mean_diff_rel_means_2m1[n]  =  mean(diff_rel_mean_diff)
+      diff_rdbar = dbar_2/rowMeans(x_2a) - dbar_1/rowMeans(x_1a)
+      df$fract_rel_means_2gt1[n] = sum( diff_rdbar > 0) / n_samples
+      df$mean_diff_rel_means_2m1[n]  =  mean(diff_rdbar)
+      
+      
       # Rel STDs: sd divided by control mean
-      diff_rel_sds_diff = exp2_diff_sds/rowMeans(x_2a) - exp1_diff_sds/rowMeans(x_1a)
-      df$fract_stds_2gt1[n] = sum( diff_rel_sds_diff > 0) / n_samples
-      df$mean_diff_stds_2m1[n]  = mean(diff_rel_sds_diff)
+      diff_rsd = sd_2/rowMeans(x_2a) - sd_1/rowMeans(x_1a)
+      df$fract_stds_2gt1[n] = sum( diff_rsd > 0) / n_samples
+      df$mean_diff_stds_2m1[n]  = mean(diff_rsd)
       
       # Delta Family of effect size
       # Cohens D
-      diff_cohen_d = rowCohenD(x_2a, x_2b) - rowCohenD(x_1a, x_1b)
+      diff_cohen_d = abs(rowCohenD(x_2a, x_2b) - rowCohenD(x_1a, x_1b))
       df$fract_cohen_d_2gt1[n] = sum(diff_cohen_d >0) / n_samples
       df$mean_diff_cohen_d_2m1[n] =  mean(diff_cohen_d)
       # Glass delta
-      diff_glass_delta = rowGlassDelta(x_2a, x_2b) - rowGlassDelta(x_1a, x_1b)
+      diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b) - rowGlassDelta(x_1a, x_1b))
       df$fract_glass_delta_2gt1[n] = sum(diff_glass_delta >0) / n_samples
       df$mean_diff_glass_delta_2m1[n] =  mean(diff_glass_delta)
       # Hedges G
-      diff_hedge_g = rowHedgeG(x_2a, x_2b) - rowHedgeG(x_1a, x_1b)
+      diff_hedge_g = abs(rowHedgeG(x_2a, x_2b) - rowHedgeG(x_1a, x_1b))
       df$fract_hedge_g_2gt1[n] = sum(diff_hedge_g >0) / n_samples
       df$mean_diff_hedge_g_2m1[n] =  mean(diff_hedge_g)
       
