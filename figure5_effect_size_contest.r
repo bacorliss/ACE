@@ -98,14 +98,16 @@ rowTScore <- function(m1, m2) {
 
 
 # Dictionary to keep track of variables tracking effect size metrics
-effect_size_dict <- vector(mode="list", length=3)
-names(effect_size_dict) <- c("prefix", "base", "suffix")
+effect_size_dict <- vector(mode="list", length=4)
+names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
-effect_size_dict[[2]] <- c("means", "stds", "rel_means","rel_stds", "t_score",
-                           "cohen_d", "hedge_g", "glass_delta", "most_mean_diff", 
-                           "p_value")
-effect_size_dict[[3]] <- c("2gt1","2m1")
-
+effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "t_score", "p_value",
+                           "cohen_d", "hedge_g", "glass_delta", "mmd",
+                           "rmmd")
+effect_size_dict[[3]] <- c("d2gtd1","2m1")
+effect_size_dict[[4]] <- c("bar(x)[d]", "s[d]", "r*bar(x)[d]","rs[d]","t[d]", "p",
+                                  "Cd", "Hg", "G*delta", "MMD",
+                                  "rMMD")
 
 
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed, 
@@ -137,28 +139,29 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Output dataframe with altered
   set.seed(rand.seed +1)
   df = tibble(mu_1 = mus_1, sigma_1 = sigmas_1,
-              mu_2 = mus_2, sigmas_2 = sigmas_2
+              mu_2 = mus_2, sigma_2 = sigmas_2
   )
   # Is pop_mean2 > pop_mean1 (TRUE)
-  df <- add_column(df, is_mu_d2gtd1 =  df$mu_2 > df$mu_1)
+  df$is_mu_d2gtd1 <-  df$mu_2 > df$mu_1
   #   pop_mean2 - pop_mean1
-  df <- add_column(df, mean_mu_d2md1 = df$mu_2 - df$mu_1)
+  df$mean_mu_d2md1 = df$mu_2 - df$mu_1
   # Is pop_std2 > pop_std1 (TRUE)
-  df <- add_column(df, is_sigma_d2gtd1 =   df$sigma_2 > df$sigma_1)
+  df$is_sigma_d2gtd1 =   df$sigma_2 > df$sigma_1
   #   pop_std2 - pop_std1
-  df <- add_column(df, mean_sigma_d2md1 =  df$sigma_2 - df$sigma_1)
+  df$mean_sigma_d2md1 =  df$sigma_2 - df$sigma_1
   
   # Append columns for effect sizes, since multiple columns are used to analyze
-  # each effect size, a dictionary of prefix,base, and suffix variable names 
+  # each effect size, a dictionary of prefix, base, and suffix variable names 
   # are used.
-  df[ paste(effect_size_dict$prefix[1], effect_size_dict$base, 
-            effect_size_dict$suffix[1], sep="_") ] <- 0
-  df[ paste(effect_size_dict$prefix[2], effect_size_dict$base, 
-            effect_size_dict$suffix[2], sep="_") ] <- 0
+  df[ paste(effect_size_dict$prefix[1], effect_size_dict$base,
+            effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
+  df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
+            effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
   return(df)
 }
 
-quantifyEffectSizes <- function(df, x_a, x_b,out_path,overwrite=FALSE){
+quantifyEffectSizes <- function(df, xdata_list, out_path = "temp/quanitfyEffectSizes.rds",
+                                overwrite = FALSE) {
   #' Simulate experiments generated from generateExperiment_Data() and calcualte
   #'  various effecct sizes
   #' 
@@ -172,8 +175,10 @@ quantifyEffectSizes <- function(df, x_a, x_b,out_path,overwrite=FALSE){
   #'  data with parameters within df)
   #' @param x_b base input data from group b (gets transformed into actual input
   #'  data with parameters within df)
-  #' 
-  #' 
+  #' @param out_path file path to save results to disk
+  #' @param overwrite if results file already exists in out_path, skip 
+  #' calculation and load from disk
+  
   
   # Only perform simulations if results not saved to disk
   if (!file.exists(out_path) | overwrite) {
@@ -182,76 +187,79 @@ quantifyEffectSizes <- function(df, x_a, x_b,out_path,overwrite=FALSE){
       # current round of simulation
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
-      x_1a = x_a
-      x_1b = x_b * df$sigma_1[n] + df$mu_2[n]
+      x_1a = xdata_list[[1]]
+      x_1b = xdata_list[[2]] * df$sigma_1[n] + df$mu_2[n]
       
-      x_2a = x_a
-      x_2b = x_b * df$sigma_2[n] + df$mu_1[n] 
+      x_2a = xdata_list[[3]]
+      x_2b = xdata_list[[4]] * df$sigma_2[n] + df$mu_1[n] 
       
       # Calculate difference of basic statistics
-      dbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
-      dbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
+      xdbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
+      xdbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
       
       sd_1 = rowSds(x_1b) - rowSds(x_1a)
       sd_2 = rowSds(x_2b) - rowSds(x_2b)
       
       # Basic Summary statistical comparisons
       # Means
-      df$fract_dbar_2gtd1[n] = sum(dbar_2 > dbar_1)/n_samples
-      df$mean_dbar_2md1[n]  = mean(dbar_2 - dbar_1)
+      df$fract_xdbar_d2gtd1[n] = sum(xdbar_2 > xdbar_1)/n_samples
+      df$mean_diff_xdbar_2m1[n]  = mean(xdbar_2 - xdbar_1)
       
       # Stds
-      df$fract_sd_2gtd1[n] = sum(sd_2 > sd_1)/n_samples
-      df$mean_diff_stds_2m1[n]  = mean(sd_2 - sd_1)
+      df$fract_sd_d2gtd1[n] = sum(sd_2 > sd_1)/n_samples
+      df$mean_diff_sd_2m1[n]  = mean(sd_2 - sd_1)
       
       # Rel Means: mean divided by control mean
-      diff_rdbar = dbar_2/rowMeans(x_2a) - dbar_1/rowMeans(x_1a)
-      df$fract_rel_means_2gt1[n] = sum( diff_rdbar > 0) / n_samples
-      df$mean_diff_rel_means_2m1[n]  =  mean(diff_rdbar)
+      diff_rxdbar = xdbar_2/rowMeans(x_2a) - xdbar_1/rowMeans(x_1a)
+      df$fract_rxdbar_d2gtd1[n] = sum( diff_rxdbar > 0) / n_samples
+      df$mean_diff_rxdbar_2m1[n]  =  mean(diff_rxdbar)
       
       
       # Rel STDs: sd divided by control mean
       diff_rsd = sd_2/rowMeans(x_2a) - sd_1/rowMeans(x_1a)
-      df$fract_stds_2gt1[n] = sum( diff_rsd > 0) / n_samples
-      df$mean_diff_stds_2m1[n]  = mean(diff_rsd)
+      df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / n_samples
+      df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
       # Delta Family of effect size
       # Cohens D
-      diff_cohen_d = abs(rowCohenD(x_2a, x_2b) - rowCohenD(x_1a, x_1b))
-      df$fract_cohen_d_2gt1[n] = sum(diff_cohen_d >0) / n_samples
+      diff_cohen_d = abs(rowCohenD(x_2a, x_2b)) - abs(rowCohenD(x_1a, x_1b))
+      df$fract_cohen_d_d2gtd1[n] = sum(diff_cohen_d >0) / n_samples
       df$mean_diff_cohen_d_2m1[n] =  mean(diff_cohen_d)
       # Glass delta
-      diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b) - rowGlassDelta(x_1a, x_1b))
-      df$fract_glass_delta_2gt1[n] = sum(diff_glass_delta >0) / n_samples
+      diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b)) - abs(rowGlassDelta(x_1a, x_1b))
+      df$fract_glass_delta_d2gtd1[n] = sum(diff_glass_delta >0) / n_samples
       df$mean_diff_glass_delta_2m1[n] =  mean(diff_glass_delta)
       # Hedges G
-      diff_hedge_g = abs(rowHedgeG(x_2a, x_2b) - rowHedgeG(x_1a, x_1b))
-      df$fract_hedge_g_2gt1[n] = sum(diff_hedge_g >0) / n_samples
+      diff_hedge_g = abs(rowHedgeG(x_2a, x_2b)) - abs(rowHedgeG(x_1a, x_1b))
+      df$fract_hedge_g_d2gtd1[n] = sum(diff_hedge_g >0) / n_samples
       df$mean_diff_hedge_g_2m1[n] =  mean(diff_hedge_g)
-      
-      # R Squared
-      
       
       # Most Mean Diff
       most_mean_diff_1 = sapply(1:n_samples, function(i) mmd_normal(x_1a[i,], x_1b[i,]))
       most_mean_diff_2 = sapply(1:n_samples, function(i) mmd_normal(x_2a[i,], x_2b[i,]))
       diff_most_mean_diff = most_mean_diff_2 - most_mean_diff_1
-      df$fract_most_mean_diff_2gt1[n] = sum(diff_most_mean_diff >0) / n_samples
-      df$mean_diff_most_mean_diff_2m1[n] = mean(diff_most_mean_diff)
+      df$fract_mmd_d2gtd1[n] = sum(diff_most_mean_diff >0) / n_samples
+      df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
+      
+      # Relative Most Mean Diff
+      diff_rmmd = most_mean_diff_2/rowMeans(x_2a) - most_mean_diff_1/rowMeans(x_1a)
+      df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd >0) / n_samples
+      df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
       # t score
       t_score_1 <- rowTScore(x_1a, x_1b)
       t_score_2 <- rowTScore(x_2a, x_2b)
-      df$fract_t_score_2gt1[n] = sum( (t_score_2 - t_score_1) > 0) / n_samples
-      df$mean_diff_most_mean_diff_2m1[n] = mean( (t_score_2 - t_score_1))
+      df$fract_t_score_d2gtd1[n] = sum( abs(t_score_2) - abs(t_score_1) > 0) / n_samples
+      df$mean_diff_t_score_2m1[n] = mean( (t_score_2 - t_score_1))
       
       # Pvalue
       diff_p_value <- pt(t_score_2, df = pmin(n_obs, n_obs) - 1) - 
         pt(t_score_1, df = pmin(n_obs, n_obs) - 1)
-      df$fract_p_value_2gt1[n] = sum(diff_p_value > 0) / n_samples
+      df$fract_p_value_d2gtd1[n] = sum(diff_p_value > 0) / n_samples
       df$mean_diff_p_value_2m1 = mean(diff_p_value)
       
       # Pearson Correlation
+      # R Squared
       # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
     }
     # Save dataframed results to a file
@@ -297,14 +305,19 @@ tidyEffectSizeResults <- function (df, gt_vector, var_suffix) {
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomnly chosen
 n_sims = 1e2
-n_samples = 1
+n_samples = 1e3
 n_obs = 50
 rand.seed = 0
 
 # Generate normalized measurement data
 set.seed(rand.seed)
-x_a = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
-x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+xdata_list <- list()
+for (n in seq(1,4,1)) {
+  xdata_list[[n]] = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+  
+}
+# x_a = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
+# x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 
 
 # Contest 1) Quantify Error rate with each metric discerining experiment
@@ -314,29 +327,29 @@ x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                     mus_1  = rep(.1,n_sims), # runif(n_sims, -0.1, 0.1), 
                                     sigmas_1 = rep(1,n_sims), 
-                                    mus_2  = rep(.1,n_sims), #runif(n_sims, -0.1, 0.1), 
+                                    mus_2  = rep(.2,n_sims), #runif(n_sims, -0.1, 0.1), 
                                     sigmas_2 = rep(1,n_sims)) 
 
 # Quantify effect sizes in untidy matrix
-df_mu_shifted <- quantifyEffectSizes(df_init, x_a, x_b,
-                                     "temp/EffectSizeContest_mean_shift.rds", 
-                                     overwrite=TRUE)
+df_mu_shifted <- quantifyEffectSizes(df_init, xdata_list,
+                                     out_path = "temp/EffectSizeContest_mean_shift.rds", 
+                                     overwrite = TRUE)
 # Tidy matrix
 df_mu_shifted_tidy <- tidyEffectSizeResults(df = df_mu_shifted, 
-                                            gt_vector = df_mu_shifted$is_mu2d_gt_mu1d,
+                                            gt_vector = df_mu_shifted$is_mu_d2gtd1,
                                             var_suffix = "fract")
 # Basic violin plot
 p <- ggplot(df_mu_shifted_tidy, aes(x=matched_vars,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  theme_classic(base_size = 8) + theme(legend.position="none",
-                                       axis.title.x = element_blank()) +
-  xlab("Metric") +
-  ylab("Error Rate Exp with Lower mu")
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Exp with Lower mu") +
+  scale_x_discrete(labels = parse(text = effect_size_dict$label)) +
+  theme_classic(base_size = 8) 
 p
 
-save_plot(paste("figure/", fig_basename, "f mmd transition values.tiff",
-                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 2, dpi = 600)
+# save_plot(paste("figure/", fig_basename, "f mmd transition values.tiff",
+#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+#           base_asp = 3, base_width = 2, dpi = 600)
 
 
 
