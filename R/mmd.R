@@ -55,7 +55,7 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   if (distribution=='t_dist'){
     mmd <- mmd_normal_tdist(x, y, conf.level = conf.level, verbose = verbose,
                                      search_pad_percent = 0.1,var.equal = var.equal)
-  } else if (distribution=='z_dist') {
+  } else if (distribution =='z_dist') {
     mmd = mmd_normal_zdist(x,y, conf.level = conf.level, verbose = verbose,
                                 search_pad_percent = 0.1,var.equal = var.equal)
   } else {
