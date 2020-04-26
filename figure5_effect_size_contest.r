@@ -103,11 +103,11 @@ names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
 effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "t_score", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
-                           "rmmd")
+                           "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
 effect_size_dict[[4]] <- c("bar(x)[d]", "s[d]", "r*bar(x)[d]","rs[d]","t[d]", "p",
                                   "Cd", "Hg", "G*delta", "MMD",
-                                  "rMMD")
+                                  "rMMD","N[d](0,1)")
 
 
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed, 
@@ -162,7 +162,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
 }
 
 quantifyEffectSizes <- function(df, overwrite = FALSE,
-                                out_path = "temp/quanitfyEffectSizes.rds") {
+                                out_path = "temp/quanitfyEffectSizes.rds", 
+                                rand.seed = 0) {
   #' Simulate experiments generated from generateExperiment_Data() and calcualte
   #'  various effecct sizes
   #' 
@@ -184,26 +185,28 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
   # Only perform simulations if results not saved to disk
   if (!file.exists(out_path) | overwrite) {
     for (n in seq(1,n_sims,1)) {
+      set.seed(rand.seed+n)
       # Transform simulated samples with normal parameteres (mean and std) for 
       # current round of simulation
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
-      x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), df$n_samples[n], df$n_obs[n])
-      x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$sigma_1[n], sd = df$mu_1[n]),
-                    df$n_samples[n], df$n_obs[n])
+      x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
+                    nrow = df$n_samples[n], ncol = df$n_obs[n])
+      x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1[n], sd = df$sigma_1[n]),
+                    nrow = df$n_samples[n], ncol = df$n_obs[n])
       
-      x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), df$n_samples[n], df$n_obs[n])
-      x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$sigma_2[n], sd = df$mu_2[n]),
+      x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
+                    nrow = df$n_samples[n], ncol = df$n_obs[n])
+      x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2[n], sd = df$sigma_2[n]),
                     df$n_samples[n], df$n_obs[n])
       
       # Calculate difference of basic statistics
+      # Metric[B] - Metric[A]
       xdbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
       xdbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
       
-      sd_1 = rowSds(x_1b) - rowSds(x_1a)
-      sd_2 = rowSds(x_2b) - rowSds(x_2a)
-      
-      browser();
+      sdd_1 = rowSds(x_1b) - rowSds(x_1a)
+      sdd_2 = rowSds(x_2b) - rowSds(x_2a)
       
       # Basic Summary statistical comparisons
       # Means
@@ -211,8 +214,8 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       df$mean_diff_xdbar_2m1[n]  = mean(xdbar_2 - xdbar_1)
       
       # Stds
-      df$fract_sd_d2gtd1[n] = sum(sd_2 > sd_1)/df$n_samples[n]
-      df$mean_diff_sd_2m1[n]  = mean(sd_2 - sd_1)
+      df$fract_sd_d2gtd1[n] = sum(sdd_2 > sdd_1)/df$n_samples[n]
+      df$mean_diff_sd_2m1[n]  = mean(sdd_2 - sdd_1)
       
       # Rel Means: mean divided by control mean
       diff_rxdbar = xdbar_2/rowMeans(x_2a) - xdbar_1/rowMeans(x_1a)
@@ -221,7 +224,7 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       
       
       # Rel STDs: sd divided by control mean
-      diff_rsd = sd_2/rowMeans(x_2a) - sd_1/rowMeans(x_1a)
+      diff_rsd = sdd_2/rowMeans(x_2a) - sdd_1/rowMeans(x_1a)
       df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
       df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
@@ -266,7 +269,12 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
-
+      
+      # standard normal random
+      diff_nrand = rowMeans(matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
+                          nrow = df$n_samples[n], ncol = df$n_obs[n]))
+      df$fract_nrand_d2gtd1[n] = sum(diff_nrand > 0 ) / df$n_samples[n]
+      df$mean_diff_nrand_2m1[n] = mean(diff_nrand)
       
       # Pearson Correlation
       # R Squared
@@ -283,7 +291,7 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
 
 
 
-tidyEffectSizeResults <- function (df, gt_colname, var_suffix, make_tidy = TRUE,
+tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRUE,
                                    ref_colname = NULL) {
   #' Normalize a subset of variables in df and then flatten data frame
   #' 
@@ -293,7 +301,7 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, make_tidy = TRUE,
   #' @param df
   #' @param gt_colname
   #' @param var_suffix
-  #' @param make_tidy
+  #' @param long_format
   #' @param ref_colname
 
   # Get list of all variables that match the variable suffix string
@@ -331,7 +339,7 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, make_tidy = TRUE,
   }
   
   # Flatten df_ref_sub into df_tidy. where each variable becomes a level of the factor 'Effect Size'
-  if (make_tidy) df_tidy <- df_ref_sub %>% gather(matched_vars)
+  if (long_format) df_tidy <- df_ref_sub %>% gather(matched_vars)
   else df_tidy <-df_ref_sub
   
   return(df_tidy)
@@ -363,24 +371,43 @@ for (n in seq(1,4,1)) {
 #
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                    mus_1  = runif(n_sims, -0.1, 0.1), 
+                                    mus_1  = runif(n_sims, -0.5, 0.5), 
                                     sigmas_1 = rep(1,n_sims), 
-                                    mus_2  = runif(n_sims, -0.1, 0.1), 
+                                    mus_2  = runif(n_sims, -0.25, 0.75), 
                                     sigmas_2 = rep(1,n_sims)) 
 
 # Quantify effect sizes in untidy matrix
 df_mu_shifted <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
                                        "temp/EffectSizeContest_mean_shift.rds")
+
+
+
+
 # Tidy matrix
 df_mu_shifted_tidy <- tidyEffectSizeResults(df = df_mu_shifted, 
                                             gt_colname = "is_mu_d2gtd1",
                                             var_suffix = "fract", 
-                                            make_tidy = TRUE,
+                                            long_format = FALSE,
+                                            ref_colname = NULL)
+# Basic violin plot
+p <- ggplot(df_mu_shifted_tidy, aes(x=matched_vars,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Lower mu[d]") +
+  scale_x_discrete(labels = parse(text = effect_size_dict$label)) +
+  theme_classic(base_size = 8) 
+p
+
+
+
+
+
+# Tidy matrix
+df_mu_shifted_tidy <- tidyEffectSizeResults(df = df_mu_shifted, 
+                                            gt_colname = "is_mu_d2gtd1",
+                                            var_suffix = "fract", 
+                                            long_format = TRUE,
                                             ref_colname = "fract_xdbar_d2gtd1")
-
-
-
-
 # Basic violin plot
 p <- ggplot(df_mu_shifted_tidy, aes(x=matched_vars,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
