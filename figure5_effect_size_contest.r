@@ -20,10 +20,11 @@ library(ggplot2)
 library(tibble)
 library(RColorBrewer)
 library(broom)
-library(gridExtra)
-library(grid)
+# library(gridExtra)
+# library(grid)
 library(tidyr)
 library(cowplot)
+library(dplyr)
 # library(effsize)
 
 # User defined libraries
@@ -339,11 +340,44 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   }
   
   # Flatten df_ref_sub into df_tidy. where each variable becomes a level of the factor 'Effect Size'
-  if (long_format) df_tidy <- df_ref_sub %>% gather(matched_vars)
-  else df_tidy <-df_ref_sub
+  if (long_format) {
+    df_tidy <- df_ref_sub %>% gather(matched_vars,factor_key=TRUE)
+     names(df_tidy)[names(df_tidy) == "matched_vars"] <- "name"
+  } else df_tidy <- df_ref_sub
   
   return(df_tidy)
 }
+
+pretty_effect_size_levels<- function(df,base_names, pretty_names, var_suffix) {
+  #' Convert long levels names to shorter ones for pretty print in plots
+  #' 
+  #' @description 
+  #' @param 
+  #' @param 
+  #' @param 
+  #' 
+  
+  # Get current names for levels and the basenames for them to be matched against
+  orig_levels <- levels(df$name)
+  # base_names <- paste(var_suffix,"_", base_names, "_", sep="") 
+  
+  # Find index for each basename
+  ind <- rep(0, length(base_names))
+  for (n in seq(1,length(base_names))) {
+    new_levels_ind =1
+    ind[n] <- which(regexpr(base_names[n],orig_levels)>0)
+  }
+  # Return new level names
+  new_levels <- effect_size_dict$label[ind]
+  
+  # df_new_levels <- df
+  # levels(df_new_levels$name) <- new_levels
+  levels(df$name) <- new_levels
+  
+  return(df)
+  
+}
+
 
 # Simulation parameters
 # 
@@ -370,56 +404,100 @@ for (n in seq(1,4,1)) {
 # with lower mean difference in means
 #
 #------------------------------------------------------------------------------
+var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                    mus_1  = runif(n_sims, -0.5, 0.5), 
+                                    mus_1  = runif(n_sims, 0, 2), 
                                     sigmas_1 = rep(1,n_sims), 
-                                    mus_2  = runif(n_sims, -0.25, 0.75), 
+                                    mus_2  = runif(n_sims, 4, 5), 
                                     sigmas_2 = rep(1,n_sims)) 
-
 # Quantify effect sizes in untidy matrix
-df_mu_shifted <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
                                        "temp/EffectSizeContest_mean_shift.rds")
 
-
-
-
-# Tidy matrix
-df_mu_shifted_tidy <- tidyEffectSizeResults(df = df_mu_shifted, 
-                                            gt_colname = "is_mu_d2gtd1",
-                                            var_suffix = "fract", 
-                                            long_format = FALSE,
-                                            ref_colname = NULL)
+## Plot error rates relative to groundtruth
+# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                            ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                            base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                            pretty_names = effect_size_dict$label, 
+                            var_suffix = var_suffix)
 # Basic violin plot
-p <- ggplot(df_mu_shifted_tidy, aes(x=matched_vars,  y=value)) +
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
   xlab("Effect Size Metric") +
   ylab("Error Rate Lower mu[d]") +
-  scale_x_discrete(labels = parse(text = effect_size_dict$label)) +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  theme_classic(base_size = 8) 
+p
+
+## Plot error rates relative to reference value and groundtruth
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = "fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
+# Basic violin plot
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
   theme_classic(base_size = 8) 
 p
 
 
+# Contest 2) Quantify Error rate with each metric discerining experiment
+# with lower mean difference in means
+#
+#------------------------------------------------------------------------------
+var_suffix = "fract"
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1  = runif(n_sims, 0, 2), 
+                                   sigmas_1 = rep(1,n_sims), 
+                                   mus_2  = runif(n_sims, 4, 5), 
+                                   sigmas_2 = rep(1,n_sims)) 
+# Quantify effect sizes in untidy matrix
+df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+                               "temp/EffectSizeContest_mean_shift.rds")
 
-
-
-# Tidy matrix
-df_mu_shifted_tidy <- tidyEffectSizeResults(df = df_mu_shifted, 
-                                            gt_colname = "is_mu_d2gtd1",
-                                            var_suffix = "fract", 
-                                            long_format = TRUE,
-                                            ref_colname = "fract_xdbar_d2gtd1")
+## Plot error rates relative to groundtruth
+# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
 # Basic violin plot
-p <- ggplot(df_mu_shifted_tidy, aes(x=matched_vars,  y=value)) +
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
   xlab("Effect Size Metric") +
   ylab("Error Rate Lower mu[d]") +
-  scale_x_discrete(labels = parse(text = effect_size_dict$label)) +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
   theme_classic(base_size = 8) 
 p
 
-# save_plot(paste("figure/", fig_basename, "f mmd transition values.tiff",
-#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-#           base_asp = 3, base_width = 2, dpi = 600)
+## Plot error rates relative to reference value and groundtruth
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = "fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
+# Basic violin plot
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  theme_classic(base_size = 8) 
+p
 
 
 
@@ -429,6 +507,50 @@ p
 # difference in means
 #
 #------------------------------------------------------------------------------
+var_suffix = "fract"
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1  = runif(n_sims, 1, 2), 
+                                   sigmas_1 = rep(1,n_sims), 
+                                   mus_2  = runif(n_sims, 4, 5), 
+                                   sigmas_2 = rep(1,n_sims)) 
+# Quantify effect sizes in untidy matrix
+df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+                               "temp/EffectSizeContest_mean_shift.rds")
+
+## Plot error rates relative to groundtruth
+# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
+# Basic violin plot
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Lower mu[d]") +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  theme_classic(base_size = 8) 
+p
+
+## Plot error rates relative to reference value and groundtruth
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = "fract_xdbar_d2gtd1")
+df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
+# Basic violin plot
+p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  theme_classic(base_size = 8) 
+p
 
 
 
