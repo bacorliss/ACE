@@ -39,7 +39,7 @@ rowSdPooled <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
 # Weighted pooled standard deviation, assume to matricies, 1 sample per row
 rowSdPooledWeighted <- 
   function(m1,m2) sqrt( ( (dim(m1)[2] - 1) * rowVars(m1)   + 
-                          (dim(m2)[2] - 1) * rowVars(m2) ) /
+                            (dim(m2)[2] - 1) * rowVars(m2) ) /
                           (dim(m1)[2] + dim(m2)[2] - 2    ) )
 
 
@@ -59,7 +59,7 @@ rowTScore <- function(m1, m2) {
   n2 <- dim(m2)[2] 
   n  <- n1+n2 
   tstat<- sqrt(n1*n2/n) * ( rowMeans(m1) - rowMeans(m2)) /
-          sqrt( (n1 - 1)/(n - 2)*rowVars(m1) + (n2 - 1)/(n - 2)*rowVars(m2) ) 
+    sqrt( (n1 - 1)/(n - 2)*rowVars(m1) + (n2 - 1)/(n - 2)*rowVars(m2) ) 
 }
 
 # Simulation Functions
@@ -106,16 +106,25 @@ effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "t_score", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)[d]", "s[d]", "r*bar(x)[d]","rs[d]","t[d]", "p",
-                                  "Cd", "Hg", "G*delta", "MMD",
-                                  "rMMD","N[d](0,1)")
+effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","t", "p",
+                           "Cd", "Hg", "G*Delta", "delta[M]",
+                           "r*delta[M]","N(0,1)")
+
+# default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
 
 
-generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed, 
-                                    mus_1  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas_1 = runif(n_sims,  0.1, 1), 
-                                    mus_2  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas_2 = runif(n_sims,  0.1, 1),
+
+generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
+                                    # Control group pop. parameters
+                                    mus_1a  = rep(0,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
+                                    mus_2a  = rep(0,n_sims), 
+                                    sigmas_2a = rep(1,n_sims),
+                                    # Experiment group pop. parameters
+                                    mus_1b  = runif(n_sims, -0.5, 0.5), 
+                                    sigmas_1b = runif(n_sims,  0.1, 1), 
+                                    mus_2b  = runif(n_sims, -0.5, 0.5), 
+                                    sigmas_2b = runif(n_sims,  0.1, 1),
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -136,21 +145,36 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   #'  experiment 2
   #' @param sigmas2 vector specifying distribution for population mean for
   #'  experiment 12
-
-  # Output dataframe with altered
+  
+  # Basic input parameters for each simulation round
   set.seed(rand.seed +1)
-  df = tibble(mu_1 = mus_1, sigma_1 = sigmas_1,
-              mu_2 = mus_2, sigma_2 = sigmas_2,
-              n_obs = n_obs, n_samples = n_samples
+  df = tibble(
+    # Control group a for exp 1 and 2
+    mu_1a = mus_1a, sigma_1a = sigmas_1a,
+    mu_2a = mus_2a, sigma_2a = sigmas_2a,
+    # Experiment group b for exp 1 and 2
+    mu_1b = mus_1b, sigma_1b = sigmas_1b,
+    mu_2b = mus_2b, sigma_2b = sigmas_2b,
+    # Sampling data
+    n_obs = n_obs, n_samples = n_samples
   )
-  # Is pop_mean2 > pop_mean1 (TRUE)
-  df$is_mu_d2gtd1 <-  df$mu_2 > df$mu_1
-  #   pop_mean2 - pop_mean1
-  df$mean_mu_d2md1 = df$mu_2 - df$mu_1
-  # Is pop_std2 > pop_std1 (TRUE)
-  df$is_sigma_d2gtd1 =   df$sigma_2 > df$sigma_1
-  #   pop_std2 - pop_std1
-  df$mean_sigma_d2md1 =  df$sigma_2 - df$sigma_1
+  # Computed statistics of difference of means distribution (mu2 - mu1)
+  # Is: Exp2 mu[d] > Exp1 mu[d]
+  df$is_mud_d2gtd1 <-  (df$mu_2b - df$mu_2a) > (df$mu_1b - df$mu_1a)
+  # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
+  df$is_rmud_d2gtd1 <-  (df$mu_2b - df$mu_2a)/df$mu_2a > (df$mu_1b - df$mu_1a)/df$mu_1a
+  # Diff:  pop_mean2 - pop_mean1
+  df$mean_mud_d2md1 = (df$mu_2b - df$mu_2a) - (df$mu_1b - df$mu_1a)
+  df$mean_rmud_d2md1 = (df$mu_2b - df$mu_2a)/df$mu_2a - (df$mu_1b - df$mu_1a)/df$mu_1a
+  # Is: pop_std2 > pop_std1 (TRUE)
+  df$is_sigmad_d2gtd1 =  (df$sigma_2b - df$sigma_2a) > (df$sigma_1b - df$sigma_1a)
+  # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
+  df$is_rsigmad_d2gtd1 =  (df$sigma_2b - df$sigma_2a)/df$mu_2a > 
+    (df$sigma_1b - df$sigma_1a)/df$mu_1a
+  # Diff:  pop_std2 - pop_std1
+  df$mean_sigmad_d2md1 = (df$sigma_2b - df$sigma_2a) - (df$sigma_1b - df$sigma_1a)
+  df$mean_rsigmad_d2md1 = (df$sigma_2b - df$sigma_2a)/df$mu_2a -
+    (df$sigma_1b - df$sigma_1a)/df$mu_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
@@ -191,14 +215,14 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       # current round of simulation
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
-      x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
+      x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1a[n], sd = df$sigma_1a[n]),
                     nrow = df$n_samples[n], ncol = df$n_obs[n])
-      x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1[n], sd = df$sigma_1[n]),
+      x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1b[n], sd = df$sigma_1b[n]),
                     nrow = df$n_samples[n], ncol = df$n_obs[n])
       
-      x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
+      x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2a[n], sd = df$sigma_2a[n]),
                     nrow = df$n_samples[n], ncol = df$n_obs[n])
-      x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2[n], sd = df$sigma_2[n]),
+      x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2b[n], sd = df$sigma_2b[n]),
                     df$n_samples[n], df$n_obs[n])
       
       # Calculate difference of basic statistics
@@ -273,7 +297,7 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       
       # standard normal random
       diff_nrand = rowMeans(matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
-                          nrow = df$n_samples[n], ncol = df$n_obs[n]))
+                                   nrow = df$n_samples[n], ncol = df$n_obs[n]))
       df$fract_nrand_d2gtd1[n] = sum(diff_nrand > 0 ) / df$n_samples[n]
       df$mean_diff_nrand_2m1[n] = mean(diff_nrand)
       
@@ -304,7 +328,10 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   #' @param var_suffix
   #' @param long_format
   #' @param ref_colname
-
+  
+  # Check if gt_colname exists
+  if (length(grep(gt_colname, names(df))) == 0) stop("gt_colname does not exist in dataframe")
+  
   # Get list of all variables that match the variable suffix string
   matched_vars <- grep(var_suffix,colnames(df), perl=TRUE, value=TRUE)
   
@@ -312,7 +339,7 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   data = matrix(0, dim(df)[1], length(matched_vars))
   colnames(data) <- matched_vars
   df_gt_sub <- as_tibble(data)
- 
+  
   # Fill in resulting values depending on variable type
   # Frac: fraction of metrics of samples that satisfy some condition: to process,
   #        subtract these values from ground truth.
@@ -342,7 +369,7 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   # Flatten df_ref_sub into df_tidy. where each variable becomes a level of the factor 'Effect Size'
   if (long_format) {
     df_tidy <- df_ref_sub %>% gather(matched_vars,factor_key=TRUE)
-     names(df_tidy)[names(df_tidy) == "matched_vars"] <- "name"
+    names(df_tidy)[names(df_tidy) == "matched_vars"] <- "name"
   } else df_tidy <- df_ref_sub
   
   return(df_tidy)
@@ -388,16 +415,8 @@ n_sims = 1e2
 n_samples = 1e3
 n_obs = 50
 rand.seed = 0
+fig_basename = "f_5"
 
-# Generate normalized measurement data
-set.seed(rand.seed)
-xdata_list <- list()
-for (n in seq(1,4,1)) {
-  xdata_list[[n]] = matrix( rnorm( n_samples * n_obs, mean = 0, sd = 1), 
-                            n_samples, n_obs)
-}
-# x_a = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
-# x_b = matrix(rnorm(n_samples*n_obs, mean = 0, sd = 1), n_samples, n_obs)
 
 
 # Contest 1) Quantify Error rate with each metric discerining experiment
@@ -406,36 +425,22 @@ for (n in seq(1,4,1)) {
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                    mus_1  = runif(n_sims, 0, 2), 
-                                    sigmas_1 = rep(1,n_sims), 
-                                    mus_2  = runif(n_sims, 4, 5), 
-                                    sigmas_2 = rep(1,n_sims)) 
+                                   mus_1a  = rep(1,n_sims), 
+                                   sigmas_1a = rep(1,n_sims), 
+                                   mus_2a  = rep(1,n_sims), 
+                                   sigmas_2a = rep(1,n_sims),
+                                   mus_1b  = runif(n_sims, 1, 2), 
+                                   sigmas_1b = rep(1,n_sims), 
+                                   mus_2b  = runif(n_sims, 2, 3), 
+                                   sigmas_2b = rep(1,n_sims)) 
 # Quantify effect sizes in untidy matrix
 df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
-                                       "temp/EffectSizeContest_mean_shift.rds")
+                               "temp/EffectSizeContest_mean_shift.rds")
 
-## Plot error rates relative to groundtruth
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_sigmad_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
-                                            ref_colname = NULL)#"fract_xdbar_d2gtd1")
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                            base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                            pretty_names = effect_size_dict$label, 
-                            var_suffix = var_suffix)
-# Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d]") +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
-p
-
-## Plot error rates relative to reference value and groundtruth
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
-                                    var_suffix = var_suffix,long_format = TRUE,
-                                    ref_colname = "fract_xdbar_d2gtd1")
+                                    ref_colname = NULL)
 df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
                                           base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
                                           pretty_names = effect_size_dict$label, 
@@ -444,10 +449,13 @@ df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy,
 p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
   xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
+  ylab(expression(Error~Rate~Exp.~Lower~mu[d])) +
   scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
   theme_classic(base_size = 8) 
 p
+save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3.25, dpi = 600)
 
 
 # Contest 2) Quantify Error rate with each metric discerining experiment
@@ -456,17 +464,20 @@ p
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1  = runif(n_sims, 0, 2), 
-                                   sigmas_1 = rep(1,n_sims), 
-                                   mus_2  = runif(n_sims, 4, 5), 
-                                   sigmas_2 = rep(1,n_sims)) 
+                                   mus_1a  = runif(n_sims, -0.5, 0.5), 
+                                   sigmas_1a = rep(1,n_sims), 
+                                   mus_2a  = runif(n_sims, -0.5, 0.5), 
+                                   sigmas_2a = rep(1,n_sims),
+                                   mus_1b  = runif(n_sims, 1, 2), 
+                                   sigmas_1b = rep(1,n_sims), 
+                                   mus_2b  = runif(n_sims, 1, 2), 
+                                   sigmas_2b = rep(1,n_sims)) 
 # Quantify effect sizes in untidy matrix
 df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
                                "temp/EffectSizeContest_mean_shift.rds")
 
-## Plot error rates relative to groundtruth
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
 df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
@@ -477,28 +488,13 @@ df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy,
 p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
   xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d]") +
+  ylab(expression(Error~Rate~Exp.~Lower~mu[d])) +
   scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
   theme_classic(base_size = 8) 
 p
-
-## Plot error rates relative to reference value and groundtruth
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
-                                    var_suffix = var_suffix,long_format = TRUE,
-                                    ref_colname = "fract_xdbar_d2gtd1")
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                                          pretty_names = effect_size_dict$label, 
-                                          var_suffix = var_suffix)
-# Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
-p
-
+save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3.25, dpi = 600)
 
 
 
@@ -511,7 +507,7 @@ var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1  = runif(n_sims, 1, 2), 
                                    sigmas_1 = rep(1,n_sims), 
-                                   mus_2  = runif(n_sims, 4, 5), 
+                                   mus_2  = runif(n_sims, 1, 5), 
                                    sigmas_2 = rep(1,n_sims)) 
 # Quantify effect sizes in untidy matrix
 df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
@@ -519,7 +515,7 @@ df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path =
 
 ## Plot error rates relative to groundtruth
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
 df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
@@ -535,8 +531,10 @@ p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
   theme_classic(base_size = 8) 
 p
 
+
 ## Plot error rates relative to reference value and groundtruth
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mu_d2gtd1",
+#
+df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = "fract_xdbar_d2gtd1")
 df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
