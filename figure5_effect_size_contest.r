@@ -464,9 +464,9 @@ save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff",
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1a  = runif(n_sims, -0.5, 0.5), 
+                                   mus_1a  = runif(n_sims, -1, 1), 
                                    sigmas_1a = rep(1,n_sims), 
-                                   mus_2a  = runif(n_sims, -0.5, 0.5), 
+                                   mus_2a  = runif(n_sims, -1, 1), 
                                    sigmas_2a = rep(1,n_sims),
                                    mus_1b  = runif(n_sims, 1, 2), 
                                    sigmas_1b = rep(1,n_sims), 
@@ -481,7 +481,7 @@ df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
 df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+       base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
                                           pretty_names = effect_size_dict$label, 
                                           var_suffix = var_suffix)
 # Basic violin plot
@@ -499,65 +499,84 @@ save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff",
 
 
 
-# Contest 2) which metric is better at discerining exp. with lower std of 
+# Contest 2) which metric is better at discerining exp. with lower mean of
+# relative difference in means
+#
+#------------------------------------------------------------------------------
+var_suffix = "fract"
+df_rmu_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1a  = runif(n_sims, 10, 20), 
+                                   sigmas_1a = rep(1,n_sims), 
+                                   mus_2a  = runif(n_sims, 10, 20), 
+                                   sigmas_2a = rep(1,n_sims),
+                                   mus_1b  = runif(n_sims, 10, 20), 
+                                   sigmas_1b = rep(1,n_sims), 
+                                   mus_2b  = runif(n_sims, 10, 20), 
+                                   sigmas_2b = rep(1,n_sims)) 
+# Quantify effect sizes in untidy matrix
+df_rmu <- quantifyEffectSizes(df = df_rmu_init,overwrite = TRUE, out_path = 
+                               "temp/EffectSizeContest_mean_shift.rds")
+
+# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+df_rmu_tidy <- tidyEffectSizeResults(df = df_rmu, gt_colname = "is_rmud_d2gtd1",
+                                    var_suffix = var_suffix,long_format = TRUE,
+                                    ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_rmu_pretty <- pretty_effect_size_levels(df = df_rmu_tidy, 
+                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label, 
+                                          var_suffix = var_suffix)
+# Basic violin plot
+p <- ggplot(df_rmu_pretty, aes(x=name,  y=value)) +
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  xlab("Effect Size Metric") +
+  ylab(expression(Error~Rate~Exp.~Lower~r*mu[d])) +
+  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  theme_classic(base_size = 8) 
+p
+save_plot(paste("figure/", fig_basename, "1a effect size contest- rmu.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3.25, dpi = 600)
+
+
+
+
+# Contest 3) which metric is better at discerining exp. with lower std of 
 # difference in means
 #
 #------------------------------------------------------------------------------
 var_suffix = "fract"
-df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1  = runif(n_sims, 1, 2), 
-                                   sigmas_1 = rep(1,n_sims), 
-                                   mus_2  = runif(n_sims, 1, 5), 
-                                   sigmas_2 = rep(1,n_sims)) 
+df_rmu_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                       mus_1a  = rep(0,n_sims), 
+                                       sigmas_1a = rep(1,n_sims), 
+                                       mus_2a  = rep(0,n_sims), 
+                                       sigmas_2a = rep(1,n_sims),
+                                       mus_1b  = rep(0,n_sims), 
+                                       sigmas_1b = runif(n_sims, .1, 2),
+                                       mus_2b  = rep(0,n_sims), 
+                                       sigmas_2b = runif(n_sims, .1, 2))
 # Quantify effect sizes in untidy matrix
-df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
-                               "temp/EffectSizeContest_mean_shift.rds")
+df_rmu <- quantifyEffectSizes(df = df_rmu_init,overwrite = TRUE, out_path = 
+                                "temp/EffectSizeContest_sigma.rds")
 
-## Plot error rates relative to groundtruth
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
-                                    var_suffix = var_suffix,long_format = TRUE,
-                                    ref_colname = NULL)#"fract_xdbar_d2gtd1")
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                                          pretty_names = effect_size_dict$label, 
-                                          var_suffix = var_suffix)
+df_rmu_tidy <- tidyEffectSizeResults(df = df_rmu, gt_colname = "is_sigmad_d2gtd1",
+                                     var_suffix = var_suffix,long_format = TRUE,
+                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_rmu_pretty <- pretty_effect_size_levels(df = df_rmu_tidy, 
+                                           base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+                                           pretty_names = effect_size_dict$label, 
+                                           var_suffix = var_suffix)
 # Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
+p <- ggplot(df_rmu_pretty, aes(x=name,  y=value)) +
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
   xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d]") +
+  ylab(expression(Error~Rate~Exp.~Lower~sigma[d])) +
   scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
   theme_classic(base_size = 8) 
 p
-
-
-## Plot error rates relative to reference value and groundtruth
-#
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
-                                    var_suffix = var_suffix,long_format = TRUE,
-                                    ref_colname = "fract_xdbar_d2gtd1")
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                                          pretty_names = effect_size_dict$label, 
-                                          var_suffix = var_suffix)
-# Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  xlab("Effect Size Metric") +
-  ylab("Error Rate Lower mu[d] from bar(x)[d]") +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
-p
-
-
-
-
-
-# Contest 3) which metric is correlates best with absolute effect size
-#
-#------------------------------------------------------------------------------
-
+save_plot(paste("figure/", fig_basename, "1a effect size contest- sigma.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3.25, dpi = 600)
 
 
 # Contest 4) Quantify each metric's correlation with absolute relative effect size
