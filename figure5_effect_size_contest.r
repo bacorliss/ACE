@@ -26,7 +26,7 @@ library(tidyr)
 library(cowplot)
 library(dplyr)
 # library(effsize)
-
+library(boot)
 # User defined libraries
 source("R/mmd.R")
 
@@ -348,8 +348,10 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   for (n in seq(1,length(matched_vars), by = 1)) {
     if (var_suffix == "fract") {
       # If var_suffix is "fract.*", for cases where GT vector is TRUE, compute (1-x)
-      df_gt_sub[[matched_vars[n]]][ df[[gt_colname]]] <- 1-df[[matched_vars[n]]][ df[[gt_colname]]]
-      df_gt_sub[[matched_vars[n]]][!df[[gt_colname]]] <-   df[[matched_vars[n]]][!df[[gt_colname]]]
+      df_gt_sub[[matched_vars[n]]][ df[[gt_colname]]] <- 
+        1 - df[[matched_vars[n]]][ df[[gt_colname]]]
+      df_gt_sub[[matched_vars[n]]][!df[[gt_colname]]] <-   
+        df[[matched_vars[n]]][!df[[gt_colname]]]
     } else {
       # if var_suffix is "mean_diff.*", subtract from GT
       df_gt_sub[matched_vars[n]] = df[matched_vars[n]] - gt_vector
@@ -405,6 +407,8 @@ pretty_effect_size_levels<- function(df,base_names, pretty_names, var_suffix) {
   
 }
 
+boot_xbar <- function(x, ind)  mean(x[ind])
+extend_max_lim <- function(x,prc) max(x) + prc* (max(x)-min(x))
 
 # Simulation parameters
 # 
@@ -419,7 +423,7 @@ fig_basename = "f_5"
 
 
 
-# Contest 1) Quantify Error rate with each metric discerining experiment
+# Contest 1-1) Quantify Error rate with each metric discerining experiment
 # with lower mean difference in means
 #
 #------------------------------------------------------------------------------
@@ -434,67 +438,98 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_2b  = runif(n_sims, 2, 3), 
                                    sigmas_2b = rep(1,n_sims)) 
 # Quantify effect sizes in untidy matrix
-df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
                                "temp/EffectSizeContest_mean_shift.rds")
 
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_sigmad_d2gtd1",
+df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = "is_sigmad_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+df_pretty <- pretty_effect_size_levels(df = df_tidy, 
+                                          base_names = paste(var_suffix,"_",
+                                          effect_size_dict$base, "_", sep=""),
                                           pretty_names = effect_size_dict$label, 
                                           var_suffix = var_suffix)
+# Calculate confidence interval
+df_result <- df_pretty %>%   group_by(name) %>% 
+  summarize(mean = mean(value), bs_ci_mean_str = toString(boot.ci(boot(value, 
+            statistic = function(x, ind)  mean(x[ind]), R = 10000),
+            conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$basic[c(4,5)]))
+df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[1]))
+df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[2]))
+df_result$is_mean_0.5 <- 0.5>df_result$bs_ci_mean_lower & 0.5 < df_result$bs_ci_mean_upper
+ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
 # Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+p <- ggplot(df_result, aes(x=name,  y=mean, group=name, label=ifelse(!is_mean_0.5, "*", ""))) +
+  geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+  geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper),size = 0.5) +
+  geom_point(size=1,fill="white", shape=1) + 
   xlab("Effect Size Metric") +
-  ylab(expression(Error~Rate~Exp.~Lower~mu[d])) +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
+  ylab(expression(Error~Rate~(Lower~mu[d]))) +
+  scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
+  expand_limits(y = extend_max_lim(ci_range, 0.1)) +
+  geom_text(y = extend_max_lim(ci_range, 0.1), size=4) +
   theme_classic(base_size = 8) 
 p
-save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff", 
+save_plot(paste("figure/", fig_basename, "_1a effect size contest- mu.tiff", 
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3.25, dpi = 600)
 
 
-# Contest 2) Quantify Error rate with each metric discerining experiment
-# with lower mean difference in means
-#
-#------------------------------------------------------------------------------
-var_suffix = "fract"
-df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1a  = runif(n_sims, -1, 1), 
-                                   sigmas_1a = rep(1,n_sims), 
-                                   mus_2a  = runif(n_sims, -1, 1), 
-                                   sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 1, 2), 
-                                   sigmas_1b = rep(1,n_sims), 
-                                   mus_2b  = runif(n_sims, 1, 2), 
-                                   sigmas_2b = rep(1,n_sims)) 
-# Quantify effect sizes in untidy matrix
-df_mu <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
-                               "temp/EffectSizeContest_mean_shift.rds")
-
-# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_mu_tidy <- tidyEffectSizeResults(df = df_mu, gt_colname = "is_mud_d2gtd1",
-                                    var_suffix = var_suffix,long_format = TRUE,
-                                    ref_colname = NULL)#"fract_xdbar_d2gtd1")
-df_mu_pretty <- pretty_effect_size_levels(df = df_mu_tidy, 
-       base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                                          pretty_names = effect_size_dict$label, 
-                                          var_suffix = var_suffix)
-# Basic violin plot
-p <- ggplot(df_mu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  xlab("Effect Size Metric") +
-  ylab(expression(Error~Rate~Exp.~Lower~mu[d])) +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
-p
-save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff", 
-                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 3.25, dpi = 600)
+# # Contest 1-2) Quantify Error rate with each metric discerining experiment
+# # with lower mean difference in means
+# #
+# #------------------------------------------------------------------------------
+# var_suffix = "fract"
+# df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+#                                    mus_1a  = runif(n_sims, -1, 1), 
+#                                    sigmas_1a = rep(1,n_sims), 
+#                                    mus_2a  = runif(n_sims, -1, 1), 
+#                                    sigmas_2a = rep(1,n_sims),
+#                                    mus_1b  = runif(n_sims, 1, 2), 
+#                                    sigmas_1b = rep(1,n_sims), 
+#                                    mus_2b  = runif(n_sims, 1, 2), 
+#                                    sigmas_2b = rep(1,n_sims)) 
+# # Quantify effect sizes in untidy matrix
+# df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+#                                "temp/EffectSizeContest_mean_shift2.rds")
+# 
+# # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+# df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = "is_mud_d2gtd1",
+#                                     var_suffix = var_suffix,long_format = TRUE,
+#                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
+# df_pretty <- pretty_effect_size_levels(df = df_tidy, 
+#        base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+#                                           pretty_names = effect_size_dict$label, 
+#                                           var_suffix = var_suffix)
+# # Calculate confidence interval
+# df_result <- df_pretty %>%   group_by(name) %>% 
+#   summarize(mean = mean(value), bs_ci_mean_str = toString(
+#     boot.ci(boot(value,statistic = function(x, ind)  mean(x[ind]), R = 10000),
+#     conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$basic[c(4,5)]))
+# df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+#                                      function(x) as.numeric(x[1]))
+# df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+#                                      function(x) as.numeric(x[2]))
+# df_result$is_mean_0.5 <- 0.5>df_result$bs_ci_mean_lower & 0.5 < df_result$bs_ci_mean_upper
+# ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
+# # Basic violin plot
+# p <- ggplot(df_result, aes(x=name,  y=mean, group=name, label=ifelse(!is_mean_0.5, "*", ""))) +
+#   geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+#   geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper),size = 0.5) +
+#   geom_point(size=1,fill="white", shape=1) + 
+#   xlab("Effect Size Metric") +
+#   ylab(expression(Error~Rate~(Lower~mu[d]))) +
+#   scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
+#   expand_limits(y = extend_max_lim(ci_range, 0.20)) +
+#   geom_text(y = extend_max_lim(ci_range, 0.20), size=3) +
+#   theme_classic(base_size = 8)
+# p
+# save_plot(paste("figure/", fig_basename, "_1b effect size contest- mu.tiff", 
+#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+#           base_asp = 3, base_width = 3.25, dpi = 600)
 
 
 
@@ -504,36 +539,52 @@ save_plot(paste("figure/", fig_basename, "1a effect size contest- mu.tiff",
 #
 #------------------------------------------------------------------------------
 var_suffix = "fract"
-df_rmu_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1a  = runif(n_sims, 10, 20), 
-                                   sigmas_1a = rep(1,n_sims), 
-                                   mus_2a  = runif(n_sims, 10, 20), 
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
+                                   mus_1a  = runif(n_sims, 10, 20),
+                                   sigmas_1a = rep(1,n_sims),
+                                   mus_2a  = runif(n_sims, 10, 20),
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 10, 20), 
-                                   sigmas_1b = rep(1,n_sims), 
-                                   mus_2b  = runif(n_sims, 10, 20), 
-                                   sigmas_2b = rep(1,n_sims)) 
+                                   mus_1b  = runif(n_sims, 10, 20),
+                                   sigmas_1b = rep(1,n_sims),
+                                   mus_2b  = runif(n_sims, 10, 20),
+                                   sigmas_2b = rep(1,n_sims))
 # Quantify effect sizes in untidy matrix
-df_rmu <- quantifyEffectSizes(df = df_rmu_init,overwrite = TRUE, out_path = 
-                               "temp/EffectSizeContest_mean_shift.rds")
+df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path =
+                               "temp/EffectSizeContest_rmean_shift.rds")
 
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_rmu_tidy <- tidyEffectSizeResults(df = df_rmu, gt_colname = "is_rmud_d2gtd1",
+df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = "is_rmud_d2gtd1",
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
-df_rmu_pretty <- pretty_effect_size_levels(df = df_rmu_tidy, 
-                                          base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
-                                          pretty_names = effect_size_dict$label, 
+df_pretty <- pretty_effect_size_levels(df = df_tidy,
+                                          base_names = paste(var_suffix,"_",
+                                          effect_size_dict$base, "_", sep=""),
+                                          pretty_names = effect_size_dict$label,
                                           var_suffix = var_suffix)
+# Calculate confidence interval
+df_result <- df_pretty %>%   group_by(name) %>%
+  summarize(mean = mean(value), bs_ci_mean_str = toString(
+    boot.ci(boot(value,statistic = function(x, ind)  mean(x[ind]), R = 10000),
+            conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$basic[c(4,5)]))
+df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","),
+                                     function(x) as.numeric(x[1]))
+df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","),
+                                     function(x) as.numeric(x[2]))
+df_result$is_mean_0.5 <- 0.5>df_result$bs_ci_mean_lower & 0.5 < df_result$bs_ci_mean_upper
+ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
 # Basic violin plot
-p <- ggplot(df_rmu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+p <- ggplot(df_result, aes(x=name,  y=mean, group=name, label=ifelse(!is_mean_0.5, "*", ""))) +
+  geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+  geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper),size = 0.5) +
+  geom_point(size=1,fill="white", shape=1) +
   xlab("Effect Size Metric") +
-  ylab(expression(Error~Rate~Exp.~Lower~r*mu[d])) +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
+  ylab(expression(Error~Rate~(Lower~r*mu[d]))) +
+  scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
+  expand_limits(y = extend_max_lim(ci_range, 0.20)) +
+  geom_text(y = extend_max_lim(ci_range, 0.20), size=4) +
+  theme_classic(base_size = 8)
 p
-save_plot(paste("figure/", fig_basename, "1a effect size contest- rmu.tiff", 
+save_plot(paste("figure/", fig_basename, "_3c effect size contest- rmu.tiff",
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3.25, dpi = 600)
 
@@ -545,7 +596,7 @@ save_plot(paste("figure/", fig_basename, "1a effect size contest- rmu.tiff",
 #
 #------------------------------------------------------------------------------
 var_suffix = "fract"
-df_rmu_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                        mus_1a  = rep(0,n_sims), 
                                        sigmas_1a = rep(1,n_sims), 
                                        mus_2a  = rep(0,n_sims), 
@@ -555,31 +606,118 @@ df_rmu_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                        mus_2b  = rep(0,n_sims), 
                                        sigmas_2b = runif(n_sims, .1, 2))
 # Quantify effect sizes in untidy matrix
-df_rmu <- quantifyEffectSizes(df = df_rmu_init,overwrite = TRUE, out_path = 
+df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
                                 "temp/EffectSizeContest_sigma.rds")
 
 # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-df_rmu_tidy <- tidyEffectSizeResults(df = df_rmu, gt_colname = "is_sigmad_d2gtd1",
+df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = "is_sigmad_d2gtd1",
                                      var_suffix = var_suffix,long_format = TRUE,
                                      ref_colname = NULL)#"fract_xdbar_d2gtd1")
-df_rmu_pretty <- pretty_effect_size_levels(df = df_rmu_tidy, 
-                                           base_names = paste(var_suffix,"_", effect_size_dict$base, "_", sep=""),
+df_pretty <- pretty_effect_size_levels(df = df_tidy, 
+                                           base_names = paste(var_suffix,"_", 
+                                           effect_size_dict$base, "_", sep=""),
                                            pretty_names = effect_size_dict$label, 
                                            var_suffix = var_suffix)
+# Calculate confidence interval
+df_result <- df_pretty %>%   group_by(name) %>% 
+  summarize(mean = mean(value), bs_ci_mean_str = toString(
+    boot.ci(boot(value,statistic = function(x, ind)  mean(x[ind]), R = 10000),
+            conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$basic[c(4,5)]))
+df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[1]))
+df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[2]))
+df_result$is_mean_0.5 <- 0.5>df_result$bs_ci_mean_lower & 0.5 < df_result$bs_ci_mean_upper
+ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
 # Basic violin plot
-p <- ggplot(df_rmu_pretty, aes(x=name,  y=value)) +
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+p <- ggplot(df_result, aes(x=name,  y=mean, group=name, label=ifelse(!is_mean_0.5, "*", ""))) +
+  geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+  geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper),size = 0.5) +
+  geom_point(size=1,fill="white", shape=1) + 
   xlab("Effect Size Metric") +
-  ylab(expression(Error~Rate~Exp.~Lower~sigma[d])) +
-  scale_x_discrete(labels = parse(text = levels(df_mu_pretty$name))) +
-  theme_classic(base_size = 8) 
+  ylab(expression(Error~Rate~(Lower~sigma[d]))) +
+  scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
+  expand_limits(y = extend_max_lim(ci_range, 0.20)) +
+  geom_text(y = extend_max_lim(ci_range, 0.20), size=4) +
+  theme_classic(base_size = 8)
 p
-save_plot(paste("figure/", fig_basename, "1a effect size contest- sigma.tiff", 
+save_plot(paste("figure/", fig_basename, "_4d effect size contest- sigma.tiff", 
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 3.25, dpi = 600)
 
 
-# Contest 4) Quantify each metric's correlation with absolute relative effect size
+
+# Contest 4) which metric is better at discerining exp. with lower rel. std of 
+# difference in means
+#
+#------------------------------------------------------------------------------
+var_suffix = "fract"
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                       mus_1a  = rep(0,n_sims), 
+                                       sigmas_1a = rep(1,n_sims), 
+                                       mus_2a  = rep(0,n_sims), 
+                                       sigmas_2a = rep(1,n_sims),
+                                       mus_1b  = rep(0,n_sims), 
+                                       sigmas_1b = runif(n_sims, .1, 2),
+                                       mus_2b  = rep(0,n_sims), 
+                                       sigmas_2b = runif(n_sims, .1, 2))
+# Quantify effect sizes in untidy matrix
+df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = 
+                                "temp/EffectSizeContest_rsigma.rds")
+
+# Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = "is_rsigmad_d2gtd1",
+                                     var_suffix = var_suffix,long_format = TRUE,
+                                     ref_colname = NULL)#"fract_xdbar_d2gtd1")
+df_pretty <- pretty_effect_size_levels(df = df_tidy, 
+                                           base_names = paste(var_suffix,"_", 
+                                           effect_size_dict$base, "_", sep=""),
+                                           pretty_names = effect_size_dict$label, 
+                                           var_suffix = var_suffix)
+# Calculate confidence interval
+df_result <- df_pretty %>%   group_by(name) %>% 
+  summarize(mean = mean(value), bs_ci_mean_str = toString(
+    boot.ci(boot(value,statistic = function(x, ind)  mean(x[ind]), R = 10000),
+            conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$basic[c(4,5)]))
+df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[1]))
+df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
+                                     function(x) as.numeric(x[2]))
+df_result$is_mean_0.5 <- 0.5>=df_result$bs_ci_mean_lower & 0.5<=df_result$bs_ci_mean_upper
+ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
+# Basic violin plot
+p <- ggplot(df_result, aes(x=name,  y=mean, group=name, label=ifelse(!is_mean_0.5, "*", ""))) +
+  geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+  geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper),size = 0.5) +
+  geom_point(size=1,fill="white", shape=1) + 
+  xlab("Effect Size Metric") +
+  ylab(expression(Error~Rate~(Lower~r*sigma[d]))) +
+  scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
+  expand_limits(y = extend_max_lim(ci_range, 0.20)) +
+  geom_text(y = extend_max_lim(ci_range, 0.20), size=4) +
+  theme_classic(base_size = 8)
+p
+save_plot(paste("figure/", fig_basename, "_5e effect size contest- rsigma.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 3.25, dpi = 600)
+
+
+
+
+
+
+
+
+# Contest 5) which metric is best at discerning experiments below a threshold 
+# difference in means
+#
+#------------------------------------------------------------------------------
+
+
+
+
+# Contest 6) which metric is best at discerning experiments below a threshold 
+# relative difference in means
 #
 #------------------------------------------------------------------------------
 
