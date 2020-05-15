@@ -158,23 +158,31 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     # Sampling data
     n_obs = n_obs, n_samples = n_samples
   )
-  # Computed statistics of difference of means distribution (mu2 - mu1)
+  # Computed statistics of difference of means distribution 
+  # d = mu2 - mu1
+  # sigma = sigma_pooled
+  mu_d1  <- df$mu_1b - df$mu_1a
+  mu_d2 <- df$mu_2b - df$mu_2a
+  sigma_d1 <- sqrt(df$sigma_1b^2/n_obs + df$sigma_1a^2/n_obs)
+  sigma_d2 <- sqrt(df$sigma_2b^2/n_obs + df$sigma_2a^2/n_obs)
+  
+  
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  (df$mu_2b - df$mu_2a) > (df$mu_1b - df$mu_1a)
+  df$is_mud_d2gtd1 <-  mu_d2 > mu_d1
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  (df$mu_2b - df$mu_2a)/df$mu_2a > (df$mu_1b - df$mu_1a)/df$mu_1a
+  df$is_rmud_d2gtd1 <-  mu_d2/df$mu_2a > mu_d1/df$mu_1a
   # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 = (df$mu_2b - df$mu_2a) - (df$mu_1b - df$mu_1a)
-  df$mean_rmud_d2md1 = (df$mu_2b - df$mu_2a)/df$mu_2a - (df$mu_1b - df$mu_1a)/df$mu_1a
+  df$mean_mud_d2md1 = mu_d2 - mu_d1
+  df$mean_rmud_d2md1 = mu_d2/df$mu_2a - mu_d1/df$mu_1a
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_d2gtd1 =  (df$sigma_2b - df$sigma_2a) > (df$sigma_1b - df$sigma_1a)
+  df$is_sigmad_d2gtd1 =  sigma_d2 > sigma_d1
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 =  (df$sigma_2b - df$sigma_2a)/df$mu_2a > 
-    (df$sigma_1b - df$sigma_1a)/df$mu_1a
+  df$is_rsigmad_d2gtd1 =  sigma_d2/df$sigma_2a > 
+    sigma_d1/df$sigma_1a
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigmad_d2md1 = (df$sigma_2b - df$sigma_2a) - (df$sigma_1b - df$sigma_1a)
-  df$mean_rsigmad_d2md1 = (df$sigma_2b - df$sigma_2a)/df$mu_2a -
-    (df$sigma_1b - df$sigma_1a)/df$mu_1a
+  df$mean_sigmad_d2md1 = sigma_d2 - sigma_d1
+  df$mean_rsigmad_d2md1 = sigma_d2/df$sigma_2a -
+    sigma_d1/df$sigma_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
@@ -183,6 +191,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
             effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
   df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
             effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
+  
+  # browser()
   return(df)
 }
 
@@ -230,8 +240,8 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       xdbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
       xdbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
       
-      sdd_1 = rowSds(x_1b) - rowSds(x_1a)
-      sdd_2 = rowSds(x_2b) - rowSds(x_2a)
+      sdd_1 = sqrt(rowSds(x_1b)^2/df$n_obs + rowSds(x_1a)^2/df$n_obs)
+      sdd_2 = sqrt(rowSds(x_2b)^2/df$n_obs + rowSds(x_2a)^2/df$n_obs)
       
       # Basic Summary statistical comparisons
       # Means
@@ -310,6 +320,7 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
   } else {
     # Restore the dataframed results from disk
     df <- readRDS(file = out_path)
+    
   }
   return(df)
 }
@@ -446,6 +457,13 @@ quantifyTidyPlot_Data <- function(df_init, gt_colname, y_label_str, out_path, fi
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
   # browser()
+  
+  
+  all_dfs <- vector(mode="list", length=4)
+  names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_result")
+  all_dfs[[1]] <- df_es; all_dfs[[2]] <- df_tidy; 
+  all_dfs[[3]] <- df_pretty; all_dfs[[4]] <- df_result; 
+  return(all_dfs)
 }
 
 
@@ -512,13 +530,13 @@ quantifyTidyPlot_Data(df_init, gt_colname = "is_rmud_d2gtd1",
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                       mus_1a  = rep(0,n_sims), 
+                                       mus_1a  = rep(1,n_sims), 
                                        sigmas_1a = rep(1,n_sims), 
-                                       mus_2a  = rep(0,n_sims), 
+                                       mus_2a  = rep(1,n_sims), 
                                        sigmas_2a = rep(1,n_sims),
-                                       mus_1b  = rep(0,n_sims), 
+                                       mus_1b  = rep(1,n_sims), 
                                        sigmas_1b = runif(n_sims, .1, 2),
-                                       mus_2b  = rep(0,n_sims), 
+                                       mus_2b  = rep(1,n_sims), 
                                        sigmas_2b = runif(n_sims, .1, 2))
 quantifyTidyPlot_Data(df_init, gt_colname = "is_sigmad_d2gtd1", 
                       y_label_str = expression(Error~Rate~(Lower~sigma[d])),
@@ -532,13 +550,13 @@ quantifyTidyPlot_Data(df_init, gt_colname = "is_sigmad_d2gtd1",
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                       mus_1a  = rep(0,n_sims), 
+                                       mus_1a  = rep(1,n_sims), 
                                        sigmas_1a = rep(1,n_sims), 
-                                       mus_2a  = rep(0,n_sims), 
+                                       mus_2a  = rep(1,n_sims), 
                                        sigmas_2a = rep(1,n_sims),
-                                       mus_1b  = rep(0,n_sims), 
+                                       mus_1b  = rep(1,n_sims), 
                                        sigmas_1b = runif(n_sims, 1, 2),
-                                       mus_2b  = rep(0,n_sims), 
+                                       mus_2b  = rep(1,n_sims), 
                                        sigmas_2b = runif(n_sims, 9, 10))
 quantifyTidyPlot_Data(df_init, gt_colname = "is_rsigmad_d2gtd1", 
                       y_label_str = expression(Error~Rate~(Lower~r*sigma[d])),
