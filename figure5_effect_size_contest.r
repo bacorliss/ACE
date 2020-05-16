@@ -62,40 +62,6 @@ rowTScore <- function(m1, m2) {
     sqrt( (n1 - 1)/(n - 2)*rowVars(m1) + (n2 - 1)/(n - 2)*rowVars(m2) ) 
 }
 
-# Simulation Functions
-#
-#-------------------------------------------------------------------------------
-#
-# Code structure: 
-# 1. two groups of untransformed sample sets are generated (x_a,x_b)
-# 2. Transform coefficients for experiment 1 and 2 are generated
-# 3. For each simulation, coefficients are applied
-#     1. x_a [exp_1_coeffs]-> x1a
-#     2. x_b [exp_1_coeffs]-> x1b
-#     1. x_a [exp_2_coeffs]-> x2a
-#     2. x_b [exp_2_coeffs]-> x2b
-#     
-#                      x_a                  x_b
-#                   |       \           /        |
-#                   |         \       /          |
-#                   |           \   /            |
-#                   |            / \             |
-#                   |          /     \           |
-#                ______________    ______________
-#               | exp_1_coeffs |  | exp_2 coeffs |
-#               |______________|  |______________| 
-#                   |       /           \      | 
-#                 x_1a    x_1b        x_2a    x_2b
-#                    \    /               \   /
-#                     \  /                 \ /
-#                   metric_1            metric_2
-#
-#
-# Results are store in a dataframe, where each row is a simulation with summary 
-#     data from a large collection of samples. For each metric
-#
-# 1. fraction of samples where exp 2 has a greater metric value than exp 1
-# 2. mean difference between metric values of [exp 2] - [exp 1]
 
 
 # Dictionary to keep track of variables tracking effect size metrics
@@ -111,9 +77,6 @@ effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","t", "p",
                            "r*delta[M]","N(0,1)")
 
 # default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
-
-
-
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a  = rep(0,n_sims), 
@@ -161,28 +124,26 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Computed statistics of difference of means distribution 
   # d = mu2 - mu1
   # sigma = sigma_pooled
-  mu_d1  <- df$mu_1b - df$mu_1a
-  mu_d2 <- df$mu_2b - df$mu_2a
-  sigma_d1 <- sqrt(df$sigma_1b^2/n_obs + df$sigma_1a^2/n_obs)
-  sigma_d2 <- sqrt(df$sigma_2b^2/n_obs + df$sigma_2a^2/n_obs)
+  df$mu_d1 <- df$mu_1b - df$mu_1a
+  df$mu_d2 <- df$mu_2b - df$mu_2a
+  df$sigma_d1 <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
+  df$sigma_d2 <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
   
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  mu_d2 > mu_d1
+  df$is_mud_d2gtd1 <-  df$mu_d2 > df$mu_d1
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  mu_d2/df$mu_2a > mu_d1/df$mu_1a
+  df$is_rmud_d2gtd1 <-  (df$mu_d2/df$mu_2a) > (df$mu_d1/df$mu_1a)
   # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 = mu_d2 - mu_d1
-  df$mean_rmud_d2md1 = mu_d2/df$mu_2a - mu_d1/df$mu_1a
+  df$mean_mud_d2md1 <- df$mu_d2 - df$mu_d1
+  df$mean_rmud_d2md1 <- (df$mu_d2/df$mu_2a) - (df$mu_d1/df$mu_1a)
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_d2gtd1 =  sigma_d2 > sigma_d1
+  df$is_sigmad_d2gtd1 <-  df$sigma_d2 > df$sigma_d1
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 =  sigma_d2/df$sigma_2a > 
-    sigma_d1/df$sigma_1a
+  df$is_rsigmad_d2gtd1 <-  (df$sigma_d2/df$sigma_2a) > (df$sigma_d1/df$sigma_1a)
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigmad_d2md1 = sigma_d2 - sigma_d1
-  df$mean_rsigmad_d2md1 = sigma_d2/df$sigma_2a -
-    sigma_d1/df$sigma_1a
+  df$mean_sigmad_d2md1 <- df$sigma_d2 - df$sigma_d1
+  df$mean_rsigmad_d2md1 <- df$sigma_d2/df$sigma_2a - df$sigma_d1/df$sigma_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
@@ -235,11 +196,10 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2b[n], sd = df$sigma_2b[n]),
                     df$n_samples[n], df$n_obs[n])
       
-      # Calculate difference of basic statistics
-      # Metric[B] - Metric[A]
+      # Sample estimate of difference in means
       xdbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
       xdbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
-      
+      # Sample estimate of standard deviation of difference in means
       sdd_1 = sqrt(rowSds(x_1b)^2/df$n_obs + rowSds(x_1a)^2/df$n_obs)
       sdd_2 = sqrt(rowSds(x_2b)^2/df$n_obs + rowSds(x_2a)^2/df$n_obs)
       
@@ -510,13 +470,13 @@ quantifyTidyPlot_Data(df_init, gt_colname = "is_mud_d2gtd1",
 #------------------------------------------------------------------------------
 var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
-                                   mus_1a  = runif(n_sims, 10, 20),
+                                   mus_1a  = rep(50, n_sims),
                                    sigmas_1a = rep(1,n_sims),
-                                   mus_2a  = runif(n_sims, 10, 20),
+                                   mus_2a  = rep(50, n_sims),
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 10, 20),
+                                   mus_1b  = runif(n_sims, 10, 100),
                                    sigmas_1b = rep(1,n_sims),
-                                   mus_2b  = runif(n_sims, 10, 20),
+                                   mus_2b  = runif(n_sims, 10, 100),
                                    sigmas_2b = rep(1,n_sims))
 quantifyTidyPlot_Data(df_init, gt_colname = "is_rmud_d2gtd1", 
                       y_label_str = expression(Error~Rate~(Lower~r*mu[d])),
