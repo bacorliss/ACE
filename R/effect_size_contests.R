@@ -82,9 +82,9 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  df$mu_d2 > df$mu_d1
+  df$is_mud_d2gtd1 <-  abs(df$mu_d2) > abs(df$mu_d1)
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  (df$mu_d2/df$mu_2a) > (df$mu_d1/df$mu_1a)
+  df$is_rmud_d2gtd1 <-  abs(df$mu_d2/df$mu_2a) > abs(df$mu_d1/df$mu_1a)
   # Is: pop_std2 > pop_std1 (TRUE)
   df$is_sigmad_d2gtd1 <-  df$sigma_d2 > df$sigma_d1
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
@@ -109,7 +109,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   return(df)
 }
 
-quantifyEffectSizes <- function(df, overwrite = FALSE,
+quantify_esize_simulations <- function(df, overwrite = FALSE,
                                 out_path = "temp/quanitfyEffectSizes.rds", 
                                 rand.seed = 0) {
   #' Simulate experiments generated from generateExperiment_Data() and calcualte
@@ -156,11 +156,11 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       # xdbar_1 = abs(rowMeans(x_1b) - rowMeans(x_1a))
       # xdbar_2 = abs(rowMeans(x_2b) - rowMeans(x_2a))
       
+      # xdbar_1 = rowMeans(x_1b) - rowMeans(x_1a)
+      # xdbar_2 = rowMeans(x_2b) - rowMeans(x_2a)
+      
       xdbar_1 = rowMeans(x_1b) - rowMeans(x_1a)
       xdbar_2 = rowMeans(x_2b) - rowMeans(x_2a)
-      
-      xdbar_1 = rowMeans(abs(x_1b)) - rowMeans(abs(x_1a))
-      xdbar_2 = rowMeans(abs(x_2b)) - rowMeans(abs(x_2a))
       
       # Sample estimate of standard deviation of difference in means
       sdd_1 = sqrt(rowSds(x_1a)^2/df$n_obs + rowSds(x_1b)^2/df$n_obs)
@@ -168,15 +168,15 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       
       # Basic Summary statistical comparisons
       # Means
-      df$fract_xdbar_d2gtd1[n] = sum(xdbar_2 > xdbar_1)/df$n_samples[n]
-      df$mean_diff_xdbar_2m1[n]  = mean(xdbar_2 - xdbar_1)
+      df$fract_xdbar_d2gtd1[n] = sum(abs(xdbar_2) > abs(xdbar_1))/df$n_samples[n]
+      df$mean_diff_xdbar_2m1[n]  = mean(abs(xdbar_2) - abs(xdbar_1))
       
       # Stds
       df$fract_sd_d2gtd1[n] = sum(sdd_2 > sdd_1)/df$n_samples[n]
       df$mean_diff_sd_2m1[n]  = mean(sdd_2 - sdd_1)
       
       # Rel Means: mean divided by control mean
-      diff_rxdbar = xdbar_2/rowMeans(x_2a) - xdbar_1/rowMeans(x_1a)
+      diff_rxdbar = abs(xdbar_2/rowMeans(x_2a)) - abs(xdbar_1/rowMeans(x_1a))
       df$fract_rxdbar_d2gtd1[n] = sum( diff_rxdbar > 0) / df$n_samples[n]
       df$mean_diff_rxdbar_2m1[n]  =  mean(diff_rxdbar)
       
@@ -195,9 +195,11 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
       df$mean_diff_t_score_2m1[n] = mean( (t_score_2 - t_score_1))
       
       # Pvalue
+      # Closer two means are, higher the p-valie
+      # Must switch signs
       diff_p_value <- pt(t_score_2, df = pmin(df$n_obs[n], df$n_obs[n]) - 1) - 
         pt(t_score_1, df = pmin(df$n_obs[n], df$n_obs[n]) - 1)
-      df$fract_p_value_d2gtd1[n] = sum(diff_p_value > 0) / df$n_samples[n]
+      df$fract_p_value_d2gtd1[n] = sum(-diff_p_value > 0) / df$n_samples[n]
       df$mean_diff_p_value_2m1 = mean(diff_p_value)
       
       # Delta Family of effect size
@@ -252,7 +254,7 @@ quantifyEffectSizes <- function(df, overwrite = FALSE,
 
 
 
-tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRUE,
+tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TRUE,
                                    ref_colname = NULL) {
   #' Normalize a subset of variables in df and then flatten data frame
   #' 
@@ -314,7 +316,7 @@ tidyEffectSizeResults <- function (df, gt_colname, var_suffix, long_format = TRU
   return(df_tidy)
 }
 
-pretty_effect_size_levels<- function(df,base_names, pretty_names, var_suffix) {
+pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
   #' Convert long levels names to shorter ones for pretty print in plots
   #' 
   #' @description 
@@ -344,19 +346,7 @@ pretty_effect_size_levels<- function(df,base_names, pretty_names, var_suffix) {
   
 }
 
-quantifyTidyPlot_Data <- function(df_init, gt_colname, y_label_str, out_path, fig_name) {
-  # Quantify effect sizes in untidy matrix
-  df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = out_path)
-  
-  # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-  df_tidy <- tidyEffectSizeResults(df = df_es, gt_colname = gt_colname,
-                                   var_suffix = var_suffix,long_format = TRUE,
-                                   ref_colname = NULL)
-  df_pretty <- pretty_effect_size_levels(df = df_tidy, 
-                                         base_names = paste(var_suffix,"_",
-                                                            effect_size_dict$base, "_", sep=""),
-                                         pretty_names = effect_size_dict$label, 
-                                         var_suffix = var_suffix)
+plot_esize_simulations <- function(df_pretty, fig_name, y_ax_label) {
   # Calculate confidence interval
   df_result <- df_pretty %>%   
     group_by(name) %>% 
@@ -379,7 +369,7 @@ quantifyTidyPlot_Data <- function(df_init, gt_colname, y_label_str, out_path, fi
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape=1) + 
     xlab("Effect Size Metric") +
-    ylab(y_label_str) +
+    ylab(y_ax_label) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = extend_max_lim(ci_range, 0.1)) +
     geom_text(y = extend_max_lim(ci_range, 0.1), size=4) +
@@ -388,11 +378,32 @@ quantifyTidyPlot_Data <- function(df_init, gt_colname, y_label_str, out_path, fi
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
   # browser()
+  return(df_result)
+  
+  
+}
+
+process_esize_simulations <- function(df_init, gt_colname, y_ax_label, out_path, fig_name) {
+  # Quantify effect sizes in untidy matrix
+  df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path)
+  
+  # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
+  df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
+                                   var_suffix = var_suffix,long_format = TRUE,
+                                   ref_colname = NULL)
+  df_pretty <- 
+    pretty_esize_levels(df = df_tidy, base_names = paste(var_suffix,"_",
+                                                         effect_size_dict$base, "_", sep=""),
+                                         pretty_names = effect_size_dict$label, 
+                                         var_suffix = var_suffix)
+  
+  # Plot effect size results
+  df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_label = y_ax_label)
   
   
   all_dfs <- vector(mode="list", length=4)
-  names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_result")
+  names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_plotted")
   all_dfs[[1]] <- df_es; all_dfs[[2]] <- df_tidy; 
-  all_dfs[[3]] <- df_pretty; all_dfs[[4]] <- df_result; 
+  all_dfs[[3]] <- df_pretty; all_dfs[[4]] <- df_plotted; 
   return(all_dfs)
 }

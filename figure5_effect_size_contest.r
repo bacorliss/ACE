@@ -48,6 +48,47 @@ fig_basename = "f_5"
 
 
 
+
+
+
+
+# Contest 1-1) Quantify Error rate with each metric discerining experiment
+# with lower mean difference in means
+#
+#------------------------------------------------------------------------------
+var_suffix = "fract"; n_sims = 100;
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1a  = rep(5,n_sims), 
+                                   sigmas_1a = rep(1,n_sims), 
+                                   mus_2a  = rep(5,n_sims), 
+                                   sigmas_2a = rep(1,n_sims),
+                                   mus_1b  = rep(6,n_sims), 
+                                   sigmas_1b = rep(1,n_sims), 
+                                   mus_2b  = rep(3,n_sims), 
+                                   sigmas_2b = rep(1,n_sims)) 
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1", 
+                                 y_ax_label = expression(Error~Rate~(Lower~mu[d])),
+                                 out_path="temp/EffectSizeContest_mean_shift.rds", 
+                                 fig_name = paste(fig_basename, "_1a effect size contest_mu.tiff", sep = ""))
+# Quantify effect sizes in untidy matrix
+#df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = "_ES_test.tiff")
+
+# Quantify error rate for one simulation
+
+
+
+
+# Plot results of one simulation
+
+
+
+
+
+
+
+
+
+
 # Contest 1-1) Quantify Error rate with each metric discerining experiment
 # with lower mean difference in means
 #
@@ -58,12 +99,12 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    sigmas_1a = rep(1,n_sims), 
                                    mus_2a  = rep(1,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 1, 2), 
+                                   mus_1b  = runif(n_sims, 4, 6), 
                                    sigmas_1b = rep(1,n_sims), 
-                                   mus_2b  = runif(n_sims, 1, 2), 
+                                   mus_2b  = runif(n_sims, 4, 6), 
                                    sigmas_2b = rep(1,n_sims)) 
 all_dfs <- quantifyTidyPlot_Data(df_init, gt_colname = "is_mud_d2gtd1", 
-                      y_label_str = expression(Error~Rate~(Lower~mu[d])),
+                      y_ax_label = expression(Error~Rate~(Lower~mu[d])),
                       out_path="temp/EffectSizeContest_mean_shift.rds", 
                       fig_name = paste(fig_basename, "_1a effect size contest_mu.tiff", sep = ""))
   
@@ -84,7 +125,7 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_2b  = runif(n_sims, 10, 100),
                                    sigmas_2b = rep(1,n_sims))
 all_dfs <- quantifyTidyPlot_Data(df_init, gt_colname = "is_rmud_d2gtd1", 
-                      y_label_str = expression(Error~Rate~(Lower~r*mu[d])),
+                      y_ax_label = expression(Error~Rate~(Lower~r*mu[d])),
                       out_path="temp/EffectSizeContest_rmean_shift.rds", 
                       fig_name = paste(fig_basename, "_2c effect size contest_rmu.tiff", sep = ""))
 
@@ -104,7 +145,7 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                        mus_2b  = rep(5,n_sims), 
                                        sigmas_2b = runif(n_sims, 0.1, 1))
 all_dfs <- quantifyTidyPlot_Data(df_init, gt_colname = "is_sigmad_d2gtd1", 
-                      y_label_str = expression(Error~Rate~(Lower~sigma[d])),
+                      y_ax_label = expression(Error~Rate~(Lower~sigma[d])),
                       out_path="temp/EffectSizeContest_sigma.rds", 
                       fig_name = paste(fig_basename, "_4d effect size contest_sigma.tiff", sep = ""))
 
@@ -124,7 +165,7 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                        mus_2b  = rep(1,n_sims), 
                                        sigmas_2b = runif(n_sims, 9, 10))
 all_dfs <- quantifyTidyPlot_Data(df_init, gt_colname = "is_rsigmad_d2gtd1", 
-                      y_label_str = expression(Error~Rate~(Lower~r*sigma[d])),
+                      y_ax_label = expression(Error~Rate~(Lower~r*sigma[d])),
                       out_path="temp/EffectSizeContest_rsigma.rds", 
                       fig_name = paste(fig_basename, "_5e effect size contest_rsigma.tiff", sep = ""))
 
