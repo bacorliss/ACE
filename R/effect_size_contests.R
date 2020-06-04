@@ -19,11 +19,11 @@ source("R/mmd.R")
 effect_size_dict <- vector(mode="list", length=4)
 names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
-effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "t_score", "p_value",
+effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "z_score", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","t", "p",
+effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","N(0,1)")
 
@@ -188,17 +188,19 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       
       # t score
-      t_score_1 <- rowTScore(x_1b, x_1a)
-      t_score_2 <- rowTScore(x_2b, x_2a)
-      df$fract_t_score_d2gtd1[n] = sum( abs(t_score_2) - abs(t_score_1) > 0) / 
+      z_score_1 <- rowzScore(x_1b, x_1a)
+      z_score_2 <- rowzScore(x_2b, x_2a)
+      diff_abs_z_score <- abs(z_score_2) - abs(z_score_1)
+      df$fract_z_score_d2gtd1[n] = sum( diff_abs_z_score > 0) / 
         df$n_samples[n]
-      df$mean_diff_t_score_2m1[n] = mean( (t_score_2 - t_score_1))
+      df$mean_diff_z_score_2m1[n] = mean( diff_abs_z_score)
       
       # Pvalue
-      # Closer two means are, higher the p-valie
+      # The more equal experiment will have a larger p-value
+      p_value_1 = 2*pnorm(-abs(z_score_1))
+      p_value_2 = 2*pnorm(-abs(z_score_2))
+      diff_p_value <-  p_value_2 - p_value_1
       # Must switch signs
-      diff_p_value <- pt(t_score_2, df = pmin(df$n_obs[n], df$n_obs[n]) - 1) - 
-        pt(t_score_1, df = pmin(df$n_obs[n], df$n_obs[n]) - 1)
       df$fract_p_value_d2gtd1[n] = sum(-diff_p_value > 0) / df$n_samples[n]
       df$mean_diff_p_value_2m1 = mean(diff_p_value)
       
@@ -236,7 +238,7 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
                                    nrow = df$n_samples[n], ncol = df$n_obs[n]))
       df$fract_nrand_d2gtd1[n] = sum(diff_nrand > 0 ) / df$n_samples[n]
       df$mean_diff_nrand_2m1[n] = mean(diff_nrand)
-      
+
       # Pearson Correlation
       # R Squared
       # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
