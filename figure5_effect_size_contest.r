@@ -53,121 +53,181 @@ fig_basename = "f_5"
 
 
 # Contest 1-1) Quantify Error rate with each metric discerining experiment
-# with lower mean difference in means
+# with lower mean difference in means 
+# [Far from zero]
 #
 #------------------------------------------------------------------------------
-var_suffix = "fract"; n_sims = 100;
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1a  = rep(5,n_sims), 
-                                   sigmas_1a = rep(1,n_sims), 
-                                   mus_2a  = rep(5,n_sims), 
-                                   sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = rep(5.1,n_sims), 
-                                   sigmas_1b = rep(1,n_sims), 
-                                   mus_2b  = rep(5.2,n_sims), 
-                                   sigmas_2b = rep(1,n_sims)) 
+                                   mus_1a  = rep(1,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
+                                   mus_1b  = runif(n_sims,5,10), 
+                                    sigmas_1b = rep(1,n_sims),
+                                   mus_2a  = rep(1,n_sims), 
+                                    sigmas_2a = rep(1,n_sims),
+                                   mus_2b  = runif(n_sims,5,10), 
+                                    sigmas_2b = rep(1,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1", 
                                  y_ax_label = expression(Error~Rate~(Lower~mu[d])),
                                  out_path="temp/EffectSizeContest_mean_shift.rds", 
-                                 fig_name = paste(fig_basename, "_1a effect size contest_mu.tiff", sep = ""))
-# Quantify effect sizes in untidy matrix
-#df_es <- quantifyEffectSizes(df = df_init,overwrite = TRUE, out_path = "_ES_test.tiff")
-
-# Quantify error rate for one simulation
-
-
-
-
-# Plot results of one simulation
-
-
-
-
-
-
-
-
-
-
-# Contest 1-1) Quantify Error rate with each metric discerining experiment
-# with lower mean difference in means
+                                 fig_name = paste(fig_basename, "_1a_esize_contest_mu_far_zero.tiff", sep = ""))
+# [Near zero]
 #
 #------------------------------------------------------------------------------
-var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                   sigmas_1a = rep(1,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
+                                   mus_1b  = runif(n_sims,0,2), 
+                                    sigmas_1b = rep(1,n_sims),
                                    mus_2a  = rep(1,n_sims), 
-                                   sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 4, 6), 
-                                   sigmas_1b = rep(1,n_sims), 
-                                   mus_2b  = runif(n_sims, 4, 6), 
-                                   sigmas_2b = rep(1,n_sims)) 
+                                    sigmas_2a = rep(1,n_sims),
+                                   mus_2b  = runif(n_sims,0,2), 
+                                    sigmas_2b = rep(1,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1", 
-                      y_ax_label = expression(Error~Rate~(Lower~mu[d])),
-                      out_path="temp/EffectSizeContest_mean_shift.rds", 
-                      fig_name = paste(fig_basename, "_1a effect size contest_mu.tiff", sep = ""))
-  
+                                     y_ax_label = expression(Error~Rate~(Lower~mu[d])),
+                                     out_path="temp/EffectSizeContest_mean_shift.rds", 
+                                     fig_name = paste(fig_basename, "_1b_esize_contest_mu_near_zero.tiff", sep = ""))
+
+
+
+
+
   
 
 # Contest 2) which metric is better at discerining exp. with lower mean of
-# relative difference in means
+# relative difference in means 
+# [Far from zero]
 #
 #------------------------------------------------------------------------------
-var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
-                                   mus_1a  = rep(5, n_sims),
-                                   sigmas_1a = rep(1,n_sims),
-                                   mus_2a  = rep(20, n_sims),
-                                   sigmas_2a = rep(1,n_sims),
-                                   mus_1b  = runif(n_sims, 10, 20),
-                                   sigmas_1b = rep(1,n_sims),
-                                   mus_2b  = runif(n_sims, 40, 80),
-                                   sigmas_2b = rep(1,n_sims))
+                                   mus_1a  =   rep(10, n_sims),
+                                    sigmas_1a = rep(1,n_sims),
+                                   mus_1b  =   runif(n_sims, 20, 50),
+                                    sigmas_1b = rep(1,n_sims),
+                                   mus_2a  =   rep(50, n_sims),
+                                    sigmas_2a = rep(1,n_sims),
+                                   mus_2b  =   runif(n_sims, 100, 250),
+                                    sigmas_2b = rep(1,n_sims))
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1", 
                       y_ax_label = expression(Error~Rate~(Lower~r*mu[d])),
                       out_path="temp/EffectSizeContest_rmean_shift.rds", 
-                      fig_name = paste(fig_basename, "_2c effect size contest_rmu.tiff", sep = ""))
+                      fig_name = paste(fig_basename, "_2b_esize_contest_rmu_far_zero.tiff", sep = ""))
+# Contest 2) which metric is better at discerining exp. with lower mean of
+# [Near zero]
+#
+#------------------------------------------------------------------------------
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
+                                   mus_1a  =   rep(10, n_sims),
+                                    sigmas_1a = rep(1,n_sims),
+                                   mus_1b  =   runif(n_sims, 5, 15),
+                                    sigmas_1b = rep(1,n_sims),
+                                   mus_2a  =   rep(50, n_sims),
+                                    sigmas_2a = rep(1,n_sims),
+                                   mus_2b  =   runif(n_sims, 25, 100),
+                                    sigmas_2b = rep(1,n_sims))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1", 
+                                     y_ax_label = expression(Error~Rate~(Lower~r*mu[d])),
+                                     out_path="temp/EffectSizeContest_rmean_shift.rds", 
+                                     fig_name = paste(fig_basename, "_2b_esize_contest_rmu_near_zero.tiff", sep = ""))
+
+
 
 
 # Contest 3) which metric is better at discerining exp. with lower 
 # STD of difference in means
+# [Far from zero]
 #
 #------------------------------------------------------------------------------
-var_suffix = "fract"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                        mus_1a  = rep(1,n_sims), 
-                                       sigmas_1a = rep(1,n_sims), 
-                                       mus_2a  = rep(5,n_sims), 
-                                       sigmas_2a = rep(1,n_sims),
-                                       mus_1b  = rep(1,n_sims), 
-                                       sigmas_1b = runif(n_sims, 0.1, 1),
-                                       mus_2b  = rep(5,n_sims), 
-                                       sigmas_2b = runif(n_sims, 0.1, 1))
+                                        sigmas_1a = runif(n_sims, 1, 20),
+                                       mus_1b  = rep(100,n_sims), 
+                                        sigmas_1b = runif(n_sims, 1, 20),
+                                       mus_2a  = rep(1,n_sims), 
+                                        sigmas_2a = runif(n_sims, 1, 20),
+                                       mus_2b  = rep(100,n_sims), 
+                                        sigmas_2b = runif(n_sims, 1, 20))
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigmad_d2gtd1", 
                       y_ax_label = expression(Error~Rate~(Lower~sigma[d])),
                       out_path="temp/EffectSizeContest_sigma.rds", 
-                      fig_name = paste(fig_basename, "_4d effect size contest_sigma.tiff", sep = ""))
+                      fig_name = paste(fig_basename, "_3a_esize_contest_sigma_far_zero.tiff", sep = ""))
+# [Near zero]
+#
+#------------------------------------------------------------------------------
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1a  = rep(1,n_sims), 
+                                   sigmas_1a = runif(n_sims, 1, 20),
+                                   mus_1b  = rep(1,n_sims), 
+                                   sigmas_1b = runif(n_sims, 1, 20),
+                                   mus_2a  = rep(1,n_sims), 
+                                   sigmas_2a = runif(n_sims, 1, 20),
+                                   mus_2b  = rep(1,n_sims), 
+                                   sigmas_2b = runif(n_sims, 1, 20))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigmad_d2gtd1", 
+                                     y_ax_label = expression(Error~Rate~(Lower~sigma[d])),
+                                     out_path="temp/EffectSizeContest_sigma.rds", 
+                                     fig_name = paste(fig_basename, "_3b_esize_contest_sigma_near_zero.tiff", sep = ""))
+
+
+
+
+
 
 
 # Contest 4) which metric is better at discerining exp. with lower 
 # REL STD of difference in means
+# [u_d Far zero]
 #
 #------------------------------------------------------------------------------
-var_suffix = "fract"
+source("R/effect_size_contests.R")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                       mus_1a  = rep(1,n_sims), 
-                                       sigmas_1a = rep(1,n_sims), 
-                                       mus_2a  = rep(1,n_sims), 
-                                       sigmas_2a = rep(1,n_sims),
-                                       mus_1b  = rep(1,n_sims), 
-                                       sigmas_1b = runif(n_sims, 1, 2),
-                                       mus_2b  = rep(1,n_sims), 
-                                       sigmas_2b = runif(n_sims, 9, 10))
+                                   mus_1a  = rep(1,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
+                                   mus_1b  = rep(10,n_sims), 
+                                    sigmas_1b = runif(n_sims, .1, 1),
+                                   mus_2a  = rep(1,n_sims), 
+                                    sigmas_2a = rep(1,n_sims),
+                                   mus_2b  = rep(10,n_sims), 
+                                    sigmas_2b = runif(n_sims, .1, 1))
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigmad_d2gtd1", 
                       y_ax_label = expression(Error~Rate~(Lower~r*sigma[d])),
                       out_path="temp/EffectSizeContest_rsigma.rds", 
-                      fig_name = paste(fig_basename, "_5e effect size contest_rsigma.tiff", sep = ""))
+                      fig_name = paste(fig_basename, "_4a_esize_contest_rsigma_far_zero.tiff", sep = ""))
+
+
+df_init$mu_d1
+df_init$mu_d2
+
+df_init$sigma_d1
+df_init$sigma_d2
+
+df_init$rsigma_d1
+df_init$rsigma_d2
+
+
+
+# [u_d near zero]
+#
+#------------------------------------------------------------------------------
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
+                                   mus_1a  = rep(1, n_sims), 
+                                   sigmas_1a = rep(1, n_sims), 
+                                   mus_1b  = rep(10, n_sims), 
+                                   sigmas_1b = runif(n_sims, 2, 10),
+                                   mus_2a  = rep(1,n_sims), 
+                                   sigmas_2a = rep(4, n_sims),
+                                   mus_2b  = rep(10, n_sims), 
+                                   sigmas_2b = runif(n_sims, 8, 40))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigmad_d2gtd1", 
+                                     y_ax_label = expression(Error~Rate~(Lower~r*sigma[d])),
+                                     out_path="temp/EffectSizeContest_rsigma.rds", 
+                                     fig_name = paste(fig_basename, "_4b_esize_contest_rsigma_near_zero.tiff", sep = ""))
+
+
+
+
+
+
+
 
 
 

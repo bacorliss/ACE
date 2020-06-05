@@ -30,15 +30,14 @@ effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","z", "p",
 # default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
-                                    mus_1a  = rep(0,n_sims), 
-                                    sigmas_1a = rep(1,n_sims), 
-                                    mus_2a  = rep(0,n_sims), 
-                                    sigmas_2a = rep(1,n_sims),
+                                    mus_1a, sigmas_1a, 
+                                    mus_2a, sigmas_2a,
                                     # Experiment group pop. parameters
-                                    mus_1b  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas_1b = runif(n_sims,  0.1, 1), 
-                                    mus_2b  = runif(n_sims, -0.5, 0.5), 
-                                    sigmas_2b = runif(n_sims,  0.1, 1),
+                                    mus_1b = NA, sigmas_1b = NA, 
+                                    mus_2b = NA, sigmas_2b = NA,
+                                    # Difference distribution pop parameters
+                                    mus_1d, sigmas_1d, 
+                                    mus_2d, sigmas_2d,
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -66,29 +65,58 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     # Control group a for exp 1 and 2
     mu_1a = mus_1a, sigma_1a = sigmas_1a,
     mu_2a = mus_2a, sigma_2a = sigmas_2a,
-    # Experiment group b for exp 1 and 2
-    mu_1b = mus_1b, sigma_1b = sigmas_1b,
-    mu_2b = mus_2b, sigma_2b = sigmas_2b,
+    
     # Sampling data
     n_obs = n_obs, n_samples = n_samples
   )
-  # Computed statistics of difference of means distribution 
-  # d = mu2 - mu1
-  # sigma = sigma_pooled
-  df$mu_d1 <- df$mu_1b - df$mu_1a
-  df$mu_d2 <- df$mu_2b - df$mu_2a
-  df$sigma_d1 <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
-  df$sigma_d2 <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
   
+  # Fill in experiment group and/or calculate difference distribution
+  if (!any(is.na(mus_1b))) { 
+    # Experiment group valid
+    # Fill in experiment group
+    # Experiment group b for exp 1 and 2
+    df$mu_1b <- mus_1b
+    df$sigma_1b <- sigmas_1b
+    df$mu_2b <- mus_2b
+    df$sigma_2b <- sigmas_2b
+    # calculate difference distribution
+    df$mu_d1 <- df$mu_1b - df$mu_1a
+    df$mu_d2 <- df$mu_2b - df$mu_2a
+    df$sigma_d1 <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
+    df$sigma_d2 <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
+  } else {
+    # Experiment group invalid
+    # Debug code
+    mus_1d <- df$mu_d1; sigmas_1d <- df$sigma_d1
+    mus_d2 <- df$mu_d2; sigmas_2d <- df$sigma_d2
+    # Calculate from difference distribution
+    df$mu_1b <- mus_1a + mus_1d
+    df$sigma_1b <- sqrt(n_obs * (sigmas_1d^2 - sigmas_1a^2/n_obs))
+    df$mu_2b <- mus_2a + mus_2d
+    df$sigma_2b <- sqrt(n_obs * (sigmas_2d^2 - sigmas_2a^2/n_obs))
+    
+  }
+  browser();
+  
+  # Statistics of difference of means distribution 
+  df$rmu_d1 <- df$mu_d1/df$mu_1a
+  df$rmu_d2 <- df$mu_d2/df$mu_2a
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_d2gtd1 <-  abs(df$mu_d2) > abs(df$mu_d1)
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  abs(df$mu_d2/df$mu_2a) > abs(df$mu_d1/df$mu_1a)
+  df$is_rmud_d2gtd1 <-  abs(df$rmu_d2) > abs(df$rmu_d1)
+  
+
+  df$rsigma_d1 <- (df$sigma_d2/df$sigma_2a)
+  df$rsigma_d2 <- (df$sigma_d1/df$sigma_1a)
+  
   # Is: pop_std2 > pop_std1 (TRUE)
   df$is_sigmad_d2gtd1 <-  df$sigma_d2 > df$sigma_d1
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 <-  (df$sigma_d2/df$sigma_2a) > (df$sigma_d1/df$sigma_1a)
+  df$is_rsigmad_d2gtd1 <-  df$rsigma_d2 > df$rsigma_d1
+  
+  
   
   # Diff:  pop_mean2 - pop_mean1
   df$mean_mud_d2md1 <- df$mu_d2 - df$mu_d1
@@ -385,7 +413,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_label) {
   
 }
 
-process_esize_simulations <- function(df_init, gt_colname, y_ax_label, out_path, fig_name) {
+process_esize_simulations <- function(df_init, gt_colname, y_ax_label, out_path,
+                                      fig_name,var_suffix = "fract") {
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path)
   
