@@ -50,8 +50,6 @@ fig_basename = "f_5"
 
 
 
-
-
 # Contest 1-1) Quantify Error rate with each metric discerining experiment
 # with lower mean difference in means 
 # [Far from zero]
@@ -60,12 +58,12 @@ fig_basename = "f_5"
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
                                     sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,5,10), 
-                                    sigmas_1d = rep(1,n_sims),
+                                   mus_1offset  = runif(n_sims,5,10), 
+                                    sigmas_1offset = rep(0,n_sims),
                                    mus_2a  = rep(1,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,5,10), 
-                                    sigmas_2d = rep(1,n_sims)) 
+                                   mus_2offset  = runif(n_sims,5,10), 
+                                    sigmas_2offset = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1", 
                                  y_ax_label = expression(Error~Rate~(Lower~mu[d])),
                                  out_path="temp/EffectSizeContest_mean_shift.rds", 
@@ -76,12 +74,12 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1",
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
                                     sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,-1,1), 
-                                    sigmas_1d = rep(1,n_sims),
+                                   mus_1offset  = runif(n_sims,-1,1), 
+                                    sigmas_1offset = rep(0,n_sims),
                                    mus_2a  = rep(1,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,-1,1), 
-                                    sigmas_2d = rep(1,n_sims)) 
+                                   mus_2offset  = runif(n_sims,-1,1), 
+                                    sigmas_2offset = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1", 
                                      y_ax_label = expression(Error~Rate~(Lower~mu[d])),
                                      out_path="temp/EffectSizeContest_mean_shift.rds", 
@@ -89,9 +87,6 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1",
 
 
 
-
-
-  
 
 # Contest 2) which metric is better at discerining exp. with lower mean of
 # relative difference in means 
@@ -101,12 +96,12 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_d2gtd1",
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(10,n_sims), 
                                    sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,10,40), 
-                                   sigmas_1d = rep(1,n_sims),
+                                   mus_1offset  = runif(n_sims,10,40), 
+                                   sigmas_1offset = rep(0,n_sims),
                                    mus_2a  = rep(50,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,50,200), 
-                                   sigmas_2d = rep(1,n_sims)) 
+                                   mus_2offset  = runif(n_sims,50,200), 
+                                   sigmas_2offset = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1", 
                       y_ax_label = expression(Error~Rate~(Lower~r*mu[d])),
                       out_path="temp/EffectSizeContest_rmean_shift.rds", 
@@ -118,12 +113,12 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1",
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(10,n_sims), 
                                    sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,-5,5), 
-                                   sigmas_1d = rep(1,n_sims),
+                                   mus_1offset  = runif(n_sims,-5,5), 
+                                   sigmas_1offset = rep(0,n_sims),
                                    mus_2a  = rep(50,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,-25, 50), 
-                                   sigmas_2d = rep(1,n_sims)) 
+                                   mus_2offset  = runif(n_sims,-25, 50), 
+                                   sigmas_2offset = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1", 
                                      y_ax_label = expression(Error~Rate~(Lower~r*mu[d])),
                                      out_path="temp/EffectSizeContest_rmean_shift.rds", 
@@ -140,12 +135,12 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_d2gtd1",
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                        mus_1a  = rep(1,n_sims), 
                                         sigmas_1a = runif(n_sims, 1, 20),
-                                       mus_1b  = rep(100,n_sims), 
-                                        sigmas_1b = runif(n_sims, 1, 20),
+                                       mus_1offset  = rep(100,n_sims), 
+                                        sigmas_1offset = runif(n_sims, 1, 20),
                                        mus_2a  = rep(1,n_sims), 
                                         sigmas_2a = runif(n_sims, 1, 20),
-                                       mus_2b  = rep(100,n_sims), 
-                                        sigmas_2b = runif(n_sims, 1, 20))
+                                       mus_2offset  = rep(100,n_sims), 
+                                        sigmas_2offset = runif(n_sims, 1, 20))
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigmad_d2gtd1", 
                       y_ax_label = expression(Error~Rate~(Lower~sigma[d])),
                       out_path="temp/EffectSizeContest_sigma.rds", 

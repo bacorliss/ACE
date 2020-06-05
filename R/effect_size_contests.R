@@ -1,5 +1,10 @@
 ### Effect Size Contest
 
+
+
+# TODO: for specifying offset distribution in generateData(), should the standard
+# deviation for the control group be added by stds or variances?
+
 library(ggplot2)
 library(tibble)
 library(RColorBrewer)
@@ -35,9 +40,9 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Experiment group pop. parameters
                                     mus_1b = NA, sigmas_1b = NA, 
                                     mus_2b = NA, sigmas_2b = NA,
-                                    # Difference distribution pop parameters
-                                    mus_1d, sigmas_1d, 
-                                    mus_2d, sigmas_2d,
+                                    # Difference distribution pop. parameters
+                                    mus_1offset, sigmas_1offset, 
+                                    mus_2offset, sigmas_2offset,
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -62,72 +67,88 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Basic input parameters for each simulation round
   set.seed(rand.seed +1)
   df = tibble(
+    # Sampling data
+    n_obs = n_obs, n_samples = n_samples,
     # Control group a for exp 1 and 2
     mu_1a = mus_1a, sigma_1a = sigmas_1a,
     mu_2a = mus_2a, sigma_2a = sigmas_2a,
-    
-    # Sampling data
-    n_obs = n_obs, n_samples = n_samples
   )
   
   # Fill in experiment group and/or calculate difference distribution
   if (!any(is.na(mus_1b))) { 
-    # Experiment group valid
+    ##  Experiment group valid
     # Fill in experiment group
     # Experiment group b for exp 1 and 2
     df$mu_1b <- mus_1b
     df$sigma_1b <- sigmas_1b
     df$mu_2b <- mus_2b
     df$sigma_2b <- sigmas_2b
-    # calculate difference distribution
+
+    # Difference distribution    
     df$mu_1d <- df$mu_1b - df$mu_1a
     df$mu_2d <- df$mu_2b - df$mu_2a
-    df$sigma_1d <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
-    df$sigma_2d <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
-  } else {
-    # Experiment group invalid
-    # Debug code
-    df$mu_1d <- mus_1d; df$sigma_1d <- sigmas_1d
-    df$mu_2d <- mus_2d; df$sigma_2d <- sigmas_2d 
-    # Calculate from difference distribution
-    # Sigmas_a is added to sigmas_d because [sigmas_d must be > sigmas_a]
-    # This is added for the sake of spawning correct sigmas_d values meant to be 
-    # an offset from sigmas_1a
-    new_sigmas_1d <- sqrt(sigmas_1a^2 + sigmas_1d^2)
-    new_sigmas_2d <- sqrt(sigmas_1a^2 + sigmas_1d^2)
-    df$mu_1b <- mus_1a + mus_1d
-    df$sigma_1b <- sqrt(n_obs * ((sigmas_1a + sigmas_1d)^2 - sigmas_1a^2/n_obs))
-    df$mu_2b <- mus_2a + mus_2d
-    df$sigma_2b <- sqrt(n_obs * ((sigmas_1a + sigmas_2d)^2 - sigmas_2a^2/n_obs))
+    df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
+    df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+
+    # calculate mean difference distribution (*not* difference distribution)
+    df$mu_1md <- df$mu_1b - df$mu_1a
+    df$mu_2md <- df$mu_2b - df$mu_2a
+    df$sigma_1md <- df$sigma_1d/sqrt(n_obs) # sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
+    df$sigma_2md <- df$sigma_2d/sqrt(n_obs) # sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
     
+  } else {
+    ##  Experiment group invalid
+    
+    # Calculate from difference distribution
+    # Sigmas_a is added to sigmas_offset because [sigmas_offset must be > sigmas_a]
+    # This is pooled for the sake of spawning correct sigmas_offset values 
+    # meant to be an offset from sigmas_1a
+
+    # Calculate difference distribution parameters (not mean difference)
+    df$mu_1d <- df$mu_1b - df$mu_1a
+    df$mu_2d <- df$mu_2b - df$mu_2a
+    df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1offset^2)
+    df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2offset^2) 
+    
+    # Calculate experiment group based on control and offset parameters
+    df$mu_1b <- mus_1a + mus_1offset
+    df$mu_2b <- mus_2a + mus_2offset
+    df$sigma_1b <- sqrt(n_obs * (df$sigmas_1d^2 - df$sigmas_1a^2/n_obs))
+    df$sigma_2b <- sqrt(n_obs * (df$sigmas_2d^2 - df$sigmas_2a^2/n_obs))
+    
+    # Calculate *mean* difference parameters (not difference)
+    df$mu_1md <- mus_1offset 
+    df$mu_2md <- mus_2offset
+    df$sigma_1md <- sigmas_1d
+    df$sigma_2md <- sigmas_2d 
   }
   
   # Statistics of difference of means distribution 
-  df$rmu_1d <- df$mu_1d/df$mu_1a
-  df$rmu_2d <- df$mu_2d/df$mu_2a
+  df$rmu_1md <- df$mu_1md/df$mu_1a
+  df$rmu_2md <- df$mu_2md/df$mu_2a
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  abs(df$mu_2d) > abs(df$mu_1d)
+  df$is_mud_d2gtd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  abs(df$rmu_2d) > abs(df$rmu_1d)
+  df$is_rmud_d2gtd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
   
 
-  df$rsigma_1d <- (df$sigma_2d/df$sigma_2a)
-  df$rsigma_2d <- (df$sigma_1d/df$sigma_1a)
+  df$rsigma_1md <- (df$sigma_2md/df$sigma_2a)
+  df$rsigma_2md <- (df$sigma_1md/df$sigma_1a)
   
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_d2gtd1 <-  df$sigma_2d > df$sigma_1d
+  df$is_sigmad_d2gtd1 <-  df$sigma_2md > df$sigma_1md
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 <-  df$rsigma_2d > df$rsigma_1d
+  df$is_rsigmad_d2gtd1 <-  df$rsigma_2md > df$rsigma_1md
   
   
   
   # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 <- df$mu_2d - df$mu_1d
-  df$mean_rmud_d2md1 <- (df$mu_2d/df$mu_2a) - (df$mu_1d/df$mu_1a)
+  df$mean_mud_d2md1 <- df$mu_2md - df$mu_1md
+  df$mean_rmud_d2md1 <- (df$mu_2md/df$mu_2a) - (df$mu_1md/df$mu_1a)
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigmad_d2md1 <- df$sigma_2d - df$sigma_1d
-  df$mean_rsigmad_d2md1 <- df$sigma_2d/df$sigma_2a - df$sigma_1d/df$sigma_1a
+  df$mean_sigmad_d2md1 <- df$sigma_2md - df$sigma_1md
+  df$mean_rsigmad_d2md1 <- df$sigma_2md/df$sigma_2a - df$sigma_1md/df$sigma_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
