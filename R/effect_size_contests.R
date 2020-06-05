@@ -80,50 +80,54 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     df$mu_2b <- mus_2b
     df$sigma_2b <- sigmas_2b
     # calculate difference distribution
-    df$mu_d1 <- df$mu_1b - df$mu_1a
-    df$mu_d2 <- df$mu_2b - df$mu_2a
-    df$sigma_d1 <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
-    df$sigma_d2 <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
+    df$mu_1d <- df$mu_1b - df$mu_1a
+    df$mu_2d <- df$mu_2b - df$mu_2a
+    df$sigma_1d <- sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
+    df$sigma_2d <- sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
   } else {
     # Experiment group invalid
     # Debug code
-    mus_1d <- df$mu_d1; sigmas_1d <- df$sigma_d1
-    mus_d2 <- df$mu_d2; sigmas_2d <- df$sigma_d2
+    df$mu_1d <- mus_1d; df$sigma_1d <- sigmas_1d
+    df$mu_2d <- mus_2d; df$sigma_2d <- sigmas_2d 
     # Calculate from difference distribution
+    # Sigmas_a is added to sigmas_d because [sigmas_d must be > sigmas_a]
+    # This is added for the sake of spawning correct sigmas_d values meant to be 
+    # an offset from sigmas_1a
+    new_sigmas_1d <- sqrt(sigmas_1a^2 + sigmas_1d^2)
+    new_sigmas_2d <- sqrt(sigmas_1a^2 + sigmas_1d^2)
     df$mu_1b <- mus_1a + mus_1d
-    df$sigma_1b <- sqrt(n_obs * (sigmas_1d^2 - sigmas_1a^2/n_obs))
+    df$sigma_1b <- sqrt(n_obs * ((sigmas_1a + sigmas_1d)^2 - sigmas_1a^2/n_obs))
     df$mu_2b <- mus_2a + mus_2d
-    df$sigma_2b <- sqrt(n_obs * (sigmas_2d^2 - sigmas_2a^2/n_obs))
+    df$sigma_2b <- sqrt(n_obs * ((sigmas_1a + sigmas_2d)^2 - sigmas_2a^2/n_obs))
     
   }
-  browser();
   
   # Statistics of difference of means distribution 
-  df$rmu_d1 <- df$mu_d1/df$mu_1a
-  df$rmu_d2 <- df$mu_d2/df$mu_2a
+  df$rmu_1d <- df$mu_1d/df$mu_1a
+  df$rmu_2d <- df$mu_2d/df$mu_2a
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  abs(df$mu_d2) > abs(df$mu_d1)
+  df$is_mud_d2gtd1 <-  abs(df$mu_2d) > abs(df$mu_1d)
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  abs(df$rmu_d2) > abs(df$rmu_d1)
+  df$is_rmud_d2gtd1 <-  abs(df$rmu_2d) > abs(df$rmu_1d)
   
 
-  df$rsigma_d1 <- (df$sigma_d2/df$sigma_2a)
-  df$rsigma_d2 <- (df$sigma_d1/df$sigma_1a)
+  df$rsigma_1d <- (df$sigma_2d/df$sigma_2a)
+  df$rsigma_2d <- (df$sigma_1d/df$sigma_1a)
   
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_d2gtd1 <-  df$sigma_d2 > df$sigma_d1
+  df$is_sigmad_d2gtd1 <-  df$sigma_2d > df$sigma_1d
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 <-  df$rsigma_d2 > df$rsigma_d1
+  df$is_rsigmad_d2gtd1 <-  df$rsigma_2d > df$rsigma_1d
   
   
   
   # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 <- df$mu_d2 - df$mu_d1
-  df$mean_rmud_d2md1 <- (df$mu_d2/df$mu_2a) - (df$mu_d1/df$mu_1a)
+  df$mean_mud_d2md1 <- df$mu_2d - df$mu_1d
+  df$mean_rmud_d2md1 <- (df$mu_2d/df$mu_2a) - (df$mu_1d/df$mu_1a)
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigmad_d2md1 <- df$sigma_d2 - df$sigma_d1
-  df$mean_rsigmad_d2md1 <- df$sigma_d2/df$sigma_2a - df$sigma_d1/df$sigma_1a
+  df$mean_sigmad_d2md1 <- df$sigma_2d - df$sigma_1d
+  df$mean_rsigmad_d2md1 <- df$sigma_2d/df$sigma_2a - df$sigma_1d/df$sigma_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
