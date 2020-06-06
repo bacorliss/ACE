@@ -28,21 +28,21 @@ effect_size_dict[[2]] <- c("xdbar", "sd", "rxdbar","rsd", "z_score", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "s", "r*bar(x)","r*s","z", "p",
+effect_size_dict[[4]] <- c("bar(x)", "v", "r*bar(x)","r*v","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","N(0,1)")
 
 # default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
-                                    mus_1a, sigmas_1a, 
-                                    mus_2a, sigmas_2a,
+                                    mus_1a, vars_1a, 
+                                    mus_2a, vars_2a,
                                     # Experiment group pop. parameters
-                                    mus_1b = NA, sigmas_1b = NA, 
-                                    mus_2b = NA, sigmas_2b = NA,
+                                    mus_1b = NA, vars_1b = NA, 
+                                    mus_2b = NA, vars_2b = NA,
                                     # Difference distribution pop. parameters
-                                    mus_1offset, sigmas_1offset, 
-                                    mus_2offset, sigmas_2offset,
+                                    mus_1offset, vars_1offset, 
+                                    mus_2offset, vars_2offset,
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -70,76 +70,95 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     # Sampling data
     n_obs = n_obs, n_samples = n_samples,
     # Control group a for exp 1 and 2
-    mu_1a = mus_1a, sigma_1a = sigmas_1a,
-    mu_2a = mus_2a, sigma_2a = sigmas_2a,
+    mu_1a = mus_1a, var_1a = vars_1a,
+    mu_2a = mus_2a, var_2a = vars_2a,
   )
   
+ 
   # Fill in experiment group and/or calculate difference distribution
   if (!any(is.na(mus_1b))) { 
     ##  Experiment group valid
     # Fill in experiment group
     # Experiment group b for exp 1 and 2
     df$mu_1b <- mus_1b
-    df$sigma_1b <- sigmas_1b
+    df$var_1b <- vars_1b
     df$mu_2b <- mus_2b
-    df$sigma_2b <- sigmas_2b
+    df$var_2b <- vars_2b
 
     # Difference distribution    
     df$mu_1d <- df$mu_1b - df$mu_1a
     df$mu_2d <- df$mu_2b - df$mu_2a
-    df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
-    df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+    df$var_1d <- sqrt(df$var_1a^2 + df$var_1b^2)
+    df$var_2d <- sqrt(df$var_2a^2 + df$var_2b^2) 
 
     # calculate mean difference distribution (*not* difference distribution)
     df$mu_1md <- df$mu_1b - df$mu_1a
     df$mu_2md <- df$mu_2b - df$mu_2a
-    df$sigma_1md <- df$sigma_1d/sqrt(n_obs) # sqrt(df$sigma_1a^2/n_obs + df$sigma_1b^2/n_obs)
-    df$sigma_2md <- df$sigma_2d/sqrt(n_obs) # sqrt(df$sigma_2a^2/n_obs + df$sigma_2b^2/n_obs)
+    df$var_1md <- df$var_1d/sqrt(n_obs) # sqrt(df$var_1a^2/n_obs + df$var_1b^2/n_obs)
+    df$var_2md <- df$var_2d/sqrt(n_obs) # sqrt(df$var_2a^2/n_obs + df$var_2b^2/n_obs)
     
   } else {
     ##  Experiment group invalid
     
     # Calculate from difference distribution
-    # Sigmas_a is added to sigmas_offset because [sigmas_offset must be > sigmas_a]
-    # This is pooled for the sake of spawning correct sigmas_offset values 
-    # meant to be an offset from sigmas_1a
-
-    # Calculate difference distribution parameters (not mean difference)
-    df$mu_1d <- df$mu_1b - df$mu_1a
-    df$mu_2d <- df$mu_2b - df$mu_2a
-    df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1offset^2)
-    df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2offset^2) 
+    # vars_a is added to vars_offset because [vars_offset must be > vars_a]
+    # This is pooled for the sake of spawning correct vars_offset values 
+    # meant to be an offset from vars_1a
     
-    # Calculate experiment group based on control and offset parameters
+    # Experiment group mean based on control and offset
     df$mu_1b <- mus_1a + mus_1offset
     df$mu_2b <- mus_2a + mus_2offset
-    df$sigma_1b <- sqrt(n_obs * (df$sigmas_1d^2 - df$sigmas_1a^2/n_obs))
-    df$sigma_2b <- sqrt(n_obs * (df$sigmas_2d^2 - df$sigmas_2a^2/n_obs))
+    
+
+    # Variance of difference in experimental
+    df$var_1b <- df$var_1a + vars_1offset
+    df$var_2b <- df$var_2a + vars_2offset
+    
+
+    # Calculate difference distribution parameters (not mean difference)
+    df$mu_1d <- mus_1offset
+    df$mu_2d <- mus_2offset
+    
+    # Variance of difference in means based on control and offset
+    df$var_1d <- df$var_1b - df$var_1a 
+    df$var_2d <- df$var_2b - df$var_2a
+    
     
     # Calculate *mean* difference parameters (not difference)
     df$mu_1md <- mus_1offset 
     df$mu_2md <- mus_2offset
-    df$sigma_1md <- sigmas_1d
-    df$sigma_2md <- sigmas_2d 
+    df$var_1md <- sqrt(df$var_1d /n_obs)
+    df$var_2md <- sqrt(df$var_2d /n_obs)
+    
+    #browser();
   }
   
-  # Statistics of difference of means distribution 
-  df$rmu_1md <- df$mu_1md/df$mu_1a
-  df$rmu_2md <- df$mu_2md/df$mu_2a
+
+  
+  
+  
+  # # Variance of the mean
+  # df$var_1ma <- sqrt(var_1a / n_obs) 
+  # df$var_2ma <- sqrt(var_1a / n_obs)
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_d2gtd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
+  # Statistics of difference of means distribution 
+  df$rmu_1md <- df$mu_1md/df$mu_1a
+  df$rmu_2md <- df$mu_2md/df$mu_2a
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
   df$is_rmud_d2gtd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
   
+  # Relative change variance of the mean compared to control sample
+  # Measures realtive variance of mean difference across different scales 
+  # of measurement
+  df$rvar_1md <- df$var_1md/ df$mu_1a
+  df$rvar_2md <- df$var_2md/ df$mu_2a
 
-  df$rsigma_1md <- (df$sigma_2md/df$sigma_2a)
-  df$rsigma_2md <- (df$sigma_1md/df$sigma_1a)
-  
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_d2gtd1 <-  df$sigma_2md > df$sigma_1md
+  df$is_vard_d2gtd1 <-  df$var_2md > df$var_1md
   # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigmad_d2gtd1 <-  df$rsigma_2md > df$rsigma_1md
+  df$is_rvard_d2gtd1 <-  df$rvar_2md > df$rvar_1md
   
   
   
@@ -147,8 +166,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   df$mean_mud_d2md1 <- df$mu_2md - df$mu_1md
   df$mean_rmud_d2md1 <- (df$mu_2md/df$mu_2a) - (df$mu_1md/df$mu_1a)
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigmad_d2md1 <- df$sigma_2md - df$sigma_1md
-  df$mean_rsigmad_d2md1 <- df$sigma_2md/df$sigma_2a - df$sigma_1md/df$sigma_1a
+  df$mean_vard_d2md1 <- df$var_2md - df$var_1md
+  df$mean_rvard_d2md1 <- df$var_2md/df$var_2a - df$var_1md/df$var_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
@@ -192,17 +211,17 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
       x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1a[n], 
-                          sd = df$sigma_1a[n]), nrow = df$n_samples[n], 
+                          sd = sqrt(df$var_1a[n])), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1b[n], 
-                          sd = df$sigma_1b[n]), nrow = df$n_samples[n], 
+                          sd = sqrt(df$var_1b[n])), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       
       x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2a[n], 
-                          sd = df$sigma_2a[n]), nrow = df$n_samples[n], 
+                          sd = sqrt(df$var_2a[n])), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2b[n], 
-                          sd = df$sigma_2b[n]), nrow = df$n_samples[n], 
+                          sd = sqrt(df$var_2b[n])), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       
       # Sample estimate of ABSOLUTE difference in means
