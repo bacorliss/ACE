@@ -64,13 +64,13 @@ source("R/effect_size_contests.R")
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                    sigmas2_1a = rep(1,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,5,10), 
-                                    sigmas2_1d = rep(0,n_sims),
+                                    sigmas_1d = rep(0,n_sims),
                                    mus_2a  = rep(1,n_sims), 
-                                    sigmas2_2a = rep(1,n_sims),
+                                    sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,5,10), 
-                                    sigmas2_2d = rep(0,n_sims)) 
+                                    sigmas_2d = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                  y_ax_str = "mu[d]",
                                  fig_name = paste(fig_basename, "_1a_esize_contest_mu_far_zero.tiff", sep = ""))
@@ -79,13 +79,13 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1",
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                    sigmas2_1a = rep(1,n_sims), 
+                                    sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,-1,1), 
-                                    sigmas2_1d = rep(0,n_sims),
+                                    sigmas_1d = rep(0,n_sims),
                                    mus_2a  = rep(1,n_sims), 
-                                    sigmas2_2a = rep(1,n_sims),
+                                    sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,-1,1), 
-                                    sigmas2_2d = rep(0,n_sims)) 
+                                    sigmas_2d = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                      y_ax_str = "mu[d]",
                                      fig_name = paste(fig_basename, "_1b_esize_contest_mu_near_zero.tiff", sep = ""))
@@ -98,30 +98,30 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1",
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                   sigmas2_1a = rep(1,n_sims),
+                                   sigmas_1a = rep(1,n_sims),
                                    mus_1d  = rep(99,n_sims), 
-                                   sigmas2_1d = runif(n_sims, 1, 20),
+                                   sigmas_1d = runif(n_sims, 1, 20),
                                    mus_2a  = rep(1,n_sims), 
-                                   sigmas2_2a = rep(1,n_sims),
+                                   sigmas_2a = rep(1,n_sims),
                                    mus_2d  = rep(99,n_sims), 
-                                   sigmas2_2d = runif(n_sims, 1, 20))
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1", 
-                                     y_ax_str = "sigma[d]^2",
+                                   sigmas_2d = runif(n_sims, 1, 20))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
+                                     y_ax_str = "sigma[d]",
                                      fig_name = paste(fig_basename, "_2a_esize_contest_sigma_far_zero.tiff", sep = ""))
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                   sigmas2_1a = rep(1,n_sims),
+                                   sigmas_1a = rep(1,n_sims),
                                    mus_1b  = rep(0,n_sims), 
-                                   sigmas2_1b = runif(n_sims, 1, 20),
+                                   sigmas_1b = runif(n_sims, 1, 20),
                                    mus_2a  = rep(0,n_sims), 
-                                   sigmas2_2a = rep(1,n_sims),
+                                   sigmas_2a = rep(1,n_sims),
                                    mus_2b  = rep(1,n_sims), 
-                                   sigmas2_2b = runif(n_sims, 1, 20))
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1", 
-                                     y_ax_str = "sigma[d]^2",
+                                   sigmas_2b = runif(n_sims, 1, 20))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
+                                     y_ax_str = "sigma[d]",
                                      fig_name = paste(fig_basename, "_2b_esize_contest_sigma_near_zero.tiff", sep = ""))
 
 
@@ -130,31 +130,31 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1",
 # [Far from zero]
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = runif(n_sims,1,1), 
-                                   sigmas2_1a = runif(n_sims,1,1), 
+                                   sigmas_1a = runif(n_sims,1,1), 
                                    mus_1d  = runif(n_sims,-1,1), 
-                                   sigmas2_1d = runif(n_sims,1,3),
+                                   sigmas_1d = runif(n_sims,1,3),
                                    mus_2a  = runif(n_sims,1,1),  
-                                   sigmas2_2a = runif(n_sims,1,1),
+                                   sigmas_2a = runif(n_sims,1,1),
                                    mus_2d  = runif(n_sims,-1,1), 
-                                   sigmas2_2d = runif(n_sims,1,3), ) 
+                                   sigmas_2d = runif(n_sims,1,3), ) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                      y_ax_str = "mu[d]",
                                      fig_name = paste(fig_basename, "_3a_esize_contest_mu_free_near_zero.tiff", sep = ""))
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1", 
-                                     y_ax_str = "sigma[d]^2",
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
+                                     y_ax_str = "sigma[d]",
                                      fig_name = paste(fig_basename, "_3a_esize_contest_sigma_free_near_zero.tiff", sep = ""))
 
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = runif(n_sims,10,20), 
-                                   sigmas2_1a = runif(n_sims,0.1,1), 
+                                   sigmas_1a = runif(n_sims,0.1,1), 
                                    mus_1d  = runif(n_sims,-10,10), 
-                                   sigmas2_1d = runif(n_sims,0.1,1),
+                                   sigmas_1d = runif(n_sims,0.1,1),
                                    mus_2a  =runif(n_sims,10,20),  
-                                   sigmas2_2a = runif(n_sims,0.1,1),
+                                   sigmas_2a = runif(n_sims,0.1,1),
                                    mus_2d  = runif(n_sims,-10,10), 
-                                   sigmas2_2d = runif(n_sims,0.1,1), ) 
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1", 
-                                     y_ax_str = "sigma[d]^2",
+                                   sigmas_2d = runif(n_sims,0.1,1), ) 
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
+                                     y_ax_str = "sigma[d]",
                                      fig_name = paste(fig_basename, "_3b_esize_contest_sigma_free_far_zero.tiff", sep = ""))
 
 
@@ -176,13 +176,13 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma2_md2gtmd1",
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(10,n_sims), 
-                                   sigmas2_1a = rep(1,n_sims), 
+                                   sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,10,40), 
-                                   sigmas2_1d = rep(0,n_sims),
+                                   sigmas_1d = rep(0,n_sims),
                                    mus_2a  = rep(50,n_sims), 
-                                   sigmas2_2a = rep(1,n_sims),
+                                   sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,50, 200), 
-                                   sigmas2_2d = rep(0,n_sims)) 
+                                   sigmas_2d = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "r*mu[d]",
                                      fig_name = paste(fig_basename, "_4b_esize_contest_rmu_far_zero.tiff", sep = ""))
@@ -192,13 +192,13 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1",
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(10,n_sims), 
-                                   sigmas2_1a = rep(1,n_sims), 
+                                   sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,-5,10), 
-                                   sigmas2_1d = rep(0,n_sims),
+                                   sigmas_1d = rep(0,n_sims),
                                    mus_2a  = rep(50,n_sims), 
-                                   sigmas2_2a = rep(1,n_sims),
+                                   sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,-25, 50), 
-                                   sigmas2_2d = rep(0,n_sims)) 
+                                   sigmas_2d = rep(0,n_sims)) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "r*mu[d]",
                                      fig_name = paste(fig_basename, "_4b_esize_contest_rmu_near_zero.tiff", sep = ""))
@@ -211,15 +211,15 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1",
 source("R/effect_size_contests.R")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
-                                    sigmas2_1a = rep(0.1,n_sims),
+                                    sigmas_1a = rep(0.1,n_sims),
                                    mus_1d  = rep(10,n_sims), 
-                                    sigmas2_1d = runif(n_sims, 0.1, 3),
+                                    sigmas_1d = runif(n_sims, 0.1, 3),
                                    mus_2a  = rep(10,n_sims), 
-                                    sigmas2_2a = rep(0.1,n_sims),
+                                    sigmas_2a = rep(0.1,n_sims),
                                    mus_2d  = rep(99,n_sims), 
-                                    sigmas2_2d = runif(n_sims, 1, 30))
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma2_md2gtmd1", 
-                      y_ax_str = "r*sigma[d]^2",
+                                    sigmas_2d = runif(n_sims, 1, 30))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1", 
+                      y_ax_str = "r*sigma[d]",
                       fig_name = paste(fig_basename, "_5a_esize_contest_rsigma_far_zero.tiff", sep = ""))
 
 # [u_d near zero]
@@ -227,15 +227,15 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma2_md2gtmd1"
 #------------------------------------------------------------------------------
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(10,n_sims), 
-                                   sigmas2_1a = rep(0.1,n_sims),
+                                   sigmas_1a = rep(0.1,n_sims),
                                    mus_1d  = rep(0,n_sims), 
-                                   sigmas2_1d = runif(n_sims, 0.1, 3),
+                                   sigmas_1d = runif(n_sims, 0.1, 3),
                                    mus_2a  = rep(100,n_sims), 
-                                   sigmas2_2a = rep(0.1,n_sims),
+                                   sigmas_2a = rep(0.1,n_sims),
                                    mus_2d  = rep(0,n_sims), 
-                                   sigmas2_2d = runif(n_sims, 1, 30))
-all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma2_md2gtmd1", 
-                                     y_ax_str = "r*sigma[d]^2",
+                                   sigmas_2d = runif(n_sims, 1, 30))
+all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1", 
+                                     y_ax_str = "r*sigma[d]",
                                      fig_name = paste(fig_basename, "_5b_esize_contest_rsigma_near_zero.tiff", sep = ""))
 
 
