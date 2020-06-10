@@ -24,11 +24,11 @@ source("R/mmd.R")
 effect_size_dict <- vector(mode="list", length=4)
 names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
-effect_size_dict[[2]] <- c("xdbar", "var", "rxdbar","rvar", "z_score", "p_value",
+effect_size_dict[[2]] <- c("xdbar", "rxdbar", "var", "rvar", "z_score", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "v", "r*bar(x)","r*v","z", "p",
+effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s^2", "r*s^2","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","N(0,1)")
 
@@ -41,8 +41,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     mus_1b = NA, sigmas2_1b = NA, 
                                     mus_2b = NA, sigmas2_2b = NA,
                                     # Difference distribution pop. parameters
-                                    mus_1offset, sigmas2_1offset, 
-                                    mus_2offset, sigmas2_2offset,
+                                    mus_1d, sigmas2_1d, 
+                                    mus_2d, sigmas2_2d,
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -70,8 +70,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     # Sampling data
     n_obs = n_obs, n_samples = n_samples,
     # Control group a for exp 1 and 2
-    mu_1a = mus_1a, sigma2_1a = sigmas2_1a,
-    mu_2a = mus_2a, sigma2_2a = sigmas2_2a,
+    mu_1a = mus_1a, mu_2a = mus_2a,
+    sigma2_1a = sigmas2_1a, sigma2_2a = sigmas2_2a,
   )
   
  
@@ -94,70 +94,55 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     # calculate mean difference distribution (*not* difference distribution)
     df$mu_1md <- df$mu_1b - df$mu_1a
     df$mu_2md <- df$mu_2b - df$mu_2a
-    df$sigma2_1md <- df$sigma2_1d/sqrt(n_obs) # sqrt(df$sigma2_1a^2/n_obs + df$sigma2_1b^2/n_obs)
-    df$sigma2_2md <- df$sigma2_2d/sqrt(n_obs) # sqrt(df$sigma2_2a^2/n_obs + df$sigma2_2b^2/n_obs)
+    df$sigma2_1md <- df$sigma2_1d/n_obs # sqrt(df$sigma2_1a^2/n_obs + df$sigma2_1b^2/n_obs)
+    df$sigma2_2md <- df$sigma2_2d/n_obs # sqrt(df$sigma2_2a^2/n_obs + df$sigma2_2b^2/n_obs)
     
   } else {
     ##  Experiment group invalid
     
     # Calculate from difference distribution
-    # vars_a is added to vars_offset because [vars_offset must be > vars_a]
-    # This is pooled for the sake of spawning correct vars_offset values 
-    # meant to be an offset from sigmas2_1a
     
     # Experiment group mean based on control and offset
-    df$mu_1b <- mus_1a + mus_1offset
-    df$mu_2b <- mus_2a + mus_2offset
-    
-
+    df$mu_1b <- mus_1a + mus_1d
+    df$mu_2b <- mus_2a + mus_2d
     # Variance of difference in experimental
-    df$sigma2_1b <- df$sigma2_1a + sigmas2_1offset
-    df$sigma2_2b <- df$sigma2_2a + sigmas2_2offset
+    df$sigma2_1b <- df$sigma2_1a + sigmas2_1d
+    df$sigma2_2b <- df$sigma2_2a + sigmas2_2d
     
-
     # Calculate difference distribution parameters (not mean difference)
-    df$mu_1d <- mus_1offset
-    df$mu_2d <- mus_2offset
-    
+    df$mu_1d <- mus_1d
+    df$mu_2d <- mus_2d
     # Variance of difference in means based on control and offset
-    df$sigma2_1d <- df$sigma2_1b - df$sigma2_1a 
-    df$sigma2_2d <- df$sigma2_2b - df$sigma2_2a
+    df$sigma2_1d <- sigmas2_1d
+    df$sigma2_2d <- sigmas2_2d
     
     # Calculate *mean* difference parameters (not difference)
-    df$mu_1md <- mus_1offset 
-    df$mu_2md <- mus_2offset
-    df$sigma2_1md <- sqrt(df$sigma2_1d /n_obs)
-    df$sigma2_2md <- sqrt(df$sigma2_2d /n_obs)
+    df$mu_1md <- mus_1d
+    df$mu_2md <- mus_2d
+    df$sigma2_1md <- df$sigma2_1d /n_obs
+    df$sigma2_2md <- df$sigma2_2d /n_obs
     
     #browser();
   }
   
-
-  
-  
-  
-  # # Variance of the mean
-  # df$sigma2_1ma <- sqrt(sigma2_1a / n_obs) 
-  # df$sigma2_2ma <- sqrt(sigma2_1a / n_obs)
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_d2gtd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
+  df$is_mud_md2gtmd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
   # Statistics of difference of means distribution 
   df$rmu_1md <- df$mu_1md/df$mu_1a
   df$rmu_2md <- df$mu_2md/df$mu_2a
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_d2gtd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
+  df$is_rmud_md2gtmd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
   
-  # Relative change variance of the mean compared to control sample
-  # Measures realtive variance of mean difference across different scales 
-  # of measurement
-  df$rsigma2_1md <- df$sigma2_1md/ df$mu_1a
-  df$rsigma2_2md <- df$sigma2_2md/ df$mu_2a
+  # Relative change variance of the mean compared to difference in means
+  #   Realtive variance across scales
+  df$rsigma2_1md <- df$sigma2_1md / df$mu_1a
+  df$rsigma2_2md <- df$sigma2_2md / df$mu_2a
 
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigma2_d2gtd1 <-  df$sigma2_2md > df$sigma2_1md
-  # Is: rel_pop_std2 > rel_pop_std1 (TRUE), AKA coefficient of variation
-  df$is_rsigma2_d2gtd1 <-  df$rsigma2_2md > df$rsigma2_1md
+  df$is_sigma2_md2gtmd1 <-  df$sigma2_2md > df$sigma2_1md
+  # Is: rel_pop_std2 > rel_pop_std1 (TRUE), a/k/a CV
+  df$is_rsigma2_md2gtmd1 <-  df$rsigma2_2md > df$rsigma2_1md
   
   
   
@@ -181,7 +166,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
 }
 
 quantify_esize_simulations <- function(df, overwrite = FALSE,
-                                out_path = "temp/quanitfyEffectSizes.rds", 
+                                out_path = "temp/", 
+                                data_file_name,
                                 rand.seed = 0) {
   #' Simulate experiments generated from generateExperiment_Data() and calcualte
   #'  various effecct sizes
@@ -202,7 +188,7 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
   n_sims = dim(df)[1]
   
   # Only perform simulations if results not saved to disk
-  if (!file.exists(out_path) | overwrite) {
+  if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
     for (n in seq(1,n_sims,1)) {
       set.seed(rand.seed+n)
       # Transform simulated samples with normal parameteres (mean and std) for 
@@ -247,7 +233,7 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       
       # Rel STDs: sd divided by control mean
-      diff_rvar = s_2md^2/rowMeans(x_2a) - s_1md^2/rowMeans(x_1a)
+      diff_rvar = s_2md^2/abs(rowMeans(x_2a)) - s_1md^2/abs(rowMeans(x_1a))
       df$fract_rvar_d2gtd1[n] = sum( diff_rvar > 0) / df$n_samples[n]
       df$mean_diff_rvar_2m1[n]  = mean(diff_rvar)
       
@@ -309,10 +295,10 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
     }
     # Save dataframed results to a file
-    saveRDS(df, file = out_path)
+    saveRDS(df, file = paste(out_path,data_file_name,sep=""))
   } else {
     # Restore the dataframed results from disk
-    df <- readRDS(file = out_path)
+    df <- readRDS(file = paste(out_path,data_file_name,sep=""))
     
   }
   # browser()
@@ -413,7 +399,7 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
   
 }
 
-plot_esize_simulations <- function(df_pretty, fig_name, y_ax_label) {
+plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   # Calculate confidence interval
   df_result <- df_pretty %>%   
     group_by(name) %>% 
@@ -436,7 +422,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_label) {
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape=1) + 
     xlab("Effect Size Metric") +
-    ylab(y_ax_label) +
+    ylab(parse(text=paste("Error~Rate~(Lower~", y_ax_str,")"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = extend_max_lim(ci_range, 0.1)) +
     geom_text(y = extend_max_lim(ci_range, 0.1), size=4) +
@@ -445,15 +431,16 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_label) {
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
   # browser()
+
   return(df_result)
-  
   
 }
 
-process_esize_simulations <- function(df_init, gt_colname, y_ax_label, out_path,
+process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
                                       fig_name,var_suffix = "fract") {
   # Quantify effect sizes in untidy matrix
-  df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path)
+  df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
+                                      data_file_name = paste(fig_name,".rds",sep = ""))
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
@@ -466,7 +453,21 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_label, out_path,
                                          var_suffix = var_suffix)
   
   # Plot effect size results
-  df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_label = y_ax_label)
+  df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
+  
+  # Plot reference ground truth success rate (Exp 1 < Exp 2)
+  # Check to see overall ground truth trtue rate
+  binom_p <- prop.test(sum(df_es[[gt_colname]]), dim(df_init)[1], conf.level=0.95, correct = FALSE)
+  p <- ggplot(tibble(x=as.factor(1),y=binom_p$estimate), aes(x=x,  y=y)) +
+    geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+    geom_linerange(aes(ymin = binom_p$conf.int[1], ymax = binom_p$conf.int[2]), size = 0.5) +
+    geom_point(size=1,fill="white", shape=1) + 
+    ylab("Fract Exp 1 < Exp 2") +
+    xlab( parse(text = y_ax_str)) +
+    theme_classic(base_size = 8) 
+  #print(p)
+  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1, dpi = 600)
   
   
   all_dfs <- vector(mode="list", length=4)
