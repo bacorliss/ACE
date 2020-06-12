@@ -30,7 +30,7 @@ effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "z_score", "p_value",
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
 effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
-                           "r*delta[M]","N(0,1)")
+                           "r*delta[M]","Rand")
 
 # default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
@@ -92,10 +92,10 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
 
     # calculate mean difference distribution (*not* difference distribution)
-    df$mu_1md <- df$mu_1b - df$mu_1a
-    df$mu_2md <- df$mu_2b - df$mu_2a
-    df$sigma_1md <- df$sigma_1d/n_obs
-    df$sigma_2md <- df$sigma_2d/n_obs
+    df$mu_1md <- df$mu_1d
+    df$mu_2md <- df$mu_2d
+    df$sigma_1md <- df$sigma_1d/sqrt(n_obs)
+    df$sigma_2md <- df$sigma_2d/sqrt(n_obs)
     
   } else {
     ##  Experiment group invalid
@@ -196,17 +196,17 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       # Use Exp 1 and 2 coefficients to generate data from normalized base data
       x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1a[n], 
-                          sd = sqrt(df$sigma_1a[n])), nrow = df$n_samples[n], 
+                          sd = df$sigma_1a[n]), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1b[n], 
-                          sd = sqrt(df$sigma_1b[n])), nrow = df$n_samples[n], 
+                          sd = df$sigma_1b[n]), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       
       x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2a[n], 
-                          sd = sqrt(df$sigma_2a[n])), nrow = df$n_samples[n], 
+                          sd = df$sigma_2a[n]), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2b[n], 
-                          sd = sqrt(df$sigma_2b[n])), nrow = df$n_samples[n], 
+                          sd = df$sigma_2b[n]), nrow = df$n_samples[n], 
                     ncol = df$n_obs[n])
       
       # Sample estimate of difference in means
@@ -233,9 +233,9 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       
       # Rel STDs: sd divided by control mean
-      diff_rvar = s_2md/abs(xbar_2d) - s_1md/abs(xbar_1d)
-      df$fract_rsd_d2gtd1[n] = sum( diff_rvar > 0) / df$n_samples[n]
-      df$mean_diff_rsd_2m1[n]  = mean(diff_rvar)
+      diff_rsd = s_2md/abs(xbar_2d) - s_1md/abs(xbar_1d)
+      df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
+      df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
       
       # t score
@@ -279,7 +279,7 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
       
       # Relative Most Mean Diff
-      diff_rmmd = most_mean_diff_2/rowMeans(x_2a) - most_mean_diff_1/rowMeans(x_1a)
+      diff_rmmd = most_mean_diff_2/xbar_2d - most_mean_diff_1/xbar_1d
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
@@ -411,8 +411,15 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
                                        function(x) as.numeric(x[1]))
   df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
                                        function(x) as.numeric(x[2]))
-  df_result$is_mean_0.5 <- 0.5 > df_result$bs_ci_mean_lower &
-    0.5 < df_result$bs_ci_mean_upper
+  # If groups have no variance in mean, then boot retuns NaNs, replace with mean
+  df_result$bs_ci_mean_lower[is.na(df_result$bs_ci_mean_lower)] <- 
+    df_result$mean[is.na(df_result$bs_ci_mean_lower)]
+  df_result$bs_ci_mean_upper[is.na(df_result$bs_ci_mean_upper)] <- 
+    df_result$mean[is.na(df_result$bs_ci_mean_upper)]
+
+  
+  df_result$is_mean_0.5 <- 0.5 >= df_result$bs_ci_mean_lower &
+    0.5 <= df_result$bs_ci_mean_upper
   ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
   
   # Basic violin plot
@@ -430,7 +437,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   print(p)
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
-  # browser()
+   #browser()
 
   return(df_result)
   
@@ -438,6 +445,9 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
                                       fig_name,var_suffix = "fract") {
+  # Display ground truth fraction of E2>E1
+  print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
+  
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""))
@@ -451,7 +461,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
                                                          effect_size_dict$base, "_", sep=""),
                                          pretty_names = effect_size_dict$label, 
                                          var_suffix = var_suffix)
-  
+  # browser()
   # Plot effect size results
   df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
   

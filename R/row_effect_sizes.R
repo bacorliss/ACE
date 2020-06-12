@@ -1,7 +1,7 @@
 
 
 ## User defined functions
-# Calculate variance by row
+# Calculate variance by row: sum of square of deviation from mean over n-1
 rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1)}
 
 # Row standard deviation
