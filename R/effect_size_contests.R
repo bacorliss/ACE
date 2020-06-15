@@ -134,17 +134,15 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
   df$is_rmud_md2gtmd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
   
-  # Relative change variance of the mean compared to difference in means
-  #   Realtive variance across scales
-  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1md)
-  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2md)
-
   # Is: pop_std2 > pop_std1 (TRUE)
   df$is_sigma_md2gtmd1 <-  df$sigma_2md > df$sigma_1md
+  # Relative change variance of the mean compared to difference in means
+  #   Realtive variance across scales
   # Is: rel_pop_std2 > rel_pop_std1, a/k/a CV1 > CV2
+  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a)
+  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a)
   df$is_rsigma_md2gtmd1 <-  df$rsigma_2md > df$rsigma_1md
-  
-  
+
   
   # Diff:  pop_mean2 - pop_mean1
   df$mean_mud_d2md1 <- df$mu_2md - df$mu_1md
@@ -233,7 +231,7 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       
       # Rel STDs: sd divided by control mean
-      diff_rsd = s_2md/abs(xbar_2d) - s_1md/abs(xbar_1d)
+      diff_rsd = s_2md/rowMeans(x_2a) - s_1md/rowMeans(x_1a)
       df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
       df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
@@ -274,12 +272,13 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
         mmd_normal(x_1a[i,], x_1b[i,],paired = FALSE))
       most_mean_diff_2 = sapply(1:df$n_samples[n], function(i) 
         mmd_normal(x_2a[i,], x_2b[i,], paired = FALSE))
+      #print(sprintf("1: %.4f, \t 2: %.4f", most_mean_diff_1[1],most_mean_diff_2[1]))
       diff_most_mean_diff = most_mean_diff_2 - most_mean_diff_1
       df$fract_mmd_d2gtd1[n] = sum(diff_most_mean_diff > 0) / df$n_samples[n]
       df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
       
       # Relative Most Mean Diff
-      diff_rmmd = most_mean_diff_2/xbar_2d - most_mean_diff_1/xbar_1d
+      diff_rmmd = most_mean_diff_2/rowMeans(x_2a) - most_mean_diff_1/rowMeans(x_1a)
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
