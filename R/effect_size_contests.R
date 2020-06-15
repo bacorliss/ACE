@@ -32,7 +32,7 @@ effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","Rand")
 
-# default distribution for population paramters for Exp 1 {a,b}, Exp 2 {a,b}
+# default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
@@ -46,10 +46,10 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
-  #' @description Generate simualted experiment data for two experiments with 
+  #' @description Generate simulated experiment data for two experiments with 
   #' distributions for mu and sigma specified as functions
   #' 
-  #' @param n_samples numer of samples (collection of observations), number of 
+  #' @param n_samples number of samples (collection of observations), number of 
   #' times that a simulated experiment is repeated
   #' @param n_obs number of measurements in a sample/experiment
   #' @param n_sims number of simulations run, which are sets of experiments with
@@ -142,8 +142,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Relative change variance of the mean compared to difference in means
   #   Realtive variance across scales
   # Is: rel_pop_std2 > rel_pop_std1, a/k/a CV1 > CV2
-  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a)
-  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a)
+  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a + df$mu_1d/2)
+  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a + df$mu_2d/2)
   df$is_rsigma_md2gtmd1 <-  df$rsigma_2md > df$rsigma_1md
 
   
@@ -234,7 +234,8 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       
       
       # Rel STDs: sd divided by control mean
-      diff_rsd = s_2md/rowMeans(x_2a) - s_1md/rowMeans(x_1a)
+      diff_rsd = s_2md / (rowMeans(x_2a) + xbar_2d/2) -
+        s_1md / (rowMeans(x_1a) + xbar_1d/2)
       df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
       df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
@@ -281,7 +282,8 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
       
       # Relative Most Mean Diff
-      diff_rmmd = most_mean_diff_2/rowMeans(x_2a) - most_mean_diff_1/rowMeans(x_1a)
+      diff_rmmd = most_mean_diff_2 / (rowMeans(x_2a) + xbar_2d/2) -
+        most_mean_diff_1 / (rowMeans(x_1a) + xbar_1d/2)
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
@@ -482,7 +484,21 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
             base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
   
   
-  # browser();
+  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
+              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
+                               df_init$mu_2md/df_init$sigma_2md))
+  
+  browser();
+  
+  p <- ggplot(df, aes(x=mu_ov_sigma, fill=group)) +
+    geom_histogram(aes(x = stat(count / sum(count))), position="identity", alpha=0.25) +
+   xlab( expression(abs(~mu[D])/sigma[D])) +
+   ylab( "Freq.") +
+   theme_classic(base_size = 8) +
+   theme(legend.position = "none")
+  p
+  
+  
   
   all_dfs <- vector(mode="list", length=4)
   names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_plotted")

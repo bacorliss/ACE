@@ -225,20 +225,20 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1",
                                                       sep = ""))
 
 # Contest 5) Quantify Error rate with each metric predicting experiment with
-# Lower realtive STD of difference in means
+# Lower relative STD of difference in means
 # [ Far from zero ]
 #
 #------------------------------------------------------------------------------
 source("R/effect_size_contests.R")
-df_init <- generateExperiment_Data(n_samples=100, n_obs, n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(10,n_sims), 
                                     sigmas_1a = rep(1,n_sims),
-                                   mus_1d  = rep(50,n_sims), 
-                                    sigmas_1d = runif(n_sims, 50, 100),
-                                   mus_2a  = rep(30,n_sims), 
+                                   mus_1d  = rep(20,n_sims), 
+                                    sigmas_1d = runif(n_sims, 10, 50),
+                                   mus_2a  = rep(40,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = rep(50,n_sims), 
-                                    sigmas_2d = runif(n_sims, 150, 300))
+                                   mus_2d  = rep(80,n_sims), 
+                                    sigmas_2d = runif(n_sims, 40, 200))
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1", 
                       y_ax_str = "r*sigma[d]",
                       fig_name = paste(fig_basename, "_5a_esize_contest_rsigma_",
