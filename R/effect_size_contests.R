@@ -91,11 +91,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
     df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
 
-    # calculate mean difference distribution (*not* difference distribution)
-    df$mu_1md <- df$mu_1d
-    df$mu_2md <- df$mu_2d
-    df$sigma_1md <- df$sigma_1d/sqrt(n_obs)
-    df$sigma_2md <- df$sigma_2d/sqrt(n_obs)
+
     
   } else {
     ##  Experiment group invalid
@@ -116,14 +112,21 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     df$sigma_1d <- sigmas_1d
     df$sigma_2d <- sigmas_2d
     
-    # Calculate *mean* difference parameters (not difference)
-    df$mu_1md <- mus_1d
-    df$mu_2md <- mus_2d
-    df$sigma_1md <- df$sigma_1d /sqrt(n_obs)
-    df$sigma_2md <- df$sigma_2d /sqrt(n_obs)
+  
     
     #browser();
   }
+  
+  # Calculate parameter of difference in means distribution
+  df$mu_1md <- mus_1d
+  df$mu_2md <- mus_2d
+  df$sigma_1md <- df$sigma_1d /sqrt(n_obs)
+  df$sigma_2md <- df$sigma_2d /sqrt(n_obs)
+  
+  # Calculate ratio of sigma_md/mu_md to determine how close D is close to zero,
+  # and how absolute value folding will effect distribution.
+  df$mu_ov_sigma_1md <- df$mu_1md / df$sigma_1md
+  df$mu_ov_sigma_2md <- df$mu_2md / df$sigma_2md
   
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
@@ -476,8 +479,10 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
     theme_classic(base_size = 8) 
   #print(p)
   save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1, dpi = 600)
+            base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
   
+  
+  # browser();
   
   all_dfs <- vector(mode="list", length=4)
   names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_plotted")
