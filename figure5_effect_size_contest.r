@@ -37,7 +37,7 @@ extend_max_lim <- function(x,prc) max(x) + prc* (max(x)-min(x))
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
 n_sims = 1e3
-n_samples = 1e3
+n_samples = 1e2
 n_obs = 50
 rand.seed = 0
 fig_basename = "f_5"
@@ -57,15 +57,18 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                     sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,5,10), 
                                     sigmas_1d = rep(0.01,n_sims),
-                                   mus_2a  = rep(1,n_sims), 
+                                   mus_2a  = rep(10,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,5,10), 
                                     sigmas_2d = rep(0.01,n_sims)) 
+ptm <- proc.time()
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                  y_ax_str = "abs(~mu[D]*phantom(.))",
                                  fig_name = paste(fig_basename, "_1a_esize_",
                                                   "contest_mu_far_zero.tiff",
                                                   sep = ""))
+proc.time() - ptm
+
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
@@ -74,7 +77,7 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                     sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,-1,1), 
                                     sigmas_1d = rep(0.01,n_sims),
-                                   mus_2a  = rep(1,n_sims), 
+                                   mus_2a  = rep(10,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,-1,1), 
                                     sigmas_2d = rep(0.01,n_sims)) 

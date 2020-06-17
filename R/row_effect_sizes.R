@@ -1,4 +1,10 @@
 
+library(BayesFactor)
+library(parallel)
+library(future.apply)
+plan(multiprocess, workers = detectCores(TRUE)-1) ## Parallelize using four cores
+library(boot)
+
 
 ## User defined functions
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -56,6 +62,33 @@ rowzScore <- function(m1, m2) {
   zstat<-  ( rowMeans(m1) - rowMeans(m2)) /
     sqrt( s1^2/n1 + s2^2/n2)
 }
+
+
+
+row_mmd <- function(m1, m2, ...) {
+  mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal(m1[i,], m2[i,], ...))
+}
+
+
+row_ttestBF <- function(m1, m2, parallel = FALSE, paired=FALSE) {
+  
+  # Ignore diagnostic messages during function call.
+  wrap_fun <- function(x1,x2)   {
+    suppressMessages(ttestBF(x1, x2)@bayesFactor$bf)
+  }
+ 
+  
+  if (parallel) {
+    bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+  } else {
+    bf <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+  }
+ 
+  
+  
+}
+
+
 
 
 ## Test data

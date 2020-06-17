@@ -24,11 +24,11 @@ source("R/mmd.R")
 effect_size_dict <- vector(mode="list", length=4)
 names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
-effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "z_score", "p_value",
+effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "bf", "p_value",
                            "cohen_d", "hedge_g", "glass_delta", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","z", "p",
+effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","Rand")
 
@@ -168,18 +168,17 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
 }
 
 quantify_esize_simulations <- function(df, overwrite = FALSE,
-                                out_path = "temp/", 
-                                data_file_name,
-                                rand.seed = 0) {
-  #' Simulate experiments generated from generateExperiment_Data() and calcualte
-  #'  various effecct sizes
+                                out_path = "temp/", data_file_name,
+                                rand.seed = 0, include_bf = FALSE) {
+  #' Simulate experiments generated from generateExperiment_Data() and calculates
+  #'  various effect sizes
   #' 
   #' @description Given a data frame of parameters and input data for each 
   #' experiment group, quantifies data with various effect size metrics.
   #' 
   #' @param df input data frame generated from generateExperiment_Data() that 
-  #' holds parameters for simualted data, along with initialized fields to store
-  #'  effect size metricss
+  #' holds parameters for simulated data, along with initialized fields to store
+  #'  effect size metrics
   #' @param x_a base input data from group a (gets transformed into actual input
   #'  data with parameters within df)
   #' @param x_b base input data from group b (gets transformed into actual input
@@ -216,8 +215,8 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       xbar_2d = rowMeans(x_2b) - rowMeans(x_2a)
       
       # Sample estimate of standard deviation of difference in means
-      s_1md = sqrt(rowSds(x_1a)^2/df$n_obs + rowSds(x_1b)^2/df$n_obs)
-      s_2md = sqrt(rowSds(x_2a)^2/df$n_obs + rowSds(x_2b)^2/df$n_obs)
+      s_1md = sqrt(rowSds(x_1a)^2/df$n_obs[n] + rowSds(x_1b)^2/df$n_obs[n])
+      s_2md = sqrt(rowSds(x_2a)^2/df$n_obs[n] + rowSds(x_2b)^2/df$n_obs[n])
       
       # Basic Summary statistical comparisons
       # Means
@@ -233,24 +232,32 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       df$fract_rxdbar_d2gtd1[n] = sum( diff_rxdbar > 0) / df$n_samples[n]
       df$mean_diff_rxdbar_2m1[n]  =  mean(diff_rxdbar)
       
-      
       # Rel STDs: sd divided by control mean
       diff_rsd = s_2md / (rowMeans(x_2a) + xbar_2d/2) -
         s_1md / (rowMeans(x_1a) + xbar_1d/2)
       df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
       df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
       
+      if (df$fract_rsd_d2gtd1[n] > 1) {browser();}
       
-      # t score
-      z_score_1 <- rowzScore(x_1b, x_1a)
-      z_score_2 <- rowzScore(x_2b, x_2a)
-      diff_abs_z_score <- abs(z_score_2) - abs(z_score_1)
-      df$fract_z_score_d2gtd1[n] = sum( diff_abs_z_score > 0) / 
-        df$n_samples[n]
-      df$mean_diff_z_score_2m1[n] = mean( diff_abs_z_score)
+      if (include_bf) {
+        # Bayes factor
+        bf_1 = row_ttestBF(x_1a, x_1b, parallel = TRUE, paired = FALSE)
+        bf_2 = row_ttestBF(x_2a, x_2b, parallel = TRUE, paired = FALSE)
+        diff_abs_bf <- abs(bf_2) - abs(bf_1)
+        df$fract_bf_d2gtd1[n] = sum(diff_abs_bf > 0) /
+          df$n_samples[n]
+        df$mean_diff_bf_2m1[n] = mean(diff_abs_bf)
+      } else {
+        df$fract_bf_d2gtd1[n] = 0
+        df$mean_diff_bf_2m1[n] = 0
+      }
+      
       
       # Pvalue
       # The more equal experiment will have a larger p-value
+      z_score_1 <- rowzScore(x_1b, x_1a)
+      z_score_2 <- rowzScore(x_2b, x_2a)
       p_value_1 = 2*pnorm(-abs(z_score_1))
       p_value_2 = 2*pnorm(-abs(z_score_2))
       diff_p_value <-  p_value_2 - p_value_1
@@ -273,23 +280,20 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       df$mean_diff_hedge_g_2m1[n] =  mean(diff_hedge_g)
       
       # Most Mean Diff
-      most_mean_diff_1 = sapply(1:df$n_samples[n], function(i) 
-        mmd_normal(x_1a[i,], x_1b[i,],paired = FALSE))
-      most_mean_diff_2 = sapply(1:df$n_samples[n], function(i) 
-        mmd_normal(x_2a[i,], x_2b[i,], paired = FALSE))
-      #print(sprintf("1: %.4f, \t 2: %.4f", most_mean_diff_1[1],most_mean_diff_2[1]))
-      diff_most_mean_diff = most_mean_diff_2 - most_mean_diff_1
+      mmd_1 = row_mmd(x_1a, x_1b, paired = FALSE)
+      mmd_2 = row_mmd(x_2a, x_2b, paired = FALSE)
+      diff_most_mean_diff = mmd_2 - mmd_1
       df$fract_mmd_d2gtd1[n] = sum(diff_most_mean_diff > 0) / df$n_samples[n]
       df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
       
       # Relative Most Mean Diff
-      diff_rmmd = most_mean_diff_2 / rowMeans(x_2a) -
-        most_mean_diff_1 / rowMeans(x_1a)
+      diff_rmmd = mmd_2 / rowMeans(x_2a) -
+        mmd_1 / rowMeans(x_1a)
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
       
-      # standard normal random
+      # Random
       diff_nrand = rowMeans(matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
                                    nrow = df$n_samples[n], ncol = df$n_obs[n]))
       df$fract_nrand_d2gtd1[n] = sum(diff_nrand > 0 ) / df$n_samples[n]
