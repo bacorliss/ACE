@@ -32,6 +32,7 @@ effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","z", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
                            "r*delta[M]","Rand")
 
+
 # default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
@@ -282,8 +283,8 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
       df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
       
       # Relative Most Mean Diff
-      diff_rmmd = most_mean_diff_2 / (rowMeans(x_2a) + xbar_2d/2) -
-        most_mean_diff_1 / (rowMeans(x_1a) + xbar_1d/2)
+      diff_rmmd = most_mean_diff_2 / rowMeans(x_2a) -
+        most_mean_diff_1 / rowMeans(x_1a)
       df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
       df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
       
@@ -415,29 +416,43 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
                                        function(x) as.numeric(x[1]))
   df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
                                        function(x) as.numeric(x[2]))
-  # If groups have no variance in mean, then boot retuns NaNs, replace with mean
+  # If groups have no variance in mean, then boot returns NaNs, replace with mean
   df_result$bs_ci_mean_lower[is.na(df_result$bs_ci_mean_lower)] <- 
     df_result$mean[is.na(df_result$bs_ci_mean_lower)]
   df_result$bs_ci_mean_upper[is.na(df_result$bs_ci_mean_upper)] <- 
     df_result$mean[is.na(df_result$bs_ci_mean_upper)]
-
   
   df_result$is_mean_0.5 <- 0.5 >= df_result$bs_ci_mean_lower &
     0.5 <= df_result$bs_ci_mean_upper
   ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
   
+  # Labels of statistical significance for each group
+  sig_labels = rep("",length(levels(df_pretty$name)))
+  sig_colors = rep("black",length(levels(df_pretty$name)))
+  sig_sizes = rep(4,length(levels(df_pretty$name)))
+  siff_vjust = rep(0,length(levels(df_pretty$name)))
+  # Set less than random to blue and -
+  sig_labels[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  "-"
+  sig_colors[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  rgb(47, 74, 71,maxColorValue = 255)
+  sig_sizes[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  5
+  siff_vjust[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  .017
+  # Set greater than random to red and +
+  sig_labels[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  "+"
+  sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  rgb(255, 0, 0,maxColorValue = 255)
+  
+  
   # Basic violin plot
-  p <- ggplot(df_result, aes(x=name,  y=mean, group=name, 
-                             label=ifelse(!is_mean_0.5, "*", ""))) +
+  p <- ggplot(df_result, aes(x=name,  y=mean, group=name)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
-    geom_point(size=1,fill="white", shape=1) + 
+    geom_point(size=1,fill="white", shape = 1) + 
     xlab("Effect Size Metric") +
-    ylab(parse(text=paste("Error~Rate~(Lower~", y_ax_str,")"))) +
+    ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
-    expand_limits(y = extend_max_lim(ci_range, 0.1)) +
-    geom_text(y = extend_max_lim(ci_range, 0.1), size=4) +
-    theme_classic(base_size = 8) 
+    expand_limits(y = extend_max_lim(ci_range, 0.2)) +
+    geom_text(y = extend_max_lim(ci_range, 0.2)+siff_vjust, aes(label = sig_labels), 
+              color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
+    theme_classic() +  theme(text = element_text(size = 8))
   print(p)
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
@@ -470,7 +485,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
   df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
   
   # Plot reference ground truth success rate (Exp 1 < Exp 2)
-  # Check to see overall ground truth trtue rate
+  # Check to see overall ground truth true rate
   binom_p <- prop.test(sum(df_es[[gt_colname]]), dim(df_init)[1], conf.level=0.95, correct = FALSE)
   p <- ggplot(tibble(x=as.factor(1),y=binom_p$estimate), aes(x=x,  y=y)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
@@ -478,26 +493,29 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
     geom_point(size=1,fill="white", shape=1) + 
     ylab("Fract Exp 1 < Exp 2") +
     xlab( parse(text = y_ax_str)) +
-    theme_classic(base_size = 8) 
-  #print(p)
+    theme_classic(base_size = 8) +
+    theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+  p
   save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
   
-  
+
+  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
-              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
-                               df_init$mu_2md/df_init$sigma_2md))
-  
-  browser();
-  
-  p <- ggplot(df, aes(x=mu_ov_sigma, fill=group)) +
-    geom_histogram(aes(x = stat(count / sum(count))), position="identity", alpha=0.25) +
-   xlab( expression(abs(~mu[D])/sigma[D])) +
+              mu_ov_sigma = abs(c(df_init$mu_1md/df_init$sigma_1md,
+                              df_init$mu_2md/df_init$sigma_2md)))
+  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
+    geom_histogram(aes(y=stat(count / sum(count))), position="identity", 
+                   alpha=0.25, bins = 15) +
+   xlab( expression(abs(~mu[D]*phantom(.))*phantom(.)/phantom(.)*sigma[D])) +
    ylab( "Freq.") +
    theme_classic(base_size = 8) +
-   theme(legend.position = "none")
-  p
-  
+   theme(legend.position = "none") + 
+   scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+  #print(p)
+  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1.5, dpi = 600)
   
   
   all_dfs <- vector(mode="list", length=4)
