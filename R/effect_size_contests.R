@@ -293,7 +293,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
 quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
-                                parallelize_sims = TRUE) {
+                                parallel_sims = TRUE) {
   #' Simulate experiments generated from generateExperiment_Data() and calculates
   #'  various effect sizes
   #' 
@@ -321,7 +321,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
     
     # browser();
-    if (parallelize_sims) {
+    if (parallel_sims) {
       # Process effect sizes in parallel
       
       print("starting parallel processing")
@@ -557,7 +557,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
 }
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
-                                      fig_name,var_suffix = "fract",include_bf = TRUE) {
+                                      fig_name,var_suffix = "fract",include_bf = TRUE,
+                                      parallel_sims = TRUE) {
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
@@ -569,7 +570,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
-                                      include_bf = include_bf)
+                                      include_bf = include_bf,parallel_sims=parallel_sims)
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
