@@ -64,6 +64,7 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
 ptm <- proc.time()
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                  y_ax_str = "abs(~mu[D]*phantom(.))",
+                                 include_bf = FALSE,
                                  fig_name = paste(fig_basename, "_1a_esize_",
                                                   "contest_mu_far_zero.tiff",
                                                   sep = ""))

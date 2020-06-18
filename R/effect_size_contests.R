@@ -9,16 +9,22 @@ library(ggplot2)
 library(tibble)
 library(RColorBrewer)
 library(broom)
-# library(gridExtra)
-# library(grid)
 library(tidyr)
 library(cowplot)
 library(dplyr)
-# library(effsize)
 library(boot)
-# User defined libraries
+library(foreach)
+library(doParallel)
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
+source("R/parallel_utils.R")
+
+
+# Parse all functions in file for parallel processing using user functions
+row_effect_sizes_fun <- parse_functions_source("R/row_effect_sizes.R")
+mmd_functions <- parse_functions_source("R/mmd.R")
+
+
 
 # Dictionary to keep track of variables tracking effect size metrics
 effect_size_dict <- vector(mode="list", length=4)
@@ -167,9 +173,127 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   return(df)
 }
 
-quantify_esize_simulations <- function(df, overwrite = FALSE,
+quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
+                                      parallelize_bf = FALSE) {
+  if (dim(df)[1] != 1) stop("Need to specify a single row of effect size matrix")
+  
+  set.seed(rand.seed)
+  # Transform simulated samples with normal parameters (mean and std) for 
+  # current round of simulation
+  
+  # Use Exp 1 and 2 coefficients to generate data from normalized base data
+  x_1a = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_1a, 
+                      sd = df$sigma_1a), nrow = df$n_samples, 
+                ncol = df$n_obs)
+  x_1b = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_1b, 
+                      sd = df$sigma_1b), nrow = df$n_samples, 
+                ncol = df$n_obs)
+  
+  x_2a = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_2a, 
+                      sd = df$sigma_2a), nrow = df$n_samples, 
+                ncol = df$n_obs)
+  x_2b = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_2b, 
+                      sd = df$sigma_2b), nrow = df$n_samples, 
+                ncol = df$n_obs)
+  
+  # Sample estimate of difference in means
+  xbar_1d = rowMeans(x_1b) - rowMeans(x_1a)
+  xbar_2d = rowMeans(x_2b) - rowMeans(x_2a)
+  
+  # Sample estimate of standard deviation of difference in means
+  s_1md = sqrt(rowSds(x_1a)^2/df$n_obs + rowSds(x_1b)^2/df$n_obs)
+  s_2md = sqrt(rowSds(x_2a)^2/df$n_obs + rowSds(x_2b)^2/df$n_obs)
+  
+  # Basic Summary statistical comparisons
+  # Means
+  df$fract_xdbar_d2gtd1 = sum(abs(xbar_2d) > abs(xbar_1d))/df$n_samples
+  df$mean_diff_xdbar_2m1  = mean(abs(xbar_2d) - abs(xbar_1d))
+  
+  # Stds
+  df$fract_sd_d2gtd1  = sum(  s_2md > s_1md) / df$n_samples
+  df$mean_diff_sd_2m1 = mean( s_2md - s_1md)
+  
+  # Rel Means: mean divided by control mean
+  diff_rxdbar = abs(xbar_2d/rowMeans(x_2a)) - abs(xbar_1d/rowMeans(x_1a))
+  df$fract_rxdbar_d2gtd1 = sum( diff_rxdbar > 0) / df$n_samples
+  df$mean_diff_rxdbar_2m1  =  mean(diff_rxdbar)
+  
+  # Rel STDs: sd divided by control mean
+  diff_rsd = s_2md / (rowMeans(x_2a) + xbar_2d/2) -
+    s_1md / (rowMeans(x_1a) + xbar_1d/2)
+  df$fract_rsd_d2gtd1 = sum( diff_rsd > 0) / df$n_samples
+  df$mean_diff_rsd_2m1  = mean(diff_rsd)
+  
+  if (df$fract_rsd_d2gtd1 > 1) {browser();}
+  
+  if (include_bf) {
+    # Bayes factor
+    bf_1 = row_ttestBF(x_1a, x_1b, parallelize = parallelize_bf, paired = FALSE)
+    bf_2 = row_ttestBF(x_2a, x_2b, parallelize = parallelize_bf, paired = FALSE)
+    diff_abs_bf <- abs(bf_2) - abs(bf_1)
+    df$fract_bf_d2gtd1 = sum(diff_abs_bf > 0) /
+      df$n_samples
+    df$mean_diff_bf_2m1 = mean(diff_abs_bf)
+  } else {
+    df$fract_bf_d2gtd1 = 0
+    df$mean_diff_bf_2m1 = 0
+  }
+  
+  
+  # Pvalue
+  # The more equal experiment will have a larger p-value
+  z_score_1 <- rowzScore(x_1b, x_1a)
+  z_score_2 <- rowzScore(x_2b, x_2a)
+  p_value_1 = 2*pnorm(-abs(z_score_1))
+  p_value_2 = 2*pnorm(-abs(z_score_2))
+  diff_p_value <-  p_value_2 - p_value_1
+  # Must switch signs
+  df$fract_p_value_d2gtd1 = sum(-diff_p_value > 0) / df$n_samples
+  df$mean_diff_p_value_2m1 = mean(diff_p_value)
+  
+  # Delta Family of effect size
+  # Cohens D
+  diff_cohen_d = abs(rowCohenD(x_2a, x_2b)) - abs(rowCohenD(x_1a, x_1b))
+  df$fract_cohen_d_d2gtd1 = sum(diff_cohen_d > 0) / df$n_samples
+  df$mean_diff_cohen_d_2m1 =  mean(diff_cohen_d)
+  # Glass delta
+  diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b)) - abs(rowGlassDelta(x_1a, x_1b))
+  df$fract_glass_delta_d2gtd1 = sum(diff_glass_delta > 0) / df$n_samples
+  df$mean_diff_glass_delta_2m1 =  mean(diff_glass_delta)
+  # Hedges G
+  diff_hedge_g = abs(rowHedgeG(x_2a, x_2b)) - abs(rowHedgeG(x_1a, x_1b))
+  df$fract_hedge_g_d2gtd1 = sum(diff_hedge_g > 0) / df$n_samples
+  df$mean_diff_hedge_g_2m1 =  mean(diff_hedge_g)
+  
+  # Most Mean Diff
+  mmd_1 = row_mmd(x_1a, x_1b, paired = FALSE)
+  mmd_2 = row_mmd(x_2a, x_2b, paired = FALSE)
+  diff_most_mean_diff = mmd_2 - mmd_1
+  df$fract_mmd_d2gtd1 = sum(diff_most_mean_diff > 0) / df$n_samples
+  df$mean_diff_mmd_2m1 = mean(diff_most_mean_diff)
+  
+  # Relative Most Mean Diff
+  diff_rmmd = mmd_2 / rowMeans(x_2a) -
+    mmd_1 / rowMeans(x_1a)
+  df$fract_rmmd_d2gtd1 = sum(diff_rmmd > 0) / df$n_samples
+  df$mean_diff_rmmd_2m1 = mean(diff_rmmd)
+  
+  
+  # Random
+  diff_nrand = rowMeans(matrix(rnorm(df$n_samples * df$n_obs, mean = 0, sd = 1), 
+                               nrow = df$n_samples, ncol = df$n_obs))
+  df$fract_nrand_d2gtd1 = sum(diff_nrand > 0 ) / df$n_samples
+  df$mean_diff_nrand_2m1 = mean(diff_nrand)
+  
+  return(df)
+}
+
+  
+  
+quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
-                                rand.seed = 0, include_bf = FALSE) {
+                                rand.seed = 0, include_bf = TRUE, 
+                                parallelize_sims = TRUE) {
   #' Simulate experiments generated from generateExperiment_Data() and calculates
   #'  various effect sizes
   #' 
@@ -186,127 +310,54 @@ quantify_esize_simulations <- function(df, overwrite = FALSE,
   #' @param out_path file path to save results to disk
   #' @param overwrite if results file already exists in out_path, skip 
   #' calculation and load from disk
-  n_sims = dim(df)[1]
+  
+  n_sims = dim(df_in)[1]
+  # Initialize output data frame
+  df <- df_in
+  
+  # browser();
   
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
-    for (n in seq(1,n_sims,1)) {
-      set.seed(rand.seed+n)
-      # Transform simulated samples with normal parameteres (mean and std) for 
-      # current round of simulation
+    
+    # browser();
+    if (parallelize_sims) {
+      # Process effect sizes in parallel
       
-      # Use Exp 1 and 2 coefficients to generate data from normalized base data
-      x_1a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1a[n], 
-                          sd = df$sigma_1a[n]), nrow = df$n_samples[n], 
-                    ncol = df$n_obs[n])
-      x_1b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_1b[n], 
-                          sd = df$sigma_1b[n]), nrow = df$n_samples[n], 
-                    ncol = df$n_obs[n])
+      print("starting parallel processing")
+      #setup parallel back end to use many processors
+      cores = detectCores()
+      cl = makeCluster(cores[1]-1)
+      registerDoParallel(cl)
       
-      x_2a = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2a[n], 
-                          sd = df$sigma_2a[n]), nrow = df$n_samples[n], 
-                    ncol = df$n_obs[n])
-      x_2b = matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = df$mu_2b[n], 
-                          sd = df$sigma_2b[n]), nrow = df$n_samples[n], 
-                    ncol = df$n_obs[n])
+      df <- foreach(n=1:n_sims, .combine=rbind,
+                             .export=c(row_effect_sizes_fun, mmd_functions,
+                                       "quantify_esize_simulation"),
+                             .packages = "BayesFactor") %dopar% {
+        #calling a function
+        tempMatrix = quantify_esize_simulation(df[n,], include_bf, 
+                                               rand.seed = rand.seed+n,
+                                               parallelize_bf = FALSE) 
+        tempMatrix #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
+      }
+      #stop cluster
+      stopCluster(cl)
       
-      # Sample estimate of difference in means
-      xbar_1d = rowMeans(x_1b) - rowMeans(x_1a)
-      xbar_2d = rowMeans(x_2b) - rowMeans(x_2a)
       
-      # Sample estimate of standard deviation of difference in means
-      s_1md = sqrt(rowSds(x_1a)^2/df$n_obs[n] + rowSds(x_1b)^2/df$n_obs[n])
-      s_2md = sqrt(rowSds(x_2a)^2/df$n_obs[n] + rowSds(x_2b)^2/df$n_obs[n])
-      
-      # Basic Summary statistical comparisons
-      # Means
-      df$fract_xdbar_d2gtd1[n] = sum(abs(xbar_2d) > abs(xbar_1d))/df$n_samples[n]
-      df$mean_diff_xdbar_2m1[n]  = mean(abs(xbar_2d) - abs(xbar_1d))
-      
-      # Stds
-      df$fract_sd_d2gtd1[n]  = sum(  s_2md > s_1md) / df$n_samples[n]
-      df$mean_diff_sd_2m1[n] = mean( s_2md - s_1md)
-      
-      # Rel Means: mean divided by control mean
-      diff_rxdbar = abs(xbar_2d/rowMeans(x_2a)) - abs(xbar_1d/rowMeans(x_1a))
-      df$fract_rxdbar_d2gtd1[n] = sum( diff_rxdbar > 0) / df$n_samples[n]
-      df$mean_diff_rxdbar_2m1[n]  =  mean(diff_rxdbar)
-      
-      # Rel STDs: sd divided by control mean
-      diff_rsd = s_2md / (rowMeans(x_2a) + xbar_2d/2) -
-        s_1md / (rowMeans(x_1a) + xbar_1d/2)
-      df$fract_rsd_d2gtd1[n] = sum( diff_rsd > 0) / df$n_samples[n]
-      df$mean_diff_rsd_2m1[n]  = mean(diff_rsd)
-      
-      if (df$fract_rsd_d2gtd1[n] > 1) {browser();}
-      
-      if (include_bf) {
-        # Bayes factor
-        bf_1 = row_ttestBF(x_1a, x_1b, parallel = TRUE, paired = FALSE)
-        bf_2 = row_ttestBF(x_2a, x_2b, parallel = TRUE, paired = FALSE)
-        diff_abs_bf <- abs(bf_2) - abs(bf_1)
-        df$fract_bf_d2gtd1[n] = sum(diff_abs_bf > 0) /
-          df$n_samples[n]
-        df$mean_diff_bf_2m1[n] = mean(diff_abs_bf)
-      } else {
-        df$fract_bf_d2gtd1[n] = 0
-        df$mean_diff_bf_2m1[n] = 0
+    }else{
+      # Process effect sizes serially
+      for (n in seq(1,n_sims,1)) {
+        df[n,] <- quantify_esize_simulation(df[n,], include_bf, 
+                                            rand.seed = rand.seed+n, 
+                                            parallelize_bf = FALSE) 
       }
       
-      
-      # Pvalue
-      # The more equal experiment will have a larger p-value
-      z_score_1 <- rowzScore(x_1b, x_1a)
-      z_score_2 <- rowzScore(x_2b, x_2a)
-      p_value_1 = 2*pnorm(-abs(z_score_1))
-      p_value_2 = 2*pnorm(-abs(z_score_2))
-      diff_p_value <-  p_value_2 - p_value_1
-      # Must switch signs
-      df$fract_p_value_d2gtd1[n] = sum(-diff_p_value > 0) / df$n_samples[n]
-      df$mean_diff_p_value_2m1 = mean(diff_p_value)
-      
-      # Delta Family of effect size
-      # Cohens D
-      diff_cohen_d = abs(rowCohenD(x_2a, x_2b)) - abs(rowCohenD(x_1a, x_1b))
-      df$fract_cohen_d_d2gtd1[n] = sum(diff_cohen_d > 0) / df$n_samples[n]
-      df$mean_diff_cohen_d_2m1[n] =  mean(diff_cohen_d)
-      # Glass delta
-      diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b)) - abs(rowGlassDelta(x_1a, x_1b))
-      df$fract_glass_delta_d2gtd1[n] = sum(diff_glass_delta > 0) / df$n_samples[n]
-      df$mean_diff_glass_delta_2m1[n] =  mean(diff_glass_delta)
-      # Hedges G
-      diff_hedge_g = abs(rowHedgeG(x_2a, x_2b)) - abs(rowHedgeG(x_1a, x_1b))
-      df$fract_hedge_g_d2gtd1[n] = sum(diff_hedge_g > 0) / df$n_samples[n]
-      df$mean_diff_hedge_g_2m1[n] =  mean(diff_hedge_g)
-      
-      # Most Mean Diff
-      mmd_1 = row_mmd(x_1a, x_1b, paired = FALSE)
-      mmd_2 = row_mmd(x_2a, x_2b, paired = FALSE)
-      diff_most_mean_diff = mmd_2 - mmd_1
-      df$fract_mmd_d2gtd1[n] = sum(diff_most_mean_diff > 0) / df$n_samples[n]
-      df$mean_diff_mmd_2m1[n] = mean(diff_most_mean_diff)
-      
-      # Relative Most Mean Diff
-      diff_rmmd = mmd_2 / rowMeans(x_2a) -
-        mmd_1 / rowMeans(x_1a)
-      df$fract_rmmd_d2gtd1[n] = sum(diff_rmmd > 0) / df$n_samples[n]
-      df$mean_diff_rmmd_2m1[n] = mean(diff_rmmd)
-      
-      
-      # Random
-      diff_nrand = rowMeans(matrix(rnorm(df$n_samples[n] * df$n_obs[n], mean = 0, sd = 1), 
-                                   nrow = df$n_samples[n], ncol = df$n_obs[n]))
-      df$fract_nrand_d2gtd1[n] = sum(diff_nrand > 0 ) / df$n_samples[n]
-      df$mean_diff_nrand_2m1[n] = mean(diff_nrand)
-
-      # Pearson Correlation
-      # R Squared
-      # Biserial Correlation https://rpubs.com/juanhklopper/biserial_correlation
     }
+    
     # Save dataframed results to a file
     saveRDS(df, file = paste(out_path,data_file_name,sep=""))
   } else {
-    # Restore the dataframed results from disk
+    # Restore the data frame results from disk
     df <- readRDS(file = paste(out_path,data_file_name,sep=""))
     
   }
@@ -506,7 +557,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
 }
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
-                                      fig_name,var_suffix = "fract") {
+                                      fig_name,var_suffix = "fract",include_bf = TRUE) {
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
@@ -517,7 +568,8 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
     
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
-                                      data_file_name = paste(fig_name,".rds",sep = ""))
+                                      data_file_name = paste(fig_name,".rds",sep = ""),
+                                      include_bf = include_bf)
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
@@ -528,7 +580,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
                                                          effect_size_dict$base, "_", sep=""),
                                          pretty_names = effect_size_dict$label, 
                                          var_suffix = var_suffix)
-  # browser()
+
   # Plot effect size results
   df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
   

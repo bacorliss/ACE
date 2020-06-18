@@ -70,7 +70,7 @@ row_mmd <- function(m1, m2, ...) {
 }
 
 
-row_ttestBF <- function(m1, m2, parallel = FALSE, paired=FALSE) {
+row_ttestBF <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
   
   # Ignore diagnostic messages during function call.
   wrap_fun <- function(x1,x2)   {
@@ -78,7 +78,7 @@ row_ttestBF <- function(m1, m2, parallel = FALSE, paired=FALSE) {
   }
  
   
-  if (parallel) {
+  if (parallelize) {
     bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
   } else {
     bf <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
