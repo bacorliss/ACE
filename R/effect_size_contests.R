@@ -408,6 +408,45 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
   
 }
 
+
+plot_population_params <- function(df_init, gt_colname,fig_name,y_ax_str){
+  
+  # Plot reference ground truth success rate (Exp 1 < Exp 2)
+  # Check to see overall ground truth true rate
+  binom_p <- prop.test(sum(df_init[[gt_colname]]), dim(df_init)[1], conf.level=0.95, correct = FALSE)
+  p <- ggplot(tibble(x=as.factor(1),y=binom_p$estimate), aes(x=x,  y=y)) +
+    geom_hline(yintercept = 0.5, size=0.5, color="grey") +
+    geom_linerange(aes(ymin = binom_p$conf.int[1], ymax = binom_p$conf.int[2]), size = 0.5) +
+    geom_point(size=1,fill="white", shape=1) + 
+    ylab("Fract Exp 1 < Exp 2") +
+    xlab( parse(text = y_ax_str)) +
+    theme_classic(base_size = 8) +
+    theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+  p
+  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
+  
+  
+  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
+  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
+              mu_ov_sigma = abs(c(df_init$mu_1md/df_init$sigma_1md,
+                                  df_init$mu_2md/df_init$sigma_2md)))
+  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
+    geom_histogram(aes(y=stat(count / sum(count))), position="identity", 
+                   alpha=0.25, bins = 15) +
+    xlab( expression(abs(~mu[D]*phantom(.))*phantom(.)/phantom(.)*sigma[D])) +
+    ylab( "Freq.") +
+    theme_classic(base_size = 8) +
+    theme(legend.position = "none") + 
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+  #print(p)
+  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1.5, dpi = 600)
+  
+  
+}
+
 plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   # Calculate confidence interval
   df_result <- df_pretty %>%   
@@ -468,9 +507,14 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
                                       fig_name,var_suffix = "fract") {
+  
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
   
+  # Plot data about population params
+  plot_population_params(df_init, gt_colname,fig_name,y_ax_str)
+    
+    
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""))
@@ -487,39 +531,6 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
   # browser()
   # Plot effect size results
   df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
-  
-  # Plot reference ground truth success rate (Exp 1 < Exp 2)
-  # Check to see overall ground truth true rate
-  binom_p <- prop.test(sum(df_es[[gt_colname]]), dim(df_init)[1], conf.level=0.95, correct = FALSE)
-  p <- ggplot(tibble(x=as.factor(1),y=binom_p$estimate), aes(x=x,  y=y)) +
-    geom_hline(yintercept = 0.5, size=0.5, color="grey") +
-    geom_linerange(aes(ymin = binom_p$conf.int[1], ymax = binom_p$conf.int[2]), size = 0.5) +
-    geom_point(size=1,fill="white", shape=1) + 
-    ylab("Fract Exp 1 < Exp 2") +
-    xlab( parse(text = y_ax_str)) +
-    theme_classic(base_size = 8) +
-    theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-  p
-  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
-  
-
-  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
-  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
-              mu_ov_sigma = abs(c(df_init$mu_1md/df_init$sigma_1md,
-                              df_init$mu_2md/df_init$sigma_2md)))
-  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
-    geom_histogram(aes(y=stat(count / sum(count))), position="identity", 
-                   alpha=0.25, bins = 15) +
-   xlab( expression(abs(~mu[D]*phantom(.))*phantom(.)/phantom(.)*sigma[D])) +
-   ylab( "Freq.") +
-   theme_classic(base_size = 8) +
-   theme(legend.position = "none") + 
-   scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-  #print(p)
-  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.5, dpi = 600)
   
   
   all_dfs <- vector(mode="list", length=4)
