@@ -36,7 +36,7 @@ effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "bf", "p_value",
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
 effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p",
                            "Cd", "Hg", "G*Delta", "delta[M]",
-                           "r*delta[M]","Rand")
+                           "r*delta[M]","Rnd")
 
 
 # default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
@@ -50,6 +50,9 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Difference distribution pop. parameters
                                     mus_1d, sigmas_1d, 
                                     mus_2d, sigmas_2d,
+                                    switch_group_id = FALSE,
+                                    switch_mean_sign = FALSE,
+                                    fig_name = "test.tiff",
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
   #' 
@@ -81,48 +84,53 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
   )
   
- 
   # Fill in experiment group and/or calculate difference distribution
   if (!any(is.na(mus_1b))) { 
     ##  Experiment group valid
     # Fill in experiment group
     # Experiment group b for exp 1 and 2
     df$mu_1b <- mus_1b
-    df$sigma_1b <- sigmas_1b
     df$mu_2b <- mus_2b
+    df$sigma_1b <- sigmas_1b
     df$sigma_2b <- sigmas_2b
-
-    # Difference distribution    
-    df$mu_1d <- df$mu_1b - df$mu_1a
-    df$mu_2d <- df$mu_2b - df$mu_2a
-    df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
-    df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-
-
-    
   } else {
     ##  Experiment group invalid
-    
-    # Calculate from difference distribution
-    
     # Experiment group mean based on control and offset
     df$mu_1b <- mus_1a + mus_1d
     df$mu_2b <- mus_2a + mus_2d
     # Variance of difference in experimental
     df$sigma_1b <- sqrt(df$sigma_1a^2 + sigmas_1d^2)
     df$sigma_2b <- sqrt(df$sigma_2a^2 + sigmas_2d^2)
-    
-    # Calculate difference distribution parameters (not mean difference)
-    df$mu_1d <- mus_1d
-    df$mu_2d <- mus_2d
-    # Variance of difference in means based on control and offset
-    df$sigma_1d <- sigmas_1d
-    df$sigma_2d <- sigmas_2d
-    
-  
-    
-    #browser();
   }
+  
+  # Define difference distribution    
+  df$mu_1d <- df$mu_1b - df$mu_1a
+  df$mu_2d <- df$mu_2b - df$mu_2a
+  df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
+  df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+  
+  if (switch_mean_sign) {
+    # Ra
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    df$mu_1a[switch_boolean] <- - df$mu_1a[switch_boolean]
+    df$mu_1b[switch_boolean] <- - df$mu_1b[switch_boolean]
+  }
+  
+  if (switch_group_id) {
+    # Temporarily store parameters for groups A and B 
+    temp_mu_1a     <- df$mu_1a
+    temp_sigma_1a  <- df$sigma_1a
+    temp_mu_1b     <- df$mu_1b
+    temp_sigma_1b  <- df$sigma_1b
+    # Determine which simulations to switch parameters for a and b
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    # Switch specified parameters
+    df$mu_1a[switch_boolean]      <- temp_mu_1b[switch_boolean]
+    df$sigma_1a[switch_boolean]   <- temp_sigma_1b[switch_boolean]
+    df$mu_1b[switch_boolean]      <- temp_mu_1a[switch_boolean]
+    df$sigma_1b[switch_boolean]   <- temp_sigma_1a[switch_boolean]
+  }
+  
   
   # Calculate parameter of difference in means distribution
   df$mu_1md <- mus_1d
@@ -134,8 +142,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # and how absolute value folding will effect distribution.
   df$mu_ov_sigma_1md <- df$mu_1md / df$sigma_1md
   df$mu_ov_sigma_2md <- df$mu_2md / df$sigma_2md
-  
-  
+
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_md2gtmd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
   # Statistics of difference of means distribution 
@@ -168,6 +175,11 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
             effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
   df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
             effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
+  
+  
+  
+  plot_population_params(df, fig_name = fig_name)
+  
   
   # browser()
   return(df)
@@ -279,12 +291,12 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$mean_diff_rmmd_2m1 = mean(diff_rmmd)
   
   
-  # Random
+  # Random group
   diff_nrand = rowMeans(matrix(rnorm(df$n_samples * df$n_obs, mean = 0, sd = 1), 
                                nrow = df$n_samples, ncol = df$n_obs))
   df$fract_nrand_d2gtd1 = sum(diff_nrand > 0 ) / df$n_samples
   df$mean_diff_nrand_2m1 = mean(diff_nrand)
-  
+    
   return(df)
 }
 
@@ -460,23 +472,39 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
 }
 
 
-plot_population_params <- function(df_init, gt_colname,fig_name,y_ax_str){
+plot_population_params <- function(df_init,fig_name){
   
   # Plot reference ground truth success rate (Exp 1 < Exp 2)
   # Check to see overall ground truth true rate
-  binom_p <- prop.test(sum(df_init[[gt_colname]]), dim(df_init)[1], conf.level=0.95, correct = FALSE)
-  p <- ggplot(tibble(x=as.factor(1),y=binom_p$estimate), aes(x=x,  y=y)) +
+  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
+  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
+  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
+  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
+  df_params <- rbind(tibble(group="mu", estimate = binom_mu$estimate, 
+                      lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
+                     tibble(group="rmu", estimate = binom_rmu$estimate, 
+                            lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
+                     tibble(group="sigma", estimate = binom_sigma$estimate, 
+                            lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
+                     tibble(group="rsigma", estimate = binom_rsigma$estimate, 
+                            lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
+  df_params$group <- factor(df_params$group, levels = df_params$group)
+  p <- ggplot(df_params, aes(x=group,  y=estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
-    geom_linerange(aes(ymin = binom_p$conf.int[1], ymax = binom_p$conf.int[2]), size = 0.5) +
+    geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size=1,fill="white", shape=1) + 
     ylab("Fract Exp 1 < Exp 2") +
-    xlab( parse(text = y_ax_str)) +
+    xlab("Pop. Params") +
     theme_classic(base_size = 8) +
-    theme(axis.ticks.x=element_blank(),axis.text.x=element_blank())
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+    scale_x_discrete(labels = c('mu' = expression(abs(phantom(.)*mu*phantom(.))),
+                                'rmu'   = expression(abs(phantom(.)*r*mu*phantom(.))),
+                                'sigma' = expression(sigma),
+                                'rsigma'   = expression(r*sigma)))
   p
   save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = .75, dpi = 600)
+            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
+  
   
   
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
@@ -493,7 +521,7 @@ plot_population_params <- function(df_init, gt_colname,fig_name,y_ax_str){
     scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
   #print(p)
   save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.5, dpi = 600)
+            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
   
   
 }
@@ -549,7 +577,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     theme_classic() +  theme(text = element_text(size = 8))
   print(p)
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 3.25, dpi = 600)
+            base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
    #browser()
 
   return(df_result)
@@ -562,10 +590,6 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
-  
-  # Plot data about population params
-  plot_population_params(df_init, gt_colname,fig_name,y_ax_str)
-    
     
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
