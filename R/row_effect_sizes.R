@@ -1,10 +1,11 @@
 
 library(BayesFactor)
 library(parallel)
-library(future.apply)
-plan(multiprocess, workers = detectCores(TRUE)-1) ## Parallelize using four cores
-library(boot)
-
+library(TOSTER)
+# library(future.apply)
+# plan(multiprocess, workers = detectCores(TRUE)-1) ## Parallelize using four cores
+# library(boot)
+library(TOSTER)
 
 ## User defined functions
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -13,7 +14,7 @@ rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1
 # Row standard deviation
 rowSds  <- function(x, ...) sqrt(rowVars(x))
 
-# Pooled standard deviation of two matricies, 1 sample per row
+# Pooled standard deviation of two matrices, 1 sample per row
 rowSdPooled <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
 
 
@@ -32,29 +33,28 @@ rowSdPooledWeighted <-
 #
 # Cohens D
 #   d = (M2 - M1)/s_pool
-rowCohenD <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
+row_cohend <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
 
 # Hedges G
 #   d = (M2 - M1)/s_pool
-rowHedgeG <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooledWeighted(m1,m2)
+row_hedgeg <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooledWeighted(m1,m2)
 
 # Glass's Delta
 #   d = (M2 - M1)/s_1
-rowGlassDelta <- function (m1,m2) ( rowMeans(m2) - rowMeans(m1)) / rowSds(m1) 
+row_glassdelta <- function (m1,m2) ( rowMeans(m2) - rowMeans(m1)) / rowSds(m1) 
 
 
 
-rowtScore <- function(m1, m2) {
+row_tscore_2s <- function(m1, m2) {
   n1 <- dim(m1)[2]
   n2 <- dim(m2)[2] 
   s1 <- rowSds(m1)
   s2 <- rowSds(m2)
-  sm_pooled <-sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * 
-    (1/n1 + 1/n2) ) 
+  sm_pooled <-sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) *     (1/n1 + 1/n2) ) 
   tstat<-  ( rowMeans(m1) - rowMeans(m2)) / sm_pooled
 }
 
-rowzScore <- function(m1, m2) {
+row_zscore_2s <- function(m1, m2) {
   n1 <- dim(m1)[2]
   n2 <- dim(m2)[2] 
   s1 <- rowSds(m1)
@@ -63,36 +63,112 @@ rowzScore <- function(m1, m2) {
     sqrt( s1^2/n1 + s2^2/n2)
 }
 
+row_ttest_2s <- function(m1, m2) {
+  n1 <- dim(m1)[2]
+  n2 <- dim(m2)[2] 
+  s1 <- rowSds(m1)
+  s2 <- rowSds(m2)
+  sm_pooled <-sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) *     (1/n1 + 1/n2) ) 
+  tstat<-  ( rowMeans(m1) - rowMeans(m2)) / sm_pooled
+  p <- 2*pnorm(-abs(tstat))
+}
+
+row_ztest_2s <- function(m1, m2) {
+  n1 <- dim(m1)[2]
+  n2 <- dim(m2)[2] 
+  s1 <- rowSds(m1)
+  s2 <- rowSds(m2)
+  zstat<-  ( rowMeans(m1) - rowMeans(m2)) /
+    sqrt( s1^2/n1 + s2^2/n2)
+  p  <- 2*pnorm(-abs(zstat))
+}
 
 
-row_mmd <- function(m1, m2, ...) {
+
+row_mmd_2s <- function(m1, m2, ...) {
   mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal(m1[i,], m2[i,], ...))
 }
 
 
-row_ttestBF <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
+row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
   
   # Ignore diagnostic messages during function call.
   wrap_fun <- function(x1,x2)   {
     suppressMessages(ttestBF(x1, x2)@bayesFactor$bf)
   }
- 
-  
-  if (parallelize) {
-    bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
-  } else {
+
+  # if (parallelize) {
+  #   bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+  # } else {
     bf <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
-  }
- 
-  
-  
+  # }
+    # browser();
+  return(bf)
 }
 
 
 
+row_tost_2s_slow <- function (m1,m2) {
+  
+  n1 <- dim(m1)[2]
+  n2 <- dim(m2)[2] 
+  
+  tost_fun <- function(x1,x2) 
+    as.data.frame(dataTOSTtwo(
+      data.frame(
+        grp=as.factor(c(rep(1,n1),rep(2,n2))), 
+        value=c(x1, x2)),
+      deps="value", group = "grp", var_equal = FALSE, low_eqbound = -1e6,
+      high_eqbound = 1e6, eqbound_type = "d", alpha = 0.05,
+      desc = FALSE, plots = FALSE)$tost)$'p[0]'
+  
+  
+  tost_p <- sapply(1:dim(m1)[1], function(i)   tost_fun(m1[i,], m2[i,]))
+ 
+}
+
+
+row_tost_2s_fast <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
+  
+  
+  fast_2max <-function(v1,v2) {
+    m = v1
+    m[v2>v1] <- v2[v2>v1]
+    return(m)
+  }
+  
+  n1 <- dim(m1)[2]
+  n2 <- dim(m2)[2] 
+  s1 <- rowSds(m1)
+  s2 <- rowSds(m2)
+  s_md <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
+
+  
+  t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_md 
+  p_low <- 1 - pt(t_lower, df = n1+n2-1)
+  t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_md 
+  p_high <- pt(t_upper, df = n1+n2-1)
+  # Quick max value of two vectors
+  p_tost_fast <- fast_2max(p_low,p_high)
+  p_tost_fast
+  
+  # # Test that mu[md] is greater than low
+  # p_lower <- sapply(1:dim(m1)[1], function(i)
+  #   t.test(m1[i,], m2[i,], alternative = "greater", mu = low_eqbound,
+  #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
+  # # Test that mu[md] lower than high
+  # p_upper <- sapply(1:dim(m1)[1], function(i)
+  #   t.test(m1[i,], m2[i,], alternative = "less", mu = high_eqbound,
+  #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
+  # p_tost_slow <- fast_2max( p_lower, p_upper)
+  # p_tost_slow
+  
+  return(p_tost_fast)
+}
+
 
 ## Test data
-
+# 
 # m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
 # m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
 # 

@@ -18,7 +18,6 @@
 library(pacman)
 p_load(ggplot2)
 p_load(tibble)
-p_load(RColorBrewer)
 p_load(broom)
 p_load(tidyr)
 p_load(dplyr)
@@ -27,9 +26,6 @@ p_load(boot)
 source("R/mmd.R")
 source("R/effect_size_contests.R")
 
-
-boot_xbar <- function(x, ind)  mean(x[ind])
-extend_max_lim <- function(x,prc) max(x) + prc* (max(x)-min(x))
 
 # Simulation parameters
 # 
@@ -43,8 +39,8 @@ rand.seed = 0
 fig_basename = "F5"
 parallel_sims = TRUE
 include_bf = TRUE
-switch_group_id = TRUE
-switch_mean_sign = TRUE
+# switch_group_ab = TRUE
+# switch_sign_mean_ab = TRUE
 
 ###############################################################################
 #
@@ -55,18 +51,19 @@ switch_mean_sign = TRUE
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
+source("R/effect_size_contests.R")
 fig_name = paste(fig_basename, "_1a_esize_", "contest_mu_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
                                    sigmas_1a = rep(1,n_sims), 
                                    mus_1d  = runif(n_sims,-1,1), 
-                                   sigmas_1d = rep(0.02,n_sims),
+                                   sigmas_1d = rep(2.5,n_sims),
                                    mus_2a  = rep(10,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,-1,1), 
-                                   sigmas_2d = rep(0.02,n_sims),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   sigmas_2d = rep(2.5,n_sims),
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                      y_ax_str = "abs(~mu[D]*phantom(.))",
@@ -79,14 +76,14 @@ fig_name = paste(fig_basename, "_1b_esize_contest_mu_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
                                     sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,5,10), 
-                                    sigmas_1d = rep(0.01,n_sims),
+                                   mus_1d  = runif(n_sims,1,5), 
+                                    sigmas_1d = rep(0.05,n_sims),
                                    mus_2a  = rep(10,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,5,10), 
-                                    sigmas_2d = rep(0.01,n_sims),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   mus_2d  = runif(n_sims,1,5), 
+                                    sigmas_2d = rep(0.05,n_sims),
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                  y_ax_str = "abs(~mu[D]*phantom(.))",
@@ -105,14 +102,14 @@ fig_name = paste(fig_basename, "_2a_esize_", "contest_sigma_near_zero", sep = ""
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(1,n_sims), 
                                    sigmas_1a = rep(1,n_sims),
-                                   mus_1d  = rep(0.1,n_sims), 
-                                   sigmas_1d = runif(n_sims, 1, 20),
-                                   mus_2a  = rep(1,n_sims), 
+                                   mus_1d  = rep(0.5,n_sims), 
+                                   sigmas_1d = runif(n_sims, 1, 5),
+                                   mus_2a  = rep(10,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = rep(0.1,n_sims), 
-                                   sigmas_2d = runif(n_sims, 1, 20),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   mus_2d  = rep(0.5,n_sims), 
+                                   sigmas_2d = runif(n_sims, 1, 5),
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = "")) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
                                      y_ax_str = "sigma[d]",
@@ -126,13 +123,13 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(1,n_sims), 
                                    sigmas_1a = rep(1,n_sims),
                                    mus_1d  = rep(10,n_sims), 
-                                   sigmas_1d = runif(n_sims, 5, 20),
+                                   sigmas_1d = runif(n_sims, 5, 15),
                                    mus_2a  = rep(1,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
                                    mus_2d  = rep(10,n_sims), 
-                                   sigmas_2d = runif(n_sims, 5, 20),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   sigmas_2d = runif(n_sims, 5, 15),
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_ab = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = "")) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1", 
                                      y_ax_str = "sigma[d]",
@@ -148,16 +145,16 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1",
 #------------------------------------------------------------------------------
 fig_name = paste(fig_basename, "_3a_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
-                                   mus_1a  = runif(n_sims,1,1), 
-                                   sigmas_1a = runif(n_sims,1,1), 
-                                   mus_1d  = runif(n_sims,-1,1), 
-                                   sigmas_1d = runif(n_sims,1,5),
-                                   mus_2a  = runif(n_sims,1,1),  
-                                   sigmas_2a = runif(n_sims,1,1),
-                                   mus_2d  = runif(n_sims,-1,1), 
-                                   sigmas_2d = runif(n_sims,1,5),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   mus_1a  = runif(n_sims,0,2), 
+                                   sigmas_1a = runif(n_sims,1,3), 
+                                   mus_1d  = runif(n_sims,0,1), 
+                                   sigmas_1d = runif(n_sims,1,3),
+                                   mus_2a  = runif(n_sims,10,12),  
+                                   sigmas_2a = runif(n_sims,1,3),
+                                   mus_2d  = runif(n_sims,0,1), 
+                                   sigmas_2d = runif(n_sims,1,3),
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                      y_ax_str = "abs(~mu[D]*phantom(.))",
@@ -180,8 +177,8 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    sigmas_2a = runif(n_sims, 1, 1),
                                    mus_2d  = runif(n_sims, 5, 10), 
                                    sigmas_2d = runif(n_sims, 5, 50),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = switch_mean_sign,
+                                   switch_group_ab = TRUE,
+                                   switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_mud_md2gtmd1", 
                                      y_ax_str = "abs(~mu[D]*phantom(.))",
@@ -196,7 +193,7 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_sigma_md2gtmd1",
 
 ###############################################################################
 #
-# Realative Error
+# Relative Error
 #
 ##############################################################################
 
@@ -209,14 +206,17 @@ fig_name = paste(fig_basename, "_4a_esize_contest_rmu_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = rep(10,n_sims), 
                                    sigmas_1a = rep(1,n_sims), 
-                                   mus_1d  = runif(n_sims,-5,10), 
-                                   sigmas_1d = rep(0.01,n_sims),
+                                   mus_1d  = runif(n_sims,1,5), 
+                                   sigmas_1d = rep(15,n_sims),
+                                   
                                    mus_2a  = rep(50,n_sims), 
                                    sigmas_2a = rep(1,n_sims),
-                                   mus_2d  = runif(n_sims,-25, 50), 
-                                   sigmas_2d = rep(0.05,n_sims),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
+                                   mus_2d  = runif(n_sims,5,25), 
+                                   sigmas_2d = rep(75,n_sims),
+                                   
+                                   switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "abs(~r*mu[D]*phantom(.))",
@@ -235,8 +235,8 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    sigmas_2a = rep(1,n_sims),
                                    mus_2d  = runif(n_sims,50, 200), 
                                    sigmas_2d = rep(1,n_sims),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
+                                   switch_group_ab = switch_group_ab,
+                                   switch_sign_mean_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "abs(~r*mu[D]*phantom(.))",
@@ -253,14 +253,17 @@ fig_name = paste(fig_basename, "_5a_esize_contest_rsigma_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = rep(10,n_sims), 
                                    sigmas_1a = rep(1, n_sims),
-                                   mus_1d  = runif(n_sims, -1, 1), 
-                                   sigmas_1d = runif(n_sims, 1, 20),
-                                   mus_2a  = rep(40,n_sims), 
+                                   mus_1d  = runif(n_sims, 2, 2), 
+                                   sigmas_1d = runif(n_sims, 5, 15),
+                                   
+                                   mus_2a  = rep(50,n_sims), 
                                    sigmas_2a = rep(1, n_sims),
-                                   mus_2d  =  runif(n_sims, -1, 1), 
-                                   sigmas_2d = runif(n_sims, 4, 80),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
+                                   mus_2d  =  runif(n_sims, 10, 10), 
+                                   sigmas_2d = runif(n_sims, 25, 75),
+                                   
+                                   switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = "")) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1", 
                                      y_ax_str = "r*sigma[d]",
@@ -275,13 +278,16 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                     sigmas_1a = rep(1,n_sims),
                                    mus_1d  = rep(20,n_sims), 
                                     sigmas_1d = runif(n_sims, 10, 50),
+                                   
                                    mus_2a  = rep(40,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
                                    mus_2d  = rep(80,n_sims), 
                                     sigmas_2d = runif(n_sims, 40, 200),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = "")) 
+                                   
+                                   switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
+                                   fig_name = paste(fig_name, ".tiff",sep = ""))  
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1", 
                       y_ax_str = "r*sigma[d]",
                       include_bf = include_bf, parallel_sims = parallel_sims,
@@ -296,19 +302,22 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rsigma_md2gtmd1",
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
+source("R/effect_size_contests.R")
 fig_name = paste(fig_basename, "_6a_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = runif(n_sims,1,1), 
                                    sigmas_1a = runif(n_sims,1,1), 
-                                   mus_1d  = runif(n_sims,-1,1), 
-                                   sigmas_1d = runif(n_sims,1,5),
+                                   mus_1d  = runif(n_sims,0,1), 
+                                   sigmas_1d = runif(n_sims,2,5),
                                    mus_2a  = runif(n_sims,1,1),  
                                    sigmas_2a = runif(n_sims,1,1),
-                                   mus_2d  = runif(n_sims,-1,1), 
-                                   sigmas_2d = runif(n_sims,1,5),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""))  
+                                   mus_2d  = runif(n_sims,0,1), 
+                                   sigmas_2d = runif(n_sims,2,5),
+                                   
+                                   switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
+                                   fig_name = paste(fig_name, ".tiff",sep = "")) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "abs(~r*mu[D]*phantom(.))",
                                      include_bf = include_bf, parallel_sims = parallel_sims,
@@ -331,8 +340,8 @@ df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    sigmas_2a = runif(n_sims, 1, 1),
                                    mus_2d  = runif(n_sims, 10, 30), 
                                    sigmas_2d = runif(n_sims, 30, 120),
-                                   switch_group_id = switch_group_id,
-                                   switch_mean_sign = FALSE,
+                                   switch_group_ab = switch_group_ab,
+                                   switch_sign_mean_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = "")) 
 all_dfs <- process_esize_simulations(df_init, gt_colname = "is_rmud_md2gtmd1", 
                                      y_ax_str = "abs(~r*mu[D]*phantom(.))",

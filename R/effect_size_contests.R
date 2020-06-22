@@ -12,12 +12,14 @@ library(broom)
 library(tidyr)
 library(cowplot)
 library(dplyr)
+# Parallel processing
 library(boot)
 library(foreach)
 library(doParallel)
+source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
-source("R/parallel_utils.R")
+
 
 
 # Parse all functions in file for parallel processing using user functions
@@ -31,11 +33,11 @@ effect_size_dict <- vector(mode="list", length=4)
 names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
 effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "bf", "p_value",
-                           "cohen_d", "hedge_g", "glass_delta", "mmd",
+                           "tostp", "cohen_d", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p",
-                           "Cd", "Hg", "G*Delta", "delta[M]",
+effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]",
+                           "p[TOST]", "Cd" , "delta[M]",
                            "r*delta[M]","Rnd")
 
 
@@ -50,8 +52,9 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Difference distribution pop. parameters
                                     mus_1d, sigmas_1d, 
                                     mus_2d, sigmas_2d,
-                                    switch_group_id = FALSE,
-                                    switch_mean_sign = FALSE,
+                                    switch_group_ab = FALSE,
+                                    switch_sign_mean_ab = FALSE,
+                                    switch_sign_mean_d = FALSE,
                                     fig_name = "test.tiff",
                                     label_dict = effect_size_dict) {
   #' Generate simulated experiment data for two experiments 
@@ -84,7 +87,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
     sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
   )
   
-  # Fill in experiment group and/or calculate difference distribution
+  # Calculate group b (or d) parameters, give option to invert sign of d,
+  # then recalculate group d
   if (!any(is.na(mus_1b))) { 
     ##  Experiment group valid
     # Fill in experiment group
@@ -96,28 +100,33 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   } else {
     ##  Experiment group invalid
     # Experiment group mean based on control and offset
-    df$mu_1b <- mus_1a + mus_1d
-    df$mu_2b <- mus_2a + mus_2d
+    
+    if (switch_sign_mean_d) {
+      mus_sign = sample(c(-1,1), n_sims, TRUE)
+    } else {
+      mus_sign = rep(1, n_sims)
+    }
+    df$mu_1b <- mus_1a + mus_sign*mus_1d
+    df$mu_2b <- mus_2a + mus_sign*mus_2d
     # Variance of difference in experimental
     df$sigma_1b <- sqrt(df$sigma_1a^2 + sigmas_1d^2)
     df$sigma_2b <- sqrt(df$sigma_2a^2 + sigmas_2d^2)
   }
-  
   # Define difference distribution    
   df$mu_1d <- df$mu_1b - df$mu_1a
   df$mu_2d <- df$mu_2b - df$mu_2a
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+
   
-  if (switch_mean_sign) {
-    # Ra
+  # Randomly switch sign of both group a and b 
+  if (switch_sign_mean_ab) {
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
     df$mu_1a[switch_boolean] <- - df$mu_1a[switch_boolean]
     df$mu_1b[switch_boolean] <- - df$mu_1b[switch_boolean]
   }
-  
-  if (switch_group_id) {
-    # Temporarily store parameters for groups A and B 
+  # Randomly switch group ID between group a and b
+  if (switch_group_ab) {
     temp_mu_1a     <- df$mu_1a
     temp_sigma_1a  <- df$sigma_1a
     temp_mu_1b     <- df$mu_1b
@@ -132,9 +141,10 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   }
   
   
-  # Calculate parameter of difference in means distribution
-  df$mu_1md <- mus_1d
-  df$mu_2md <- mus_2d
+  # Calculate parameter of difference in means distribution (taken from mean of 
+  # D since we had the option to invert the sign for D)
+  df$mu_1md <- df$mu_1d
+  df$mu_2md <- df$mu_2d
   df$sigma_1md <- df$sigma_1d /sqrt(n_obs)
   df$sigma_2md <- df$sigma_2d /sqrt(n_obs)
   
@@ -236,12 +246,11 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$fract_rsd_d2gtd1 = sum( diff_rsd > 0) / df$n_samples
   df$mean_diff_rsd_2m1  = mean(diff_rsd)
   
-  if (df$fract_rsd_d2gtd1 > 1) {browser();}
   
   if (include_bf) {
     # Bayes factor
-    bf_1 = row_ttestBF(x_1a, x_1b, parallelize = parallelize_bf, paired = FALSE)
-    bf_2 = row_ttestBF(x_2a, x_2b, parallelize = parallelize_bf, paired = FALSE)
+    bf_1 = row_bayesf_2s(x_1a, x_1b, parallelize = parallelize_bf, paired = FALSE)
+    bf_2 = row_bayesf_2s(x_2a, x_2b, parallelize = parallelize_bf, paired = FALSE)
     diff_abs_bf <- abs(bf_2) - abs(bf_1)
     df$fract_bf_d2gtd1 = sum(diff_abs_bf > 0) /
       df$n_samples
@@ -252,10 +261,10 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   }
   
   
-  # Pvalue
+  # NHST P-value 
   # The more equal experiment will have a larger p-value
-  z_score_1 <- rowzScore(x_1b, x_1a)
-  z_score_2 <- rowzScore(x_2b, x_2a)
+  z_score_1 <- row_zscore_2s(x_1b, x_1a)
+  z_score_2 <- row_zscore_2s(x_2b, x_2a)
   p_value_1 = 2*pnorm(-abs(z_score_1))
   p_value_2 = 2*pnorm(-abs(z_score_2))
   diff_p_value <-  p_value_2 - p_value_1
@@ -263,23 +272,32 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$fract_p_value_d2gtd1 = sum(-diff_p_value > 0) / df$n_samples
   df$mean_diff_p_value_2m1 = mean(diff_p_value)
   
+  
+  # TOST p value (Two tailed equivalence test)
+  tostp_1 <- row_tost_2s_fast(x_1b, x_1a,low_eqbound = -1,high_eqbound = 1)
+  tostp_2 <- row_tost_2s_fast(x_2b, x_2a,low_eqbound = -1,high_eqbound = 1)
+  diff_tostp <- tostp_2 - tostp_1
+  df$fract_tostp_d2gtd1 <- sum(diff_tostp > 0) / df$n_samples
+  df$mean_diff_tostp_2m1 <- mean(diff_tostp) 
+  
+  
   # Delta Family of effect size
   # Cohens D
-  diff_cohen_d = abs(rowCohenD(x_2a, x_2b)) - abs(rowCohenD(x_1a, x_1b))
+  diff_cohen_d = abs(row_cohend(x_2a, x_2b)) - abs(row_cohend(x_1a, x_1b))
   df$fract_cohen_d_d2gtd1 = sum(diff_cohen_d > 0) / df$n_samples
   df$mean_diff_cohen_d_2m1 =  mean(diff_cohen_d)
   # Glass delta
-  diff_glass_delta = abs(rowGlassDelta(x_2a, x_2b)) - abs(rowGlassDelta(x_1a, x_1b))
-  df$fract_glass_delta_d2gtd1 = sum(diff_glass_delta > 0) / df$n_samples
-  df$mean_diff_glass_delta_2m1 =  mean(diff_glass_delta)
+  # diff_glass_delta = abs(row_glassdelta(x_2a, x_2b)) - abs(row_glassdelta(x_1a, x_1b))
+  # df$fract_glass_delta_d2gtd1 = sum(diff_glass_delta > 0) / df$n_samples
+  # df$mean_diff_glass_delta_2m1 =  mean(diff_glass_delta)
   # Hedges G
-  diff_hedge_g = abs(rowHedgeG(x_2a, x_2b)) - abs(rowHedgeG(x_1a, x_1b))
-  df$fract_hedge_g_d2gtd1 = sum(diff_hedge_g > 0) / df$n_samples
-  df$mean_diff_hedge_g_2m1 =  mean(diff_hedge_g)
+  # diff_hedge_g = abs(row_hedgeg(x_2a, x_2b)) - abs(row_hedgeg(x_1a, x_1b))
+  # df$fract_hedge_g_d2gtd1 = sum(diff_hedge_g > 0) / df$n_samples
+  # df$mean_diff_hedge_g_2m1 =  mean(diff_hedge_g)
   
   # Most Mean Diff
-  mmd_1 = row_mmd(x_1a, x_1b, paired = FALSE)
-  mmd_2 = row_mmd(x_2a, x_2b, paired = FALSE)
+  mmd_1 = row_mmd_2s(x_1a, x_1b, paired = FALSE)
+  mmd_2 = row_mmd_2s(x_2a, x_2b, paired = FALSE)
   diff_most_mean_diff = mmd_2 - mmd_1
   df$fract_mmd_d2gtd1 = sum(diff_most_mean_diff > 0) / df$n_samples
   df$mean_diff_mmd_2m1 = mean(diff_most_mean_diff)
@@ -345,7 +363,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       df <- foreach(n=1:n_sims, .combine=rbind,
                              .export=c(row_effect_sizes_fun, mmd_functions,
                                        "quantify_esize_simulation"),
-                             .packages = "BayesFactor") %dopar% {
+                             .packages = c("BayesFactor","TOSTER"))  %dopar% {
         #calling a function
         tempMatrix = quantify_esize_simulation(df[n,], include_bf, 
                                                rand.seed = rand.seed+n,
@@ -359,8 +377,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
     }else{
       # Process effect sizes serially
       for (n in seq(1,n_sims,1)) {
-        df[n,] <- quantify_esize_simulation(df[n,], include_bf, 
-                                            rand.seed = rand.seed+n, 
+        df[n,] <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE) 
       }
       
@@ -509,12 +526,12 @@ plot_population_params <- function(df_init,fig_name){
   
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
-              mu_ov_sigma = abs(c(df_init$mu_1md/df_init$sigma_1md,
-                                  df_init$mu_2md/df_init$sigma_2md)))
+              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
+                                  df_init$mu_2md/df_init$sigma_2md))
   p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
     geom_histogram(aes(y=stat(count / sum(count))), position="identity", 
                    alpha=0.25, bins = 15) +
-    xlab( expression(abs(~mu[D]*phantom(.))*phantom(.)/phantom(.)*sigma[D])) +
+    xlab( expression(mu[DM]*phantom(.)/phantom(.)*sigma[DM])) +
     ylab( "Freq.") +
     theme_classic(base_size = 8) +
     theme(legend.position = "none") + 
@@ -527,6 +544,8 @@ plot_population_params <- function(df_init,fig_name){
 }
 
 plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
+  
+  # browser();
   # Calculate confidence interval
   df_result <- df_pretty %>%   
     group_by(name) %>% 
@@ -571,10 +590,12 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     xlab("Effect Size Metric") +
     ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
-    expand_limits(y = extend_max_lim(ci_range, 0.2)) +
-    geom_text(y = extend_max_lim(ci_range, 0.2)+siff_vjust, aes(label = sig_labels), 
+    expand_limits(y = c(0,1.1)) +
+    geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
               color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
-    theme_classic() +  theme(text = element_text(size = 8))
+    theme_classic() +  theme(text = element_text(size = 8))+
+    #coord_cartesian(ylim=c(0,1.05)) +
+  scale_y_continuous(expand = c(0, 0))
   print(p)
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
