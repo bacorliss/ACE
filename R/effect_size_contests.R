@@ -16,6 +16,7 @@ library(dplyr)
 library(boot)
 library(foreach)
 library(doParallel)
+library(stringr)
 source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
@@ -36,8 +37,8 @@ effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "bf", "p_value",
                            "tostp", "cohen_d", "mmd",
                            "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]",
-                           "p[TOST]", "Cd" , "delta[M]",
+effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST] ",
+                           " p[TOST]", "Cd" , "delta[M]",
                            "r*delta[M]","Rnd")
 
 
@@ -186,8 +187,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
             effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
   
-  
-  
+  # Plot generated population parameters
   plot_population_params(df, fig_name = fig_name)
   
   
@@ -246,7 +246,6 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$fract_rsd_d2gtd1 = sum( diff_rsd > 0) / df$n_samples
   df$mean_diff_rsd_2m1  = mean(diff_rsd)
   
-  
   if (include_bf) {
     # Bayes factor
     bf_1 = row_bayesf_2s(x_1a, x_1b, parallelize = parallelize_bf, paired = FALSE)
@@ -260,7 +259,6 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
     df$mean_diff_bf_2m1 = 0
   }
   
-  
   # NHST P-value 
   # The more equal experiment will have a larger p-value
   z_score_1 <- row_zscore_2s(x_1b, x_1a)
@@ -272,28 +270,18 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$fract_p_value_d2gtd1 = sum(-diff_p_value > 0) / df$n_samples
   df$mean_diff_p_value_2m1 = mean(diff_p_value)
   
-  
   # TOST p value (Two tailed equivalence test)
-  tostp_1 <- row_tost_2s_fast(x_1b, x_1a,low_eqbound = -1,high_eqbound = 1)
-  tostp_2 <- row_tost_2s_fast(x_2b, x_2a,low_eqbound = -1,high_eqbound = 1)
+  tostp_1 <- row_tost_2s(x_1b, x_1a,low_eqbound = -.1,high_eqbound = .1)
+  tostp_2 <- row_tost_2s(x_2b, x_2a,low_eqbound = -.1,high_eqbound = .1)
   diff_tostp <- tostp_2 - tostp_1
   df$fract_tostp_d2gtd1 <- sum(diff_tostp > 0) / df$n_samples
   df$mean_diff_tostp_2m1 <- mean(diff_tostp) 
-  
   
   # Delta Family of effect size
   # Cohens D
   diff_cohen_d = abs(row_cohend(x_2a, x_2b)) - abs(row_cohend(x_1a, x_1b))
   df$fract_cohen_d_d2gtd1 = sum(diff_cohen_d > 0) / df$n_samples
   df$mean_diff_cohen_d_2m1 =  mean(diff_cohen_d)
-  # Glass delta
-  # diff_glass_delta = abs(row_glassdelta(x_2a, x_2b)) - abs(row_glassdelta(x_1a, x_1b))
-  # df$fract_glass_delta_d2gtd1 = sum(diff_glass_delta > 0) / df$n_samples
-  # df$mean_diff_glass_delta_2m1 =  mean(diff_glass_delta)
-  # Hedges G
-  # diff_hedge_g = abs(row_hedgeg(x_2a, x_2b)) - abs(row_hedgeg(x_1a, x_1b))
-  # df$fract_hedge_g_d2gtd1 = sum(diff_hedge_g > 0) / df$n_samples
-  # df$mean_diff_hedge_g_2m1 =  mean(diff_hedge_g)
   
   # Most Mean Diff
   mmd_1 = row_mmd_2s(x_1a, x_1b, paired = FALSE)
@@ -345,42 +333,35 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   # Initialize output data frame
   df <- df_in
   
-  # browser();
-  
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
     
     # browser();
     if (parallel_sims) {
-      # Process effect sizes in parallel
-      
       print("starting parallel processing")
       #setup parallel back end to use many processors
       cores = detectCores()
       cl = makeCluster(cores[1]-1)
       registerDoParallel(cl)
       
-      df <- foreach(n=1:n_sims, .combine=rbind,
-                             .export=c(row_effect_sizes_fun, mmd_functions,
-                                       "quantify_esize_simulation"),
-                             .packages = c("BayesFactor","TOSTER"))  %dopar% {
+      df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
+                      c("BayesFactor","TOSTER"),
+                .export = c(row_effect_sizes_fun, mmd_functions,
+                            "quantify_esize_simulation")) %dopar% {
         #calling a function
         tempMatrix = quantify_esize_simulation(df[n,], include_bf, 
                                                rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE) 
-        tempMatrix #Equivalent to finalMatrix = cbind(finalMatrix, tempMatrix)
+        tempMatrix
       }
       #stop cluster
       stopCluster(cl)
-      
-      
     }else{
       # Process effect sizes serially
       for (n in seq(1,n_sims,1)) {
         df[n,] <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE) 
       }
-      
     }
     
     # Save dataframed results to a file
@@ -388,7 +369,6 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   } else {
     # Restore the data frame results from disk
     df <- readRDS(file = paste(out_path,data_file_name,sep=""))
-    
   }
   # browser()
   return(df)
@@ -489,22 +469,54 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
 }
 
 
-plot_population_params <- function(df_init,fig_name){
+plot_population_params <- function(df_init, fig_name){
+  
+
+  # Output csv of agreement of input parameters to each individual input parameter
+  param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
+                   "is_rsigma_md2gtmd1")
+  n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
+  pwise_binom_p <- n_agreement
+  params <- str_match(param_fields, "is_(.*)_md2gtmd1")[,2]
+  
+  for (r in seq(1,length(param_fields),1)) {
+    for (c in seq(1,length(param_fields),1)) {
+      n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
+      pwise_binom_p[r,c] <-
+        prop.test(n_agreement[r,c], dim(df_init)[1], alternative = "two.sided",
+                  conf.level = 1-0.05/4, correct = TRUE)$p.value
+    }
+  }
+  str_binom_p <- matrix(sapply(pwise_binom_p, function(x) if(x>0.05) 
+    {sprintf("%0.2f",x)} else {sprintf("%0.2e",x)}),nrow = dim(pwise_binom_p)[1])
+  colnames(str_binom_p)<- params
+  rownames(str_binom_p)<- params
+  # Write to csv
+  csv_path <- paste("figure/params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
+  cat("Table 1: Binomial test of agreement by group\n", file = csv_path)
+  suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
+                               col.names=TRUE, sep=","))
+  
   
   # Plot reference ground truth success rate (Exp 1 < Exp 2)
   # Check to see overall ground truth true rate
-  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
-  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
-  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
-  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], conf.level=1-0.05/4, correct = FALSE)
-  df_params <- rbind(tibble(group="mu", estimate = binom_mu$estimate, 
-                      lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
-                     tibble(group="rmu", estimate = binom_rmu$estimate, 
-                            lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
-                     tibble(group="sigma", estimate = binom_sigma$estimate, 
-                            lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
-                     tibble(group="rsigma", estimate = binom_rsigma$estimate, 
-                            lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
+  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
+                        conf.level=1-0.05/4, correct = FALSE)
+  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
+                         conf.level=1-0.05/4, correct = FALSE)
+  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], 
+                           conf.level=1-0.05/4, correct = FALSE)
+  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], 
+                            conf.level=1-0.05/4, correct = FALSE)
+  df_params <- rbind(
+    tibble(group="mu", estimate = binom_mu$estimate, 
+           lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
+    tibble(group="rmu", estimate = binom_rmu$estimate, 
+           lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
+    tibble(group="sigma", estimate = binom_sigma$estimate, 
+           lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
+    tibble(group="rsigma", estimate = binom_rsigma$estimate, 
+           lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
   df_params$group <- factor(df_params$group, levels = df_params$group)
   p <- ggplot(df_params, aes(x=group,  y=estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
@@ -514,44 +526,65 @@ plot_population_params <- function(df_init,fig_name){
     xlab("Pop. Params") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
-    scale_x_discrete(labels = c('mu' = expression(abs(phantom(.)*mu*phantom(.))),
-                                'rmu'   = expression(abs(phantom(.)*r*mu*phantom(.))),
-                                'sigma' = expression(sigma),
-                                'rsigma'   = expression(r*sigma)))
+    scale_x_discrete(
+      labels = c('mu' = expression(abs(phantom(.)*mu*phantom(.))),
+      'rmu'   = expression(abs(phantom(.)*r*mu*phantom(.))),
+      'sigma' = expression(sigma),
+      'rsigma'   = expression(r*sigma)))
   p
   save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
   
   
   
+  
+  # Export csv file for agreement between each variable to others
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
               mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
                                   df_init$mu_2md/df_init$sigma_2md))
   p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
-    geom_histogram(aes(y=stat(count / sum(count))), position="identity", 
-                   alpha=0.25, bins = 15) +
+    geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
+                   alpha=0.25, bins = 30) +
+    geom_vline(xintercept = -2.6,linetype = "dashed") +
+    geom_vline(xintercept = 2.6, linetype = "dashed") +
     xlab( expression(mu[DM]*phantom(.)/phantom(.)*sigma[DM])) +
     ylab( "Freq.") +
     theme_classic(base_size = 8) +
-    theme(legend.position = "none") + 
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-  #print(p)
+    theme(legend.position = "none") +  
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),expand = c(0, 0))
+  ymax <- max(ggplot_build(p)$data[[1]]$ymax)
+  # KS Test between both groups as they are plotted to see if hist. are different
+  fill_id <- levels(as.factor(ggplot_build(p)$data[[1]]$fill))
+  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill = fill_id[1])$count, 
+          subset(ggplot_build(p)$data[[1]], fill = fill_id[2])$count, 
+          alternative = "two.sided", exact = TRUE)
+  p <- p + expand_limits(y = c(0, 1.1* ymax)) + 
+    annotate("text",label=sprintf('p = %.2e', ks_p_val$p.value), x=0, y=1.07*ymax, 
+             label = "Some text",size=2)
+  print(p)
   save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
   
   
+  browser();
+   # +
+    # geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
+    #           color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
+    # theme_classic() +  theme(text = element_text(size = 8))+
+    # scale_y_continuous(expand = c(0, 0))
 }
+
 
 plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   
-  # browser();
-  # Calculate confidence interval
+  # Calculate group means and corrected confidence intervals
   df_result <- df_pretty %>%   
     group_by(name) %>% 
     summarize(mean = mean(value), bs_ci_mean_str = toString(
       boot.ci(boot(value, function(x, ind)  mean(x[ind]), R = 10000),
-              conf = 1-(0.05/length(levels(df_pretty$name))), type = "basic" )$
+              conf = 1-(0.05/choose(length(levels(df_pretty$name)), 2)),
+              type = "basic" )$
         basic[c(4,5)]))
   df_result$bs_ci_mean_lower <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
                                        function(x) as.numeric(x[1]))
@@ -567,6 +600,35 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     0.5 <= df_result$bs_ci_mean_upper
   ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
   
+  
+  # Export CSV table of means and relative means for results write-up
+  mean_by_group <- df_result$mean
+  mean_row <- matrix(rep(df_result$mean,length(levels(df_pretty$name))), 
+                     ncol = length(levels(df_pretty$name)), 
+                     nrow = length(levels(df_pretty$name)))
+  rownames(mean_row) <- as.list(levels(df_pretty$name))
+  mean_col <- t(mean_row)
+  rmean_by_group <- (( mean_row - mean_col)/mean_col) * 100
+  colnames(rmean_by_group) <- as.list(levels(df_pretty$name))
+  names(mean_by_group) <- as.list(levels(df_pretty$name))
+  # Calculate multiple comparison p value
+  paired_results <- pairwise.t.test(df_pretty$value, df_pretty$name, p.adjust.method = "bonferroni",
+                                    pool.sd = FALSE, paired = FALSE, alternative = c("two.sided"))
+  paired_pvalues <- paired_results[[3]]
+  # Write tables to file
+  # Suppress warning with writing multiple tables to csv with column names
+  csv_path <- paste("figure/output_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
+  cat("Table 1: mean error rate for each group\n", file = csv_path)
+  suppressWarnings(write.table(t(mean_by_group), csv_path, append = TRUE, 
+                               col.names=TRUE, sep=","))
+  cat("\nTable 2: relative mean error rate for each group\n",  append = TRUE, 
+      file = csv_path)
+  suppressWarnings(write.table(rmean_by_group, csv_path, col.names = TRUE, 
+                               sep=",", append=TRUE))
+  cat("\nTable 3: p value of mean error rate for each group\n",  append = TRUE, file = csv_path)
+  suppressWarnings(write.table(paired_pvalues, csv_path, col.names = TRUE, 
+                               sep=",", append=TRUE))
+  
   # Labels of statistical significance for each group
   sig_labels = rep("",length(levels(df_pretty$name)))
   sig_colors = rep("black",length(levels(df_pretty$name)))
@@ -580,8 +642,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   # Set greater than random to red and +
   sig_labels[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  "+"
   sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  rgb(255, 0, 0,maxColorValue = 255)
-  
-  
+
   # Basic violin plot
   p <- ggplot(df_result, aes(x=name,  y=mean, group=name)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
@@ -594,7 +655,6 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
               color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
     theme_classic() +  theme(text = element_text(size = 8))+
-    #coord_cartesian(ylim=c(0,1.05)) +
   scale_y_continuous(expand = c(0, 0))
   print(p)
   save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
@@ -615,7 +675,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
-                                      include_bf = include_bf,parallel_sims=parallel_sims)
+                                      include_bf = include_bf,parallel_sims = parallel_sims)
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,

@@ -1,11 +1,7 @@
 
 library(BayesFactor)
-library(parallel)
 library(TOSTER)
-# library(future.apply)
-# plan(multiprocess, workers = detectCores(TRUE)-1) ## Parallelize using four cores
-# library(boot)
-library(TOSTER)
+
 
 ## User defined functions
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -128,7 +124,7 @@ row_tost_2s_slow <- function (m1,m2) {
 }
 
 
-row_tost_2s_fast <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
+row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
   
   
   fast_2max <-function(v1,v2) {
