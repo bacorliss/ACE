@@ -298,15 +298,15 @@ all_dfs <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 gt_colnames = "is_rsigma_md2gtmd1"
 fig_name = paste(fig_basename, "_5b_esize_contest_rsigma_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
-                                   mus_1a  = rep(10,n_sims), 
+                                   mus_1a  = rep(100,n_sims), 
                                     sigmas_1a = rep(1,n_sims),
                                    mus_1d  = rep(20,n_sims), 
                                     sigmas_1d = runif(n_sims, 10, 50),
                                    
-                                   mus_2a  = rep(40,n_sims), 
+                                   mus_2a  = rep(400,n_sims), 
                                     sigmas_2a = rep(1,n_sims),
                                    mus_2d  = rep(80,n_sims), 
-                                    sigmas_2d = runif(n_sims, 30, 150),
+                                    sigmas_2d = runif(n_sims, 40, 200),
                                    
                                    switch_sign_mean_d = TRUE,
                                    switch_sign_mean_ab = FALSE,
@@ -332,13 +332,13 @@ fig_name = paste(fig_basename, "_6a_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed,
                                    mus_1a  = runif(n_sims,10,10), 
                                    sigmas_1a = runif(n_sims,1,1), 
-                                   mus_1d  = runif(n_sims,0.5,4), 
-                                   sigmas_1d = runif(n_sims,10,20),
+                                   mus_1d  = runif(n_sims,1,3), 
+                                   sigmas_1d = runif(n_sims,8,20),
                                    
-                                   mus_2a  = runif(n_sims,50,50),  
+                                   mus_2a  = runif(n_sims,40,40),  
                                    sigmas_2a = runif(n_sims,1,1),
-                                   mus_2d  = runif(n_sims,2.5,20),  
-                                   sigmas_2d = runif(n_sims,50,100),
+                                   mus_2d  = runif(n_sims,4,12),  
+                                   sigmas_2d = runif(n_sims,32,80),
                                    
                                    switch_sign_mean_d = TRUE,
                                    switch_sign_mean_ab = FALSE,

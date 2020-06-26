@@ -240,8 +240,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
   suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
                                col.names = TRUE, sep=","))
   
-  # Plot reference ground truth success rate (Exp 1 < Exp 2)
-  # Check to see overall ground truth true rate
+  # Calculate binomial confidence intervals for each sucess rate for each parameter
   binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
                         conf.level=1-0.05/4, correct = FALSE)
   binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
@@ -260,9 +259,8 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
     tibble(group="rsigma", estimate = binom_rsigma$estimate, 
            lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
   df_params$group <- factor(df_params$group, levels = df_params$group)
-  # ybounds = c(min(df_params$lci), max(df_params$uci))
   
-  
+  # Plot confidence interval of success rate for each parameter and their agreement
   p <- ggplot(df_params, aes(x = group,  y = estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
