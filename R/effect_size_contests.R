@@ -57,7 +57,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     switch_sign_mean_ab = FALSE,
                                     switch_sign_mean_d = FALSE,
                                     fig_name = "test.tiff",
-                                    label_dict = effect_size_dict) {
+                                    label_dict = effect_size_dict,
+                                    gt_colnames) {
   #' Generate simulated experiment data for two experiments 
   #' 
   #' @description Generate simulated experiment data for two experiments with 
@@ -188,12 +189,148 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
             effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
   
   # Plot generated population parameters
-  plot_population_params(df, fig_name = fig_name)
+  plot_population_params(df, fig_name = fig_name, gt_colnames = gt_colnames)
   
   
   # browser()
   return(df)
 }
+
+
+plot_population_params <- function(df_init, gt_colnames,fig_name){
+  
+  # gt_colnames <-c("is_mud_md2gtmd1","is_rmud_md2gtmd1")
+  
+  
+  # Output csv of agreement of input parameters to each individual input parameter
+  param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
+                   "is_rsigma_md2gtmd1")
+  
+  # Calculate indices of colname
+  gt_param_inds <- unname(sapply(gt_colnames,function(x){pmatch(x,param_fields)}))
+  gt_param_labels <- c(expression(abs(phantom(.)*mu[D]*phantom(.))), 
+                       expression(abs(phantom(.)*r~mu[D]*phantom(.))),
+                       expression(sigma[D]), 
+                       expression(r~sigma[D]))
+  gt_param_labels <- c("abs(phantom(.)*mu[D]*phantom(.))*phantom(.)", 
+                       "abs(phantom(.)*r~mu[D]*phantom(.))*phantom(.)",
+                       "sigma[D]*phantom(.)", "r~sigma[D]*phantom(.)")
+  
+  
+  n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
+  pwise_binom_p <- n_agreement
+  params <- str_match(param_fields, "is_(.*)_md2gtmd1")[,2]
+  
+  for (r in seq(1,length(param_fields),1)) {
+    for (c in seq(1,length(param_fields),1)) {
+      n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
+      pwise_binom_p[r,c] <-
+        prop.test(n_agreement[r,c], dim(df_init)[1], alternative = "two.sided",
+                  conf.level = 1-0.05/4, correct = TRUE)$p.value
+    }
+  }
+  
+  str_binom_p <- matrix(sapply(pwise_binom_p, function(x) if(x>0.05) 
+  {sprintf("%0.2f",x)} else {sprintf("%0.2e",x)}),nrow = dim(pwise_binom_p)[1])
+  colnames(str_binom_p) <- params
+  rownames(str_binom_p) <- params
+  # Write to csv
+  csv_path <- paste("figure/params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
+  cat("Table 1: Binomial test of agreement by group\n", file = csv_path)
+  suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
+                               col.names = TRUE, sep=","))
+  
+  # Plot reference ground truth success rate (Exp 1 < Exp 2)
+  # Check to see overall ground truth true rate
+  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
+                        conf.level=1-0.05/4, correct = FALSE)
+  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
+                         conf.level=1-0.05/4, correct = FALSE)
+  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], 
+                           conf.level=1-0.05/4, correct = FALSE)
+  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], 
+                            conf.level=1-0.05/4, correct = FALSE)
+  df_params <- rbind(
+    tibble(group="mu", estimate = binom_mu$estimate, 
+           lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
+    tibble(group="rmu", estimate = binom_rmu$estimate, 
+           lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
+    tibble(group="sigma", estimate = binom_sigma$estimate, 
+           lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
+    tibble(group="rsigma", estimate = binom_rsigma$estimate, 
+           lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
+  df_params$group <- factor(df_params$group, levels = df_params$group)
+  # ybounds = c(min(df_params$lci), max(df_params$uci))
+  
+  
+  p <- ggplot(df_params, aes(x = group,  y = estimate)) +
+    geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
+    geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
+    geom_point(size = 1.25, fill = "white", shape = 1) + 
+    ylab("Fract Exp 1 < Exp 2    ") +
+    xlab("Pop. Params") +
+    theme_classic(base_size = 8) +
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
+    coord_cartesian(y=c(0,1), clip = "off") +
+    scale_x_discrete(
+      labels = c('mu' = parse(text=paste(gt_param_labels[1],"*phantom(.)")),
+                 'rmu'   = parse(text=paste("phantom(.)*",gt_param_labels[2])),
+                 'sigma' = parse(text=gt_param_labels[3]),
+                 'rsigma'   = parse(text=gt_param_labels[4])))
+  # Add statistical annotation above plot, one for each ground truth variable 
+  # specified (up to 2)
+  p <- p +  theme(plot.margin = unit(c(13,0,0,0), "pt")) +
+    annotate("text",label = gt_param_labels[gt_param_inds[1]], x = 0, size=2.5,
+             y = 1.13,vjust = 0, hjust=1,parse=TRUE) +
+    geom_text(y = 1.13, aes(label = ifelse(pwise_binom_p[gt_param_inds[1],]<0.05, "#","")),
+              size = 2.5, vjust=0, hjust=0.5) +
+    annotate("segment", x = 0, xend = 5, y = 1.09, yend = 1.09, colour = "black", size=.2) 
+  if (length(gt_colnames)==2){
+    p <- p +  theme(plot.margin = unit(c(22,0,0,0), "pt")) +
+      annotate("text",label = gt_param_labels[gt_param_inds[2]], x = 0, size=2.5,
+               y = 1.3,vjust = 0, hjust=1,parse=TRUE) +
+      geom_text(y = 1.3,aes(label = ifelse(pwise_binom_p[gt_param_inds[2],]<0.05, "#","")),
+                size = 2.5, vjust=0, hjust=0.5) +
+      annotate("segment", x = 0, xend = 5, y = 1.27, yend = 1.27, colour = "black", size=.2) 
+  }    
+  print(p)
+  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
+  
+  
+  
+  # Export csv file for agreement between each variable to others
+  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
+  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
+              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
+                              df_init$mu_2md/df_init$sigma_2md))
+  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
+    geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
+                   alpha=0.25, bins = 30) +
+    geom_vline(xintercept = -2.6,linetype = "dashed") +
+    geom_vline(xintercept = 2.6, linetype = "dashed") +
+    xlab( expression(mu[DM]*phantom(.)/phantom(.)*sigma[DM])) +
+    ylab( "Freq.") +
+    theme_classic(base_size = 8) +
+    theme(legend.position = "none") +  
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),expand = c(0, 0))
+  ymax <- max(ggplot_build(p)$data[[1]]$ymax)
+  # KS Test between both groups as they are plotted to see if hist. are different
+  fill_id <- levels(as.factor(ggplot_build(p)$data[[1]]$fill))
+  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill = fill_id[1])$count, 
+                      subset(ggplot_build(p)$data[[1]], fill = fill_id[2])$count, 
+                      alternative = "two.sided", exact = FALSE)
+  p <- p + expand_limits(y = c(0, 1.1* ymax)) + 
+    annotate("label",label=sprintf('p = %.2e', ks_p_val$p.value), x=0, y=1.07*ymax, 
+             size=2, fill = "white",label.size = NA)
+  # print(p)
+  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
+  
+
+}
+
+
 
 quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
                                       parallelize_bf = FALSE) {
@@ -466,113 +603,6 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
   
   return(df)
   
-}
-
-
-plot_population_params <- function(df_init, fig_name){
-  
-
-  # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
-                   "is_rsigma_md2gtmd1")
-  n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
-  pwise_binom_p <- n_agreement
-  params <- str_match(param_fields, "is_(.*)_md2gtmd1")[,2]
-  
-  for (r in seq(1,length(param_fields),1)) {
-    for (c in seq(1,length(param_fields),1)) {
-      n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
-      pwise_binom_p[r,c] <-
-        prop.test(n_agreement[r,c], dim(df_init)[1], alternative = "two.sided",
-                  conf.level = 1-0.05/4, correct = TRUE)$p.value
-    }
-  }
-  str_binom_p <- matrix(sapply(pwise_binom_p, function(x) if(x>0.05) 
-    {sprintf("%0.2f",x)} else {sprintf("%0.2e",x)}),nrow = dim(pwise_binom_p)[1])
-  colnames(str_binom_p)<- params
-  rownames(str_binom_p)<- params
-  # Write to csv
-  csv_path <- paste("figure/params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
-  cat("Table 1: Binomial test of agreement by group\n", file = csv_path)
-  suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
-                               col.names=TRUE, sep=","))
-  
-  
-  # Plot reference ground truth success rate (Exp 1 < Exp 2)
-  # Check to see overall ground truth true rate
-  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
-                        conf.level=1-0.05/4, correct = FALSE)
-  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
-                         conf.level=1-0.05/4, correct = FALSE)
-  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], 
-                           conf.level=1-0.05/4, correct = FALSE)
-  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], 
-                            conf.level=1-0.05/4, correct = FALSE)
-  df_params <- rbind(
-    tibble(group="mu", estimate = binom_mu$estimate, 
-           lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
-    tibble(group="rmu", estimate = binom_rmu$estimate, 
-           lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
-    tibble(group="sigma", estimate = binom_sigma$estimate, 
-           lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
-    tibble(group="rsigma", estimate = binom_rsigma$estimate, 
-           lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
-  df_params$group <- factor(df_params$group, levels = df_params$group)
-  p <- ggplot(df_params, aes(x=group,  y=estimate)) +
-    geom_hline(yintercept = 0.5, size=0.5, color="grey") +
-    geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
-    geom_point(size=1,fill="white", shape=1) + 
-    ylab("Fract Exp 1 < Exp 2") +
-    xlab("Pop. Params") +
-    theme_classic(base_size = 8) +
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
-    scale_x_discrete(
-      labels = c('mu' = expression(abs(phantom(.)*mu*phantom(.))),
-      'rmu'   = expression(abs(phantom(.)*r*mu*phantom(.))),
-      'sigma' = expression(sigma),
-      'rsigma'   = expression(r*sigma)))
-  p
-  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
-  
-  
-  
-  
-  # Export csv file for agreement between each variable to others
-  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
-  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
-              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
-                                  df_init$mu_2md/df_init$sigma_2md))
-  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
-    geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
-                   alpha=0.25, bins = 30) +
-    geom_vline(xintercept = -2.6,linetype = "dashed") +
-    geom_vline(xintercept = 2.6, linetype = "dashed") +
-    xlab( expression(mu[DM]*phantom(.)/phantom(.)*sigma[DM])) +
-    ylab( "Freq.") +
-    theme_classic(base_size = 8) +
-    theme(legend.position = "none") +  
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),expand = c(0, 0))
-  ymax <- max(ggplot_build(p)$data[[1]]$ymax)
-  # KS Test between both groups as they are plotted to see if hist. are different
-  fill_id <- levels(as.factor(ggplot_build(p)$data[[1]]$fill))
-  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill = fill_id[1])$count, 
-          subset(ggplot_build(p)$data[[1]], fill = fill_id[2])$count, 
-          alternative = "two.sided", exact = TRUE)
-  p <- p + expand_limits(y = c(0, 1.1* ymax)) + 
-    annotate("text",label=sprintf('p = %.2e', ks_p_val$p.value), x=0, y=1.07*ymax, 
-             label = "Some text",size=2)
-  print(p)
-  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
-  
-  
-  browser();
-   # +
-    # geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
-    #           color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
-    # theme_classic() +  theme(text = element_text(size = 8))+
-    # scale_y_continuous(expand = c(0, 0))
 }
 
 
