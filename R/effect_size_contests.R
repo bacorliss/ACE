@@ -34,11 +34,10 @@ effect_size_dict <- vector(mode="list", length=4)
 names(effect_size_dict) <- c("prefix", "base", "suffix","label")
 effect_size_dict[[1]] <- c("fract", "mean_diff")
 effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sd", "rsd", "bf", "p_value",
-                           "tostp", "cohen_d", "mmd",
-                           "rmmd","nrand")
+                           "tostp", "cohen_d", "mmd",  "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST] ",
-                           " p[TOST]", "Cd" , "delta[M]",
+effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]*phantom(.)",
+                           "~p[TOST]", "Cd" , "delta[M]",
                            "r*delta[M]","Rnd")
 
 
@@ -199,22 +198,15 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
 
 plot_population_params <- function(df_init, gt_colnames,fig_name){
   
-  # gt_colnames <-c("is_mud_md2gtmd1","is_rmud_md2gtmd1")
-  
-  
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
                    "is_rsigma_md2gtmd1")
   
   # Calculate indices of colname
   gt_param_inds <- unname(sapply(gt_colnames,function(x){pmatch(x,param_fields)}))
-  gt_param_labels <- c(expression(abs(phantom(.)*mu[D]*phantom(.))), 
-                       expression(abs(phantom(.)*r~mu[D]*phantom(.))),
-                       expression(sigma[D]), 
-                       expression(r~sigma[D]))
-  gt_param_labels <- c("abs(phantom(.)*mu[D]*phantom(.))*phantom(.)", 
-                       "abs(phantom(.)*r~mu[D]*phantom(.))*phantom(.)",
-                       "sigma[D]*phantom(.)", "r~sigma[D]*phantom(.)")
+  gt_param_labels <- c("abs(~mu[DM]*phantom(.))", 
+                       "abs(~r*mu[DM]*phantom(.))",
+                       "~sigma[DM]*phantom(.)", "r*sigma[DM]")
   
   
   n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
@@ -266,30 +258,31 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
     ylab("Fract Exp 1 < Exp 2    ") +
-    xlab("Pop. Params") +
+    xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
     coord_cartesian(y=c(0,1), clip = "off") +
-    scale_x_discrete(
-      labels = c('mu' = parse(text=paste(gt_param_labels[1],"*phantom(.)")),
-                 'rmu'   = parse(text=paste("phantom(.)*",gt_param_labels[2])),
-                 'sigma' = parse(text=gt_param_labels[3]),
-                 'rsigma'   = parse(text=gt_param_labels[4])))
+    scale_x_discrete(expand=c(0.1, 0), labels =
+       c('mu' = parse(text=paste(gt_param_labels[1],"*phantom(.)")),
+       'rmu'   = parse(text=paste("phantom(.)*",gt_param_labels[2])),
+       'sigma' = parse(text=gt_param_labels[3]),
+       'rsigma'   = parse(text=gt_param_labels[4])))
   # Add statistical annotation above plot, one for each ground truth variable 
   # specified (up to 2)
-  p <- p +  theme(plot.margin = unit(c(13,0,0,0), "pt")) +
-    annotate("text",label = gt_param_labels[gt_param_inds[1]], x = 0, size=2.5,
+  p <- p +  theme(plot.margin = unit(c(13,3,3,3), "pt")) +
+    annotate("text",label = paste(gt_param_labels[gt_param_inds[1]],"~phantom(.)",
+                                  sep = ""), x = 0.8, size=2.5,
              y = 1.13,vjust = 0, hjust=1,parse=TRUE) +
     geom_text(y = 1.13, aes(label = ifelse(pwise_binom_p[gt_param_inds[1],]<0.05, "#","")),
               size = 2.5, vjust=0, hjust=0.5) +
-    annotate("segment", x = 0, xend = 5, y = 1.09, yend = 1.09, colour = "black", size=.2) 
+    annotate("segment", x = 0.8, xend = 4, y = 1.09, yend = 1.09, colour = "black", size=.2) 
   if (length(gt_colnames)==2){
     p <- p +  theme(plot.margin = unit(c(22,0,0,0), "pt")) +
-      annotate("text",label = gt_param_labels[gt_param_inds[2]], x = 0, size=2.5,
-               y = 1.3,vjust = 0, hjust=1,parse=TRUE) +
+      annotate("text",label = paste(gt_param_labels[gt_param_inds[2]],"~phantom(.)",sep=""),
+               x = 0.8, size=2.5, y = 1.3,vjust = 0, hjust=1,parse=TRUE) +
       geom_text(y = 1.3,aes(label = ifelse(pwise_binom_p[gt_param_inds[2],]<0.05, "#","")),
                 size = 2.5, vjust=0, hjust=0.5) +
-      annotate("segment", x = 0, xend = 5, y = 1.27, yend = 1.27, colour = "black", size=.2) 
+      annotate("segment", x = 0.8, xend = 4, y = 1.27, yend = 1.27, colour = "black", size=.2) 
   }    
   print(p)
   save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
@@ -315,17 +308,19 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
   ymax <- max(ggplot_build(p)$data[[1]]$ymax)
   # KS Test between both groups as they are plotted to see if hist. are different
   fill_id <- levels(as.factor(ggplot_build(p)$data[[1]]$fill))
-  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill = fill_id[1])$count, 
-                      subset(ggplot_build(p)$data[[1]], fill = fill_id[2])$count, 
+  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill == fill_id[1])$y, 
+                      subset(ggplot_build(p)$data[[1]], fill == fill_id[2])$y, 
                       alternative = "two.sided", exact = FALSE)
   p <- p + expand_limits(y = c(0, 1.1* ymax)) + 
-    annotate("label",label=sprintf('p = %.2e', ks_p_val$p.value), x=0, y=1.07*ymax, 
+    annotate("label",label=ifelse(ks_p_val$p.value>0.05, 
+                                  sprintf('p = %.3f', ks_p_val$p.value),
+                                  sprintf('p = %.2e', ks_p_val$p.value))
+               , x=0, y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
   save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
-  
-
+  # browser();
 }
 
 
@@ -664,7 +659,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   siff_vjust = rep(0,length(levels(df_pretty$name)))
   # Set less than random to blue and -
   sig_labels[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  "-"
-  sig_colors[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  rgb(47, 74, 71,maxColorValue = 255)
+  sig_colors[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  rgb(47, 117, 181,maxColorValue = 255)
   sig_sizes[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  5
   siff_vjust[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  .017
   # Set greater than random to red and +
@@ -677,7 +672,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Effect Size Metric") +
-    ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str))) +
+    ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str,"~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
