@@ -41,6 +41,133 @@ effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]*phant
                            "r*delta[M]","Rnd")
 
 
+pop_params_from_aoffset <- function( n_samples, n_obs, n_sims, 
+                                    mus_1a, sigmas_1a, 
+                                    mus_2a, sigmas_2a,
+                                    mus_1ao, sigmas_1ao, 
+                                    mus_2ao, sigmas_2ao) {
+  # browser()
+  # Calculate D based on A and offset from A parameters
+  mus_1d = mus_1ao;  sigmas_1d = sigmas_1a + sigmas_1ao
+  mus_2d = mus_2ao;  sigmas_2d = sigmas_2a + sigmas_2ao
+  # calculate B from A and D
+  mus_1b = mus_1a + mus_1d;  sigmas_1b = sqrt(sigmas_1d^2 - sigmas_1a^2)
+  mus_2b = mus_2a + mus_2d;  sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
+  # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
+  df = tibble( n_obs = n_obs, n_samples = n_samples,
+    mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,
+    mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d, 
+    sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
+    sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d,
+  )
+  return(df)
+}
+
+
+pop_params_from_ab <- function( n_samples, n_obs, n_sims, 
+                                mus_1a, sigmas_1a, 
+                                mus_2a, sigmas_2a,
+                                mus_1b, sigmas_1b, 
+                                mus_2b, sigmas_2b) {
+  # Calculate D based on A and B parameters
+  mus_1d = mus_1b - mus_1a;  sigmas_1d = sqrt(sigmas_1a^2 + sigmas_1b^2)
+  mus_2d = mus_2b - mus_2a;  sigmas_2d = sqrt(sigmas_2a^2 + sigmas_2b^2)
+  # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
+  df = tibble( n_obs = n_obs, n_samples = n_samples,
+               mu_1a = mus_1a, mu_2a = mus_2a, sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
+               mu_1b = mus_1b, mu_2b = mus_2b, sigma_1b = sigmas_1b, sigma_2b = sigmas_2b,
+               mu_1d = mus_1d, mu_2d = mus_2d, sigma_1d = sigmas_1d, sigma_2d = sigmas_2d,
+  )
+  return(df)
+}
+
+
+pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
+                                switch_group_ab, switch_exp_12) {
+  
+  
+  df <- df_init
+  # browser()
+  
+  # Randomly switch sign of D for both experiments, recalculate B
+  if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
+  df$mu_1d =  mus_sign * df$mu_1d
+  df$mu_2d =  mus_sign * df$mu_2d
+  
+  df$mu_1b = df$mu_1a + df$mu_1d
+  df$mu_2b = df$mu_2a + df$mu_2d
+  }
+  
+
+  # Randomly switch sign of both group a and b for exp 1 and 2 separately, recalculate d
+  if (switch_sign_mean_ab) {
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    df$mu_1a[switch_boolean] <- -df$mu_1a[switch_boolean]
+    df$mu_2a[switch_boolean] <- -df$mu_2a[switch_boolean]
+    df$mu_1b[switch_boolean] <- -df$mu_1b[switch_boolean]
+    df$mu_2b[switch_boolean] <- -df$mu_2b[switch_boolean]
+    
+    # Recalculate D
+    df$mu_1d = df$mu_1b - df$mu_1a; 
+    df$mu_2d = df$mu_2b - df$mu_2a;
+  }
+  
+  
+  # Randomly switch assignment for A and B for EACH experiment, recalculate D
+  if (switch_group_ab) {
+    # Random switch binary vector
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    # Save temp variables for switch
+    temp_mu_1a     <- df$mu_1a;    temp_sigma_1a  <- df$sigma_1a
+    temp_mu_1b     <- df$mu_1b;    temp_sigma_1b  <- df$sigma_1b
+    temp_mu_2a     <- df$mu_2a;    temp_sigma_2a  <- df$sigma_2a
+    temp_mu_2b     <- df$mu_2b;    temp_sigma_2b  <- df$sigma_2b
+    # Exp 1
+    df$mu_1a[switch_boolean]      <- temp_mu_1b[switch_boolean]
+    df$sigma_1a[switch_boolean]   <- temp_sigma_1b[switch_boolean]
+    df$mu_1b[switch_boolean]      <- temp_mu_1a[switch_boolean]
+    df$sigma_1b[switch_boolean]   <- temp_sigma_1a[switch_boolean]
+    # Exp 2
+    df$mu_2a[switch_boolean]      <- temp_mu_2b[switch_boolean]
+    df$sigma_2a[switch_boolean]   <- temp_sigma_2b[switch_boolean]
+    df$mu_2b[switch_boolean]      <- temp_mu_2a[switch_boolean]
+    df$sigma_2b[switch_boolean]   <- temp_sigma_2a[switch_boolean]
+    # Recalculate D
+    df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
+    df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
+    
+  }
+ 
+  
+  if (switch_exp_12) {
+    # Save temp variables for switch
+    temp_mu_1a     <- df$mu_1a;    temp_sigma_1a  <- df$sigma_1a
+    temp_mu_1b     <- df$mu_1b;    temp_sigma_1b  <- df$sigma_1b
+    temp_mu_2a     <- df$mu_2a;    temp_sigma_2a  <- df$sigma_2a
+    temp_mu_2b     <- df$mu_2b;    temp_sigma_2b  <- df$sigma_2b
+    # Determine which simulations to switch parameters for a and b
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    # Switch specified parameters
+    df$mu_1a[switch_boolean]      <- temp_mu_2a[switch_boolean]
+    df$sigma_1a[switch_boolean]   <- temp_sigma_2a[switch_boolean]
+    df$mu_1b[switch_boolean]      <- temp_mu_2b[switch_boolean]
+    df$sigma_1b[switch_boolean]   <- temp_sigma_2b[switch_boolean]
+    
+    df$mu_2a[switch_boolean]      <- temp_mu_1a[switch_boolean]
+    df$sigma_2a[switch_boolean]   <- temp_sigma_1a[switch_boolean]
+    df$mu_2b[switch_boolean]      <- temp_mu_1b[switch_boolean]
+    df$sigma_2b[switch_boolean]   <- temp_sigma_1b[switch_boolean]
+    # Recalculate D
+    df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
+    df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
+  }
+  
+  
+  
+  return(df)
+}
+
+
 # default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     # Control group pop. parameters
@@ -50,11 +177,12 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     mus_1b = NA, sigmas_1b = NA, 
                                     mus_2b = NA, sigmas_2b = NA,
                                     # Difference distribution pop. parameters
-                                    mus_1d, sigmas_1d, 
-                                    mus_2d, sigmas_2d,
+                                    mus_1ao = NA, sigmas_1ao = NA, 
+                                    mus_2ao = NA, sigmas_2ao = NA,
                                     switch_group_ab = FALSE,
                                     switch_sign_mean_ab = FALSE,
                                     switch_sign_mean_d = FALSE,
+                                    switch_exp_12 = FALSE,
                                     fig_name = "test.tiff",
                                     label_dict = effect_size_dict,
                                     gt_colnames) {
@@ -78,69 +206,40 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   #' @param sigmas2 vector specifying distribution for population mean for
   #'  experiment 12
   
-  # Basic input parameters for each simulation round
-  set.seed(rand.seed +1)
-  df = tibble(
-    # Sampling data
-    n_obs = n_obs, n_samples = n_samples,
-    # Control group a for exp 1 and 2
-    mu_1a = mus_1a, mu_2a = mus_2a,
-    sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
-  )
-  
-  # Calculate group b (or d) parameters, give option to invert sign of d,
-  # then recalculate group d
-  if (!any(is.na(mus_1b))) { 
-    ##  Experiment group valid
-    # Fill in experiment group
-    # Experiment group b for exp 1 and 2
-    df$mu_1b <- mus_1b
-    df$mu_2b <- mus_2b
-    df$sigma_1b <- sigmas_1b
-    df$sigma_2b <- sigmas_2b
-  } else {
-    ##  Experiment group invalid
-    # Experiment group mean based on control and offset
-    
-    if (switch_sign_mean_d) {
-      mus_sign = sample(c(-1,1), n_sims, TRUE)
-    } else {
-      mus_sign = rep(1, n_sims)
-    }
-    df$mu_1b <- mus_1a + mus_sign*mus_1d
-    df$mu_2b <- mus_2a + mus_sign*mus_2d
-    # Variance of difference in experimental
-    df$sigma_1b <- sqrt(df$sigma_1a^2 + sigmas_1d^2)
-    df$sigma_2b <- sqrt(df$sigma_2a^2 + sigmas_2d^2)
+  # Expand any singleton pop param arguments replicate to number of simulations
+  input_args <- formalArgs(generateExperiment_Data)
+  pargs <-grep("^(mus)|(sigmas)", input_args, value=TRUE)
+  # For any pop param not equal in length to n_sims, expand
+  for (n in seq_along(pargs)) {
+    if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
   }
+
+  # Record some parameter values for simulations
+  set.seed(rand.seed +1)
+  
+  # Generate initial dataframe from params, no switching done yet  
+  if (is.na(mus_1b)) {
+    df_init <- pop_params_from_aoffset( n_samples, n_obs, n_sims, 
+                                         mus_1a, sigmas_1a,  mus_2a, sigmas_2a,
+                                         mus_1ao, sigmas_1ao, mus_2ao, sigmas_2ao) 
+  } else {
+    df_init   <- pop_params_from_ab( n_samples, n_obs, n_sims, 
+                                   mus_1a, sigmas_1a,  mus_2a, sigmas_2a,
+                                   mus_1b, sigmas_1b, mus_2b, sigmas_2b)
+  }
+  # Switch params if needed
+  df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
+                            switch_sign_mean_ab = switch_sign_mean_ab, 
+                            switch_group_ab = switch_group_ab,
+                            switch_exp_12 = switch_exp_12)
+  
+  # browser()
+  
   # Define difference distribution    
   df$mu_1d <- df$mu_1b - df$mu_1a
   df$mu_2d <- df$mu_2b - df$mu_2a
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-
-  
-  # Randomly switch sign of both group a and b 
-  if (switch_sign_mean_ab) {
-    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
-    df$mu_1a[switch_boolean] <- - df$mu_1a[switch_boolean]
-    df$mu_1b[switch_boolean] <- - df$mu_1b[switch_boolean]
-  }
-  # Randomly switch group ID between group a and b
-  if (switch_group_ab) {
-    temp_mu_1a     <- df$mu_1a
-    temp_sigma_1a  <- df$sigma_1a
-    temp_mu_1b     <- df$mu_1b
-    temp_sigma_1b  <- df$sigma_1b
-    # Determine which simulations to switch parameters for a and b
-    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
-    # Switch specified parameters
-    df$mu_1a[switch_boolean]      <- temp_mu_1b[switch_boolean]
-    df$sigma_1a[switch_boolean]   <- temp_sigma_1b[switch_boolean]
-    df$mu_1b[switch_boolean]      <- temp_mu_1a[switch_boolean]
-    df$sigma_1b[switch_boolean]   <- temp_sigma_1a[switch_boolean]
-  }
-  
   
   # Calculate parameter of difference in means distribution (taken from mean of 
   # D since we had the option to invert the sign for D)
@@ -218,11 +317,12 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
       n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
       pwise_binom_p[r,c] <-
         prop.test(n_agreement[r,c], dim(df_init)[1], alternative = "two.sided",
-                  conf.level = 1-0.05/4, correct = TRUE)$p.value
+                  conf.level = 1-0.05/(4*length(gt_colnames)), correct = TRUE)$p.value
     }
   }
-  
-  str_binom_p <- matrix(sapply(pwise_binom_p, function(x) if(x>0.05) 
+  # Corrected p values based on number of independent variables selected * 4
+  pwise_binom_p_corr <- pmin(4*length(gt_colnames) * pwise_binom_p,rep(1,prod(dim(pwise_binom_p))))
+  str_binom_p <- matrix(sapply(pwise_binom_p_corr, function(x) if(x> 0.05) 
   {sprintf("%0.2f",x)} else {sprintf("%0.2e",x)}),nrow = dim(pwise_binom_p)[1])
   colnames(str_binom_p) <- params
   rownames(str_binom_p) <- params
@@ -234,13 +334,13 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
   
   # Calculate binomial confidence intervals for each sucess rate for each parameter
   binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
-                        conf.level=1-0.05/4, correct = FALSE)
+                        conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
   binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
-                         conf.level=1-0.05/4, correct = FALSE)
+                         conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
   binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], 
-                           conf.level=1-0.05/4, correct = FALSE)
+                           conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
   binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], 
-                            conf.level=1-0.05/4, correct = FALSE)
+                            conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
   df_params <- rbind(
     tibble(group="mu", estimate = binom_mu$estimate, 
            lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
@@ -273,14 +373,14 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
     annotate("text",label = paste(gt_param_labels[gt_param_inds[1]],"~phantom(.)",
                                   sep = ""), x = 0.8, size=2.5,
              y = 1.13,vjust = 0, hjust=1,parse=TRUE) +
-    geom_text(y = 1.13, aes(label = ifelse(pwise_binom_p[gt_param_inds[1],]<0.05, "#","")),
+    geom_text(y = 1.13, aes(label = ifelse(pwise_binom_p_corr[gt_param_inds[1],]<0.05, "#","")),
               size = 2.5, vjust=0, hjust=0.5) +
     annotate("segment", x = 0.8, xend = 4, y = 1.09, yend = 1.09, colour = "black", size=.2) 
   if (length(gt_colnames)==2){
     p <- p +  theme(plot.margin = unit(c(22,0,0,0), "pt")) +
       annotate("text",label = paste(gt_param_labels[gt_param_inds[2]],"~phantom(.)",sep=""),
                x = 0.8, size=2.5, y = 1.3,vjust = 0, hjust=1,parse=TRUE) +
-      geom_text(y = 1.3,aes(label = ifelse(pwise_binom_p[gt_param_inds[2],]<0.05, "#","")),
+      geom_text(y = 1.3,aes(label = ifelse(pwise_binom_p_corr[gt_param_inds[2],]<0.05, "#","")),
                 size = 2.5, vjust=0, hjust=0.5) +
       annotate("segment", x = 0.8, xend = 4, y = 1.27, yend = 1.27, colour = "black", size=.2) 
   }    
@@ -358,12 +458,14 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   # Basic Summary statistical comparisons
   # Means
-  df$fract_xdbar_d2gtd1 = sum(abs(xbar_2d) > abs(xbar_1d))/df$n_samples
-  df$mean_diff_xdbar_2m1  = mean(abs(xbar_2d) - abs(xbar_1d))
+  diff_xdbar = abs(xbar_2d) - abs(xbar_1d)
+  df$fract_xdbar_d2gtd1 = sum(diff_xdbar > 0) / df$n_samples
+  df$mean_diff_xdbar_2m1  = mean(diff_xdbar)
   
   # Stds
-  df$fract_sd_d2gtd1  = sum(  s_2md > s_1md) / df$n_samples
-  df$mean_diff_sd_2m1 = mean( s_2md - s_1md)
+  diff_sd = s_2md - s_1md
+  df$fract_sd_d2gtd1  = sum(diff_sd > 0) / df$n_samples
+  df$mean_diff_sd_2m1 = mean(diff_sd)
   
   # Rel Means: mean divided by control mean
   diff_rxdbar = abs(xbar_2d/rowMeans(x_2a)) - abs(xbar_1d/rowMeans(x_1a))
