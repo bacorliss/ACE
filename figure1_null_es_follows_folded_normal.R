@@ -21,7 +21,10 @@ source("R/stat_helper.r")
 
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
-fig_basename="f_1"
+fig_num="1"
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
+           showWarnings = FALSE)
+
 
 # Parameters
 rand_seed <- 0
@@ -65,7 +68,7 @@ p_1a <- ggplot(df_1a, aes(x = x)) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1a
 # Export to TIF
-save_plot(paste("figure/", fig_basename, "a example_folded_dists.tiff", sep = ""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff", sep = ""),
           p_1a, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 6.5, dpi = 600) 
 
@@ -116,7 +119,7 @@ p_1b <- ggplot(df_1b, aes(x=d, y=x)) +
   theme_classic(base_size = 8) + theme(legend.position="none", axis.title.x = element_blank())
 p_1b
 # Export to TIF
-save_plot(paste("figure/", fig_basename, "b dist_comparison_violin.tiff", sep = ""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "b dist_comparison_violin.tiff", sep = ""),
           p_1b, ncol = 1, nrow = 1, base_height = .8,
           base_asp = 3, base_width = 2.25, dpi = 600)
 
@@ -151,7 +154,7 @@ p_1c <- ggplot(df_1c, aes(x=d, y=estimate)) +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max)) 
 p_1c  
-save_plot(paste("figure/", fig_basename, "c dist_comparison_facet.tiff",sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "c dist_comparison_facet.tiff",sep = ""), 
           p_1c, ncol = 1, nrow = 1, base_height = .9,
           base_asp = 3, base_width = 1.85, dpi = 600)
 
@@ -168,7 +171,7 @@ p_1d <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
   xlab(expression("P-Values |N| : FN")) + ylab("Probablitly") +
   geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
 p_1d             
-save_plot(paste("figure/", fig_basename, "d_dist_comparison_hist.tiff", sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "d_dist_comparison_hist.tiff", sep = ""), 
           p_1d, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
   
@@ -190,7 +193,7 @@ p_1e <- ggplot(df_1e, aes(x=x, y=y)) +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
-save_plot(paste("figure/", fig_basename, "e dist_comp_qq_plot.tiff",sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "e dist_comp_qq_plot.tiff",sep = ""), 
           p_1e, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
@@ -212,7 +215,7 @@ p_1f <- ggplot(data=df_fits, aes(x=x, y=y)) +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max))
 p_1f
-save_plot(paste("figure/", fig_basename, "f dist_comparison_qq_slope.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 1, dpi = 600)
 
@@ -264,7 +267,7 @@ p_1g <- ggplot(df_1g, aes(x=d, y=x)) +
                                      axis.title.x=element_blank())
 p_1g
 # Export to TIF
-save_plot(paste("figure/", fig_basename, "g dist_comparison_violin.tiff", sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "g dist_comparison_violin.tiff", sep = ""), 
           p_1g, ncol = 1, nrow = 1, base_height = .75,
           base_asp = 3, base_width = 2.25, dpi = 600)
 
@@ -298,7 +301,7 @@ p_1h <- ggplot(df_1h, aes(x=d, y=estimate)) +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max)) 
 p_1h  
-save_plot(paste("figure/", fig_basename, "h dist_comparison_facet.tiff",sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "h dist_comparison_facet.tiff",sep = ""), 
           p_1h, ncol = 1, nrow = 1, base_height = 1,
           base_asp = 3, base_width = 1.85, dpi = 600)
 
@@ -315,7 +318,7 @@ p_1i <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
   xlab("P-Values |N| : FN") + ylab("Probablitly") +
   geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
 p_1i            
-save_plot(paste("figure/", fig_basename, "i_dist_comparison_hist.tiff", sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "i_dist_comparison_hist.tiff", sep = ""), 
           p_1i, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
@@ -337,7 +340,7 @@ p_1j <- ggplot(df_1j, aes(x=x, y=y)) +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1j
-save_plot(paste("figure/", fig_basename, "j dist_comp_qq_plot.tiff",sep = ""), 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "j dist_comp_qq_plot.tiff",sep = ""), 
           p_1j, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
@@ -358,7 +361,7 @@ p_1k <- ggplot(data=df_fits, aes(x=x,y=y)) +
   geom_blank(aes(y = y_min)) +
   geom_blank(aes(y = y_max)) 
 p_1k
-save_plot(paste("figure/", fig_basename, "k dist_comparison_qq_slope.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "k dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1k, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1, dpi = 600)
 

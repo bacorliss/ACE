@@ -419,7 +419,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
              size=2, fill = "white",label.size = NA)
   # print(p)
   save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
+            base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   # browser();
 }
 

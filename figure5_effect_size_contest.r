@@ -15,6 +15,12 @@
 #   * glasses delta
 #   * MHD
 
+# Set workspace to location of this source file, since there are file dependencies
+# on a relative path basis
+# From #R Studio
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+setwd(getSrcDirectory()[1])
+
 library(pacman)
 p_load(ggplot2)
 p_load(tibble)
@@ -85,12 +91,12 @@ fig_name = paste(fig_basename, "_1b_esize_contest_mu_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_obs, n_sims, rand.seed, 
                                    mus_1a  = 1, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims,1,5), 
+                                   mus_1ao  = runif(n_sims,1,3), 
                                    sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims,1,5), 
+                                   mus_2ao  = runif(n_sims,1,3), 
                                    sigmas_2ao = 1,
                                    switch_group_ab = TRUE,
                                    switch_sign_mean_d = TRUE,

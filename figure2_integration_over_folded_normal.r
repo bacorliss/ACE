@@ -19,7 +19,10 @@ library(cowplot)
 library(VGAM)
 
 
-fig_basename = "f_2"
+fig_num = "2"
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
+           showWarnings = FALSE)
+
 # dnorm: density function: proability for a specific value of x/zscore of PDF
 # pnorm: cum. probability/quantile for a given zscore
 # qnorm: return z_score for a given cum. probability/quantile
@@ -27,8 +30,10 @@ fig_basename = "f_2"
 
 
 tri_color <- brewer.pal(n = 3, name = "Set1")
+distrs=c("FN", "NN","SN")
 
-
+# Subfigure A: Compare FN,NN,SN with mu = 1 and swept sigma
+#------------------------------------------------------------------------------
 mus=c(0,0,0)
 sigmas=c(1,5,10)
 x <- seq(0,10,by = 0.5)
@@ -56,11 +61,13 @@ p_2d <- ggplot(data=df, aes(x=x,y=y)) +
   scale_color_manual(values = rep(tri_color,length(mus)))
 p_2d
 
-save_plot(paste("figure/", fig_basename, "d integration_cdf_central.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "a integration_cdf_central.tiff", 
                 sep = ""), p_2d, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
 
+# Subfigure B: Compare FN,NN,SN with mu = 1 and several sigmas
+#------------------------------------------------------------------------------
 mus=c(1,2,4)
 sigmas=c(1,1,1)
 x <- seq(0,5,by = 0.5)
@@ -87,9 +94,7 @@ p_2e <- ggplot(data=df, aes(x=x,y=y)) +
   scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
   scale_color_manual(values = rep(tri_color,length(mus)))
 p_2e
-
-
-save_plot(paste("figure/", fig_basename, "e integration_cdf_central.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "b integration_cdf_central.tiff", 
                 sep = ""), p_2e, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -103,51 +108,79 @@ mus=runif(1e4,-5,5)
 sigmas=runif(1e4,.1,5)
 x <- seq(0,10,by = 0.5)
 
-df <- tibble(rmse_FF_FN = rep(0,n_samples),rmse_FF_FS = rep(0,n_samples),
-             r_FF_FN= rep(0,n_samples), r_FF_FS= rep(0,n_samples))
+df <- tibble( #rmse_FF_vs_FN = rep(0,n_samples),rmse_FF_vs_FS = rep(0,n_samples),
+             r_FF_vs_FN= rep(0,n_samples), r_FF_vs_FS= rep(0,n_samples))
 
 for (n in seq(1, n_samples, by=1)) {
   a = pfoldnorm(x, mus[n], sigmas[n])
   b = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])
   c = pnorm( (x-mus[n]) / sigmas[n], 0, 1) - pnorm( (-x-mus[n]) / sigmas[n], 0, 1)
   
-  df$rmse_FF_FN[n] = sqrt(mean((a-b)^2))
-  df$r_FF_FN[n] = cor.test(a, b, method = "pearson")$estimate
+  # df$rmse_FF_vs_FN[n] = sqrt(mean((a-b)^2))
+  df$r_FF_vs_FN[n] = cor.test(a, b, method = "pearson")$estimate
   
-  df$rmse_FF_FS[n] = sqrt(mean((a-c)^2))
-  df$r_FF_FS[n] = cor.test(a, c, method = "pearson")$estimate
+  # df$rmse_FF_vs_FS[n] = sqrt(mean((a-c)^2))
+  df$r_FF_vs_FS[n] = cor.test(a, c, method = "pearson")$estimate
 }
 
 
 
-p_2e <- ggplot(data=df, aes(x=1,y=r_FF_FN)) +
-  geom_point() +
-  geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Q-Q Slopes") + xlab("") +
-  xlab(expression("FN : FN")) +
-  theme_classic(base_size=8) + theme(legend.position="none",
-                                     axis.text.x=element_blank()) #+
-  #geom_blank(aes(y = y_min)) +
-  #geom_blank(aes(y = y_max))
-p_2e
-save_plot(paste("figure/", fig_basename, "e equiv_integration_FF_FN.tiff", 
-                sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
-          base_asp = 3, base_width = 1, dpi = 600)  
+# QQ plot comparing Folded Normal (FN) with nonstandard normal (NN)
+gg <- ggplot(data = tibble(x = a, y = b), aes(x=x, y = y)) +
+  geom_point(size=0.5) +
+  ylab("CDF NN") + xlab(expression("CDF FN")) +
+  theme_classic(base_size=8) + theme(legend.position="none") +
+  geom_abline(slope = 1, intercept = 0, show.legend = NA)
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "c Q-Q FN_vs_NN.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 1.3, dpi = 600)  
 
 
-
-
-
-p_2f <- ggplot(data=df, aes(y=r_FF_FS)) +
-  geom_point() +
-  geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
-  ylab("Q-Q Slopes") + xlab("") +
-  xlab(expression("FN : FS")) +
+# Correlation between FN and NN over large number of QQ plots
+gg <- ggplot(data = tibble(y = mean(df$r_FF_vs_FN), sd_y = sd(df$r_FF_vs_FN)),
+               aes(x=as.factor(""), y = y)) +
+  geom_point(size=0.5) +
+  geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
+                     ymax = y + 1.96*sd_y/sqrt(n_samples))) +
+  ylab("Q-Q PCC") + xlab("") + xlab(expression("FN : NN ")) +
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.text.x=element_blank()) +
-  geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max))
-p_2f
-save_plot(paste("figure/", fig_basename, "2f equiv_integration_FF_FS.tiff", 
-                sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
-          base_asp = 3, base_width = 1, dpi = 600)  
+  geom_blank(aes(y = 0.985)) +
+  geom_blank(aes(y = 1.015))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FF_vs_FS.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 0.75, dpi = 600)  
+
+
+
+
+# QQ plot comparing Folded Normal (FN) with standard normal (SN)
+gg <- ggplot(data = tibble(x = a, y = c), aes(x=x, y = y)) +
+  geom_point(size=0.5) +
+  ylab("CDF SN") + xlab(expression("CDF FN")) +
+  theme_classic(base_size=8) + theme(legend.position="none") +
+  geom_abline(slope = 1, intercept =0, show.legend = NA)
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "e Q-Q FN_vs_SN.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 1.3, dpi = 600)  
+
+
+# Correlation between FN and NN over large number of QQ plots
+gg <- ggplot(data = tibble(y = mean(df$r_FF_vs_FS), sd_y = sd(df$r_FF_vs_FS)),
+             aes(x=as.factor(""), y = y)) +
+  geom_point(size=0.5) +
+  geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
+                     ymax = y + 1.96*sd_y/sqrt(n_samples))) +
+  ylab("Q-Q PCC") + xlab("") +
+  xlab(expression("FN : SN ")) +
+  theme_classic(base_size=8) + theme(legend.position="none",
+                                     axis.text.x=element_blank()) +
+  geom_blank(aes(y = 0.985)) +
+  geom_blank(aes(y = 1.015))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FF_vs_FS.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = .75, dpi = 600)  
