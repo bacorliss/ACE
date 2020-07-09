@@ -150,8 +150,8 @@ graphics.off()
 #--------------------------------------------------------------------------------------#
 
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
-mu = c(-0.1, -0.05, -0.025, 0, .025, 0.05, 0.1, NA)
-sigma = .1
+mu = c(-1.0, -0.4, -0.2, 0, 0.2, 0.40, 1.0, NA)
+sigma = 1
 n_samples = 1000
 n_obs = 35
 set.seed(0)
@@ -197,32 +197,43 @@ for (n in seq(1,length(mu),1)) {
   df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), 
                         fract_mmd_95 = fract_mmd_95, mmd_95 = mmd_95, 
                         mcl_90 = mcl_90, mcl_95 = mcl_95)
-  #print(df_list[[n]]$mu)
-  # print()
-  #print(mean(fract_mmd_95))
 }
 
 df <- ldply(df_list, rbind)
 
-
+# Get groups means and CI of mean
 df_plotted <- df %>% group_by(mu) %>% 
   summarize(mean_fract_mmd_95 = mean(fract_mmd_95), 
-            ucl_mu = mean(fract_mmd_95) - qnorm(0.025) * sd(fract_mmd_95) / length(fract_mmd_95),
-            lcl_mu = mean(fract_mmd_95) + qnorm(0.025) * sd(fract_mmd_95) / length(fract_mmd_95),)
+            lcl_mu = mean(fract_mmd_95) + qnorm(0.05/(2*choose(length(mu),2))) * 
+              sd(fract_mmd_95) / length(fract_mmd_95),
+            ucl_mu = mean(fract_mmd_95) - qnorm(0.05/(2*choose(length(mu),2))) * 
+              sd(fract_mmd_95) / length(fract_mmd_95))
+df_plotted$unique_sig = as.factor(rep("#",length(mu)))
+
+ptest_result <- pairwise.t.test(df$fract_mmd_95, df$mu, p.adjust.method = "bonferroni",
+                                paired = TRUE, alternative = "two.sided")
 
 
 
+hospital_labeller <- function(variable,ind){
+  return(df_plotted$unique_sig[value])
+}
 
+
+unique_sig = as.factor(mu)
+names(unique_sig) <- as.factor(rep("#",length(mu)))
 
 # Plotting
 g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) + 
   geom_hline(aes(yintercept=1, col="CI_90"), linetype="dotted", size=0.8) + 
   geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
-  geom_violin(group=n) + 
+  geom_violin(fill="grey", alpha= 0.7, color = NA, lwd=0) + 
+  geom_point(data = df_plotted, aes(x=mu, y=mean_fract_mmd_95))+
+  geom_linerange(data=df_plotted, aes(x=mu, y=mean_fract_mmd_95, ymin=lcl_mu, ymax=ucl_mu)) +
   theme_minimal() +
-  facet_grid(.~mu, scales = "free",switch = "y") + 
+  facet_grid(.~mu, scales = "free", switch = "y") + 
   theme(strip.background = element_blank(), strip.text.y = element_blank(),legend.text.align=0,
-       strip.text = element_blank(),strip.text.x = element_blank(),
+       strip.text.x = labeller(mu=rep("#",length(mu))),
        axis.title.y = element_text(size = 8), axis.title.x = element_text(size = 10),
        legend.key.size = unit(.5,"line"), legend.spacing.y = unit(0, "cm"),
        legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
@@ -233,7 +244,6 @@ g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) +
     linetype = c("solid","solid"))))
 #g1C
 gg1C <- ggplotGrob(g1C)
-
 gg1C$widths[18] = 6*gg1C$widths[18]
 grid.draw(gg1C)
 

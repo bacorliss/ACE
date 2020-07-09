@@ -20,8 +20,7 @@ library(VGAM)
 
 
 fig_num = "2"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
-           showWarnings = FALSE)
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
 
 # dnorm: density function: proability for a specific value of x/zscore of PDF
 # pnorm: cum. probability/quantile for a given zscore

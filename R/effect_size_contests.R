@@ -184,6 +184,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     switch_sign_mean_d = FALSE,
                                     switch_exp_12 = FALSE,
                                     fig_name = "test.tiff",
+                                    fig_path = "Figure/",
                                     label_dict = effect_size_dict,
                                     gt_colnames) {
   #' Generate simulated experiment data for two experiments 
@@ -287,7 +288,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
             effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
   
   # Plot generated population parameters
-  plot_population_params(df, fig_name = fig_name, gt_colnames = gt_colnames)
+  plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
+                         gt_colnames = gt_colnames)
   
   
   # browser()
@@ -295,7 +297,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
 }
 
 
-plot_population_params <- function(df_init, gt_colnames,fig_name){
+plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
@@ -327,7 +329,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
   colnames(str_binom_p) <- params
   rownames(str_binom_p) <- params
   # Write to csv
-  csv_path <- paste("figure/params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
+  csv_path <- paste(fig_path, "params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
   cat("Table 1: Binomial test of agreement by group\n", file = csv_path)
   suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
                                col.names = TRUE, sep=","))
@@ -385,7 +387,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
       annotate("segment", x = 0.8, xend = 4, y = 1.27, yend = 1.27, colour = "black", size=.2) 
   }    
   print(p)
-  save_plot(paste("figure/", 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
   
   
@@ -418,7 +420,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name){
                , x=0, y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
-  save_plot(paste("figure/", 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   # browser();
 }
@@ -701,7 +703,7 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
 }
 
 
-plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
+plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
   
   # Calculate group means and corrected confidence intervals
   df_result <- df_pretty %>%   
@@ -742,7 +744,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
   paired_pvalues <- paired_results[[3]]
   # Write tables to file
   # Suppress warning with writing multiple tables to csv with column names
-  csv_path <- paste("figure/output_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
+  csv_path <- paste(fig_path, "output_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
   cat("Table 1: mean error rate for each group\n", file = csv_path)
   suppressWarnings(write.table(t(mean_by_group), csv_path, append = TRUE, 
                                col.names=TRUE, sep=","))
@@ -782,7 +784,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
     theme_classic() +  theme(text = element_text(size = 8))+
   scale_y_continuous(expand = c(0, 0))
   print(p)
-  save_plot(paste("figure/", fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
    #browser()
 
@@ -791,7 +793,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, y_ax_str) {
 }
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
-                                      fig_name,var_suffix = "fract",include_bf = TRUE,
+                                      fig_name,fig_path,var_suffix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE) {
   
   # Display ground truth fraction of E2>E1
@@ -813,7 +815,8 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
                                          var_suffix = var_suffix)
 
   # Plot effect size results
-  df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, y_ax_str = y_ax_str)
+  df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, 
+                                       fig_path = fig_path, y_ax_str = y_ax_str)
   
   
   all_dfs <- vector(mode="list", length=4)
