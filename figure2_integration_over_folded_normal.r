@@ -109,18 +109,21 @@ sigmas=runif(1e4,.1,5)
 x <- seq(0,10,by = 0.5)
 
 df <- tibble( #rmse_FF_vs_FN = rep(0,n_samples),rmse_FF_vs_FS = rep(0,n_samples),
-             r_FF_vs_FN= rep(0,n_samples), r_FF_vs_FS= rep(0,n_samples))
+             r_FN_vs_NN= rep(0,n_samples), r_FN_vs_SN= rep(0,n_samples))
 
 for (n in seq(1, n_samples, by=1)) {
+  # FN Folded normal
   a = pfoldnorm(x, mus[n], sigmas[n])
+  # NN Nonstandard normal
   b = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])
+  # SN Standard normal
   c = pnorm( (x-mus[n]) / sigmas[n], 0, 1) - pnorm( (-x-mus[n]) / sigmas[n], 0, 1)
   
   # df$rmse_FF_vs_FN[n] = sqrt(mean((a-b)^2))
-  df$r_FF_vs_FN[n] = cor.test(a, b, method = "pearson")$estimate
+  df$r_FN_vs_NN[n] = cor.test(a, b, method = "pearson")$estimate
   
   # df$rmse_FF_vs_FS[n] = sqrt(mean((a-c)^2))
-  df$r_FF_vs_FS[n] = cor.test(a, c, method = "pearson")$estimate
+  df$r_FN_vs_SN[n] = cor.test(a, c, method = "pearson")$estimate
 }
 
 
@@ -128,7 +131,7 @@ for (n in seq(1, n_samples, by=1)) {
 # QQ plot comparing Folded Normal (FN) with nonstandard normal (NN)
 gg <- ggplot(data = tibble(x = a, y = b), aes(x=x, y = y)) +
   geom_point(size=0.5) +
-  ylab("CDF NN") + xlab(expression("CDF FN")) +
+  ylab(expression(CDF~F[NN])) + xlab(expression(CDF~F[FN])) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept = 0, show.legend = NA)
 gg
@@ -138,18 +141,19 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "c Q-Q FN_vs_NN.tiff",
 
 
 # Correlation between FN and NN over large number of QQ plots
-gg <- ggplot(data = tibble(y = mean(df$r_FF_vs_FN), sd_y = sd(df$r_FF_vs_FN)),
+gg <- ggplot(data = tibble(y = mean(df$r_FN_vs_NN), sd_y = sd(df$r_FN_vs_NN)),
                aes(x=as.factor(""), y = y)) +
   geom_point(size=0.5) +
   geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
                      ymax = y + 1.96*sd_y/sqrt(n_samples))) +
-  ylab("Q-Q PCC") + xlab("") + xlab(expression("FN : NN ")) +
+  ylab("Q-Q PCC") + 
+  xlab(expression(paste(F[FN], " : ", F[NN], "  ", sep=""))) +
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.text.x=element_blank()) +
   geom_blank(aes(y = 0.985)) +
   geom_blank(aes(y = 1.015))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FF_vs_FS.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 0.75, dpi = 600)  
 
@@ -159,7 +163,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FF_vs_FS.
 # QQ plot comparing Folded Normal (FN) with standard normal (SN)
 gg <- ggplot(data = tibble(x = a, y = c), aes(x=x, y = y)) +
   geom_point(size=0.5) +
-  ylab("CDF SN") + xlab(expression("CDF FN")) +
+  ylab(expression(CDF~F[SN])) + xlab(expression(CDF~F[FN])) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept =0, show.legend = NA)
 gg
@@ -169,18 +173,18 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "e Q-Q FN_vs_SN.tiff",
 
 
 # Correlation between FN and NN over large number of QQ plots
-gg <- ggplot(data = tibble(y = mean(df$r_FF_vs_FS), sd_y = sd(df$r_FF_vs_FS)),
+gg <- ggplot(data = tibble(y = mean(df$r_FN_vs_SN), sd_y = sd(df$r_FN_vs_SN)),
              aes(x=as.factor(""), y = y)) +
   geom_point(size=0.5) +
   geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
                      ymax = y + 1.96*sd_y/sqrt(n_samples))) +
-  ylab("Q-Q PCC") + xlab("") +
-  xlab(expression("FN : SN ")) +
+  ylab("Q-Q PCC") + 
+  xlab(expression(paste(F[FN], " : ", F[SN], "  ", sep="")))    +
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.text.x=element_blank()) +
   geom_blank(aes(y = 0.985)) +
   geom_blank(aes(y = 1.015))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FF_vs_FS.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = .75, dpi = 600)  

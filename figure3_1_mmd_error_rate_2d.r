@@ -130,7 +130,9 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
 
 
 # General variables
-fig_basename = "f_3"
+fig_num = "3"
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
+
 n_samples <- 1e3
 rand_seed <- 0
 
@@ -173,7 +175,7 @@ df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2
 
 # Visualize difference between mmd and mu
 # https://sebastianraschka.com/Articles/heatmaps_in_r.html
-png(paste("figure/", fig_basename, "a1 mmd diff.png"),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.png",sep=""),    
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
@@ -181,7 +183,7 @@ my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
 max_val = ceiling(max(df_results$mean_diff_mmd_mu))
 col_breaks = NULL             
 heatmap.2(df_results$mean_diff_mmd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow=rep("",length(sigmas)), labCol= round(mus,1),
+          labRow=rev(round(sigmas,1)), labCol= round(mus,1),
           col = my_palette, density.info='none', scale="none",
           cexRow = 1, cexCol = 1, denscol="black", keysize=1,
           key.par=list(mar=c(3.5,0,3,0)), breaks = col_breaks,
@@ -193,7 +195,7 @@ dev.off()
 
 
 # Visualize relative difference between mmd and mu
-png(paste("figure/", fig_basename, "a2 mmd rdiff.png"),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.png", sep=""),    
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("white", "red"))(n = 199)
@@ -201,7 +203,7 @@ my_palette <- colorRampPalette(c("white", "red"))(n = 199)
 max_val = ceiling(max(df_results$mean_diff_mmd_mu))
 col_breaks = NULL #c(seq(0, .3, length=100), seq(0.31, .4, length=100))             
 heatmap.2(df_results$mean_rdiff_mmd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow = rep("",length(sigmas)), labCol= round(mus,1),
+          labRow = rev(round(sigmas,1)), labCol= round(mus,1),
           col = my_palette, density.info = 'none', scale="none",
           cexRow = 1, cexCol = 1, denscol = "black", keysize=1,
           key.par = list(mar=c(3.5,0,3,0)), breaks = col_breaks,
@@ -214,7 +216,7 @@ dev.off()
 
 
 # Visualize error rate of mmd
-png(paste("figure/", fig_basename, "a3 mmd error rate 2D.png"),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.png", sep=""),    
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
@@ -237,7 +239,7 @@ dev.off()
 
 
 # 2D Heatmap of error (1) p == 0.05), (2) p == 1, (3) p == 0.05 & p == 1
-png(paste("figure/", fig_basename, "a4 mmd error test.png"),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_a4 mmd error test.png", sep=""),    
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("white","blue", "red", "purple"))(n = 399)
@@ -271,7 +273,7 @@ df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
                            "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
 
 # 2D Heatmap of error (1) p == 0.05), (2) p == 1, (3) p == 0.05 & p == 1
-png(paste("figure/", fig_basename, "a5 mmd error test mu_over_sigma.png"),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_a5 mmd error test mu_over_sigma.png", sep=""),    
     width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
 # creates a own color palette from red to green
 my_palette <- colorRampPalette(c("white","blue", "red", "purple"))(n = 399)
@@ -407,7 +409,7 @@ p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side),
   xlab("Error Rate Null Hypothesis") + 
   ylab(expression(mu/sigma))
 p
-save_plot(paste("figure/", fig_basename, "f mmd transition values.tiff", 
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_f mmd transition values.tiff", 
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 

@@ -15,6 +15,10 @@ clr_set = brewer.pal(n = 8, name = "Set1")
 # Calculate conifdence intervals
 source("R/mmd.R")
 
+fig_num = "4"
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
+
+
 # Custom functions
 RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
   #' Given (x, y) data, find x where the linear interpolation crosses y = y0
@@ -37,8 +41,8 @@ RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
 # Generate repeatable sample of random normal numbers
 mu = 0
 sigma = 1
-sigma_range = 0.5
-n_obs = 30
+sigma_range = 0.3
+n_obs = 35
 set.seed(0)
 y <- rnorm(n_obs, mean = mu, sd = sigma)
 
@@ -46,26 +50,32 @@ y <- rnorm(n_obs, mean = mu, sd = sigma)
 y <- y - mean(y)
 
 # Define sweep for shift in sample mean from zero
-df = tibble(x = seq(from = -sigma_range*sigma, to = sigma_range*sigma, by = 0.1),grp=1)
+df = tibble(x = seq(from = -sigma_range*sigma, to = sigma_range*sigma, by = 0.02),grp=1)
 
 # Replicate samples so each of the x offsets can be applied to a seprate row
 y_expanded <- matrix(y, nrow = length(df$x),ncol = length(y), byrow = TRUE)
 y_expanded + dim(df$x[row(y_expanded)])
 y_sweep <- sweep(y_expanded,1, df$x,'+')
 
-# Calcualte most hidden difference
-df$mmd_95    <- apply(y_sweep, 1, mmd_normal_tdist)
-
-# Most confidence limit: max(abs( confident limits() ))
-conf_interval_fcn = function(x, alpha) {
-  mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)), 
-              qt(   alpha/2,  df = length(x)-1) * sd(x)/sqrt(length(x)))
-  }
 
 
+# # Most confidence limit: max(abs( confident limits() ))
+# conf_interval_fcn = function(x, alpha) {
+#   mean(x) + c(pnorm(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)), 
+#               pnorm(   alpha/2,  df = length(x)-1) * sd(x)/sqrt(length(x)))
+#   }
 
-df$mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) ))) 
-df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) ))) 
+
+# Calculate most hidden difference
+# source("R/mmd.R")
+df$mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
+# Max absolute confidence level
+df$mcl_90   <- apply(y_sweep, 1, function (x)  
+  max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
+df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( 
+  max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )))
+
+# T test p value
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
 # df$mmd_95 - df$mcl_90 
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
@@ -108,7 +118,7 @@ g1B <- g1B +
   geom_rect(aes(xmin=-Inf, xmax = x_critical[1], ymin = -Inf, ymax = Inf, fill = "Crit. Region")) +
   geom_rect(aes(xmin = x_critical[2], xmax = Inf, ymin = -Inf, ymax = Inf, fill = "Crit. Region")) +
   geom_hline(aes(yintercept=0.05, col="Conf. Level")) + 
-  geom_point(aes(col="t-test "), shape = 16, size = 1) +
+  geom_point(aes(col="t-test "), shape = 16, size = 0.5) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
   xlab(expression(bar(x))) +
@@ -129,7 +139,8 @@ g1B
 # Use cowplot to align subplots
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
 cg
-save_plot("figure/figure_2AB_MMD_vs_CI95.tiff", cg, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep=""),
+          cg, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 graphics.off()
 
@@ -139,24 +150,20 @@ graphics.off()
 #--------------------------------------------------------------------------------------#
 
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
-source("R/mmd.R")
-mu = c(-10,-1, -0.5, 0, 0.5, 1, 10, NA)
-sigma = 1
-n_samples = 100
-n_obs = 5
+mu = c(-0.1, -0.05, -0.025, 0, .025, 0.05, 0.1, NA)
+sigma = .1
+n_samples = 1000
+n_obs = 35
 set.seed(0)
 # Sample around mean
 y_samples <- matrix(rnorm(n_samples*n_obs,0,sigma), nrow = n_samples, byrow = TRUE)
 
 # Most confidence limit: max(abs( confident limits() ))
-conf_interval_fcn = function(x, alpha) mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)),
-                                                   qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
-conf_range_fcn = function(x, alpha)  c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)),
-                                                   qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
+# conf_interval_fcn = function(x, alpha) mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)),
+#                                                    qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
 
-# Make list of dataframes to be concatenated at end of computations
+# Make list of data frames to be concatenated at end of computations
 df_list <- list()
-
 for (n in seq(1,length(mu),1)) {
   shift = mu[n]
   
@@ -167,31 +174,51 @@ for (n in seq(1,length(mu),1)) {
     y_sweep = y_samples+shift
   }
   
-  # Calcualte most hidden difference
+  # Calculate MMD and max abs confidence intervals
   mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
-  mcl_90   <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.10) )))
-  mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( conf_interval_fcn(x, 0.05) )))
+  mcl_90   <- apply(y_sweep, 1, function (x)  
+    max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
+  
+  mcl_95  <- apply(y_sweep, 1, function (x)  
+    max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
+  
+  # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs( 
+  #   t.test(x, conf.level = 1-0.10)$conf.int )))
+  # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs( 
+  #   t.test(x, conf.level = 1-0.05)$conf.int )))
+  
+  
   # ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
   
   mmd_diff <- mmd_95 - mcl_90
   ci_diff <- mcl_95 - mcl_90
-  normalized_mmd_95 <- mmd_diff/ci_diff
+  fract_mmd_95 <- mmd_diff/ci_diff
   
-  df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), normalized_mmd_95 = normalized_mmd_95, 
-                        mmd_95 = mmd_95, mcl_90 = mcl_90, mcl_95 = mcl_95)
+  df_list[[n]] = tibble(n=as.factor(n), mu = as.factor(shift), 
+                        fract_mmd_95 = fract_mmd_95, mmd_95 = mmd_95, 
+                        mcl_90 = mcl_90, mcl_95 = mcl_95)
   #print(df_list[[n]]$mu)
   # print()
-  #print(mean(normalized_mmd_95))
+  #print(mean(fract_mmd_95))
 }
 
 df <- ldply(df_list, rbind)
 
 
+df_plotted <- df %>% group_by(mu) %>% 
+  summarize(mean_fract_mmd_95 = mean(fract_mmd_95), 
+            ucl_mu = mean(fract_mmd_95) - qnorm(0.025) * sd(fract_mmd_95) / length(fract_mmd_95),
+            lcl_mu = mean(fract_mmd_95) + qnorm(0.025) * sd(fract_mmd_95) / length(fract_mmd_95),)
+
+
+
+
+
 # Plotting
-g1C <- ggplot(df, aes(x=mu, y=normalized_mmd_95)) + 
+g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) + 
   geom_hline(aes(yintercept=1, col="CI_90"), linetype="dotted", size=0.8) + 
   geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
-  geom_boxplot(group=n) + 
+  geom_violin(group=n) + 
   theme_minimal() +
   facet_grid(.~mu, scales = "free",switch = "y") + 
   theme(strip.background = element_blank(), strip.text.y = element_blank(),legend.text.align=0,
@@ -211,7 +238,8 @@ gg1C$widths[18] = 6*gg1C$widths[18]
 grid.draw(gg1C)
 
 # Export figure to disk
-save_plot("figure/figure_2C_MMD_vs_CI95.tiff", gg1C, ncol = 1, nrow = 1, base_height = 1.5,
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "2C_MMD_vs_CI95.tiff",sep=""),
+          gg1C, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 graphics.off()
 # 
@@ -220,12 +248,12 @@ graphics.off()
 #   summarise(res = list(tidy(t.test(temp, mu=35)))) %>%
 #   #unnest()
 
-library(tidyr)
-library(broom)
-dt_res <- df %>%
-  group_by(mu) %>%                      
-  summarise_each(funs(mean, sd, p_val_0 = t.test(normalized_mmd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
-        p_val_1 = t.test(normalized_mmd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),normalized_mmd_95) 
+# library(tidyr)
+# library(broom)
+# dt_res <- df %>%
+#   group_by(mu) %>%                      
+#   summarise_each(funs(mean, sd, p_val_0 = t.test(fract_mmd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
+#         p_val_1 = t.test(fract_mmd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),fract_mmd_95) 
 
 
 
