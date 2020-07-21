@@ -69,7 +69,7 @@ p_1a <- ggplot(df_1a, aes(x = x)) +
 p_1a
 # Export to TIF
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff", sep = ""),
-          p_1a, ncol = 1, nrow = 1, base_height = 2,
+          p_1a, ncol = 1, nrow = 1, base_height = 1.2,
           base_asp = 3, base_width = 6.5, dpi = 600) 
 
 
@@ -113,15 +113,30 @@ df_1b <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
                tibble(d = factor("N : FN"), x = p_val_n2fn), 
                tibble(d = factor("|N| : FN"), x = p_val_abs_n2fn))
 
+# Test if each p-value is from normal distribution
+unif_p_vals = c(ifelse(length(unique(p_val_n2abs_n))==1, "p < 1.2e-6",
+                       chisq.test(hist(p_val_n2abs_n, breaks=20)$counts/n_obs, 
+                                  simulate.p.value = FALSE)$p.value),
+                ifelse(length(unique(p_val_n2fn))==1, "p < 1.2e-6",
+                       chisq.test(hist(p_val_n2fn, breaks=20)$counts/n_obs, 
+                           simulate.p.value = FALSE)$p.value),
+                ifelse(length(unique(p_val_abs_n2fn))==1, "p < 1.e-6",
+                       sprintf("p = %.3f", chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
+                           simulate.p.value = FALSE)$p.value)))
+
+
+
 p_1b <- ggplot(df_1b, aes(x=d, y=x)) + 
   geom_violin(scale="width", kernel="gaussian", fill="grey96") +
-  xlab("") + ylab("P-Val.") + geom_boxplot(width = 0.1,outlier.size=1) +
+  geom_text(data = tibble(d = levels(df_1b$d),y = rep(1.15,3)), aes(x=d,y=y, label = unif_p_vals), vjust = 0.5, size=1.8) +
+  geom_hline(yintercept=1, size=0.2,alpha = 0.2)+
+  xlab("") + ylab("KS P-Val.") + geom_boxplot(width = 0.1,outlier.size=1) +
   theme_classic(base_size = 8) + theme(legend.position="none", axis.title.x = element_blank())
 p_1b
 # Export to TIF
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "b dist_comparison_violin.tiff", sep = ""),
           p_1b, ncol = 1, nrow = 1, base_height = .8,
-          base_asp = 3, base_width = 2.25, dpi = 600)
+          base_asp = 2, base_width = 3, dpi = 600)
 
 
 # Show % of trials that have significant p-values ---------------------------------------------
@@ -152,29 +167,12 @@ p_1c <- ggplot(df_1c, aes(x=d, y=estimate)) +
   theme(legend.position="none",strip.text.x = element_blank(), 
         axis.ticks.x=element_blank()) +
   geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max)) 
+  geom_blank(aes(y = y_max)) +
+scale_y_continuous(labels = scales::number_format(accuracy = 0.001))
 p_1c  
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "c dist_comparison_facet.tiff",sep = ""), 
           p_1c, ncol = 1, nrow = 1, base_height = .9,
-          base_asp = 3, base_width = 1.85, dpi = 600)
-
-
-# Plot hisogram, of KS values and show that they are derived from a uniform distribution
-# Stats
-chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
-                       simulate.p.value = TRUE)
-chi_test$p.value
-# Plotting
-p_1d <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
-  geom_histogram(aes(y=stat(width*density)), bins=20, fill="grey") +
-  theme_classic(base_size=8) + theme(legend.position="none") +
-  xlab(expression("P-Values |N| : FN")) + ylab("Probablitly") +
-  geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
-p_1d             
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "d_dist_comparison_hist.tiff", sep = ""), 
-          p_1d, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 1.5, dpi = 600)
-  
+          base_asp = 3, base_width = 2.6, dpi = 600)
 
 
 # Plot a single line comparing output between FN and |N|
@@ -202,18 +200,17 @@ lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
                       function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
                       simplify = TRUE ))
-cl_fits <- quantile(fits, c(.025, .975)) 
-df_fits <- tibble(x=as.factor("|N| : FN"),y=mean(fits),y_min = 0.99,y_max = 1.1)
+ttest_fits <- t.test(fits, mu = 1)
 
-p_1f <- ggplot(data=df_fits, aes(x=x, y=y)) +
+
+p_1f <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y)) +
   geom_point() +
-  #geom_hline(yintercept = 1, linetype = 2, color = "red", alpha = .2) +
-  geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
+  geom_linerange(aes(ymin =  ttest_fits$conf.int[1], ymax =  ttest_fits$conf.int[2])) +
   ylab("Q-Q Slopes") + xlab("") +
   #xlab(expression("|N| : FN")) +
   theme_classic(base_size=8) + theme(legend.position="none") +
-  geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max))
+  geom_blank(aes(y = 0.999)) +
+  geom_blank(aes(y = 1.001))
 p_1f
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
@@ -230,7 +227,6 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.
 #     Normal data, then apply ABS()     |   x   1000
 #     Folded normal data
 set.seed(rand_seed)
-n_trials <- 1e4
 mus <- runif(1e4, min = -5, max = 5)
 sds <-  runif(1e4, min = .1, max = 5)
 n_obs <- 1000
@@ -259,8 +255,22 @@ df_1g <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
                tibble(d = factor("N : FN"), x = p_val_n2fn), 
                tibble(d = factor("|N| : FN"), x = p_val_abs_n2fn))
 
+# Test if each p-value is from normal distribution
+unif_p_vals = c(ifelse(length(unique(p_val_n2abs_n))==1, "p < 1.2e-6",
+                       sprintf("p = %.2e", chisq.test(hist(p_val_n2abs_n, breaks=20)$counts/n_obs, 
+                                  simulate.p.value = FALSE)$p.value)),
+                ifelse(length(unique(p_val_n2fn))==1, "p < 1.2e-6",
+                       sprintf("p = %.2e", chisq.test(hist(p_val_n2fn, breaks=20)$counts/n_obs, 
+                                  simulate.p.value = FALSE)$p.value)),
+                ifelse(length(unique(p_val_abs_n2fn))==1, "p < 1.e-6",
+                       sprintf("p = %.2e", chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
+                                                      simulate.p.value = FALSE)$p.value)))
+
+
 p_1g <- ggplot(df_1g, aes(x=d, y=x)) + 
   geom_violin(scale="width", kernel="gaussian", fill="grey96") +
+  geom_text(data = tibble(d = levels(df_1b$d),y = rep(1.15,3)), aes(x=d,y=y, label = unif_p_vals), vjust = 0.5, size=1.8) +
+  geom_hline(yintercept=1, size=0.2,alpha = 0.2)+
   geom_boxplot(width=0.1, outlier.shape=NA) +
   xlab("") + ylab("P-Val.") + 
   theme_classic(base_size=8) + theme(legend.position="none",
@@ -269,7 +279,7 @@ p_1g
 # Export to TIF
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g dist_comparison_violin.tiff", sep = ""), 
           p_1g, ncol = 1, nrow = 1, base_height = .75,
-          base_asp = 3, base_width = 2.25, dpi = 600)
+          base_asp = 3, base_width = 3, dpi = 600)
 
 
 # Show % of trials that have significant p-values ---------------------------------------------
@@ -299,28 +309,14 @@ p_1h <- ggplot(df_1h, aes(x=d, y=estimate)) +
   theme_classic(base_size=8) + theme(legend.position="none",strip.text.x = element_blank(),
                                      axis.ticks.x=element_blank()) + #axis.text.x=element_blank()
   geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max)) 
+  geom_blank(aes(y = y_max)) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.001))
 p_1h  
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "h dist_comparison_facet.tiff",sep = ""), 
           p_1h, ncol = 1, nrow = 1, base_height = 1,
-          base_asp = 3, base_width = 1.85, dpi = 600)
+          base_asp = 3, base_width = 2.5, dpi = 600)
 
 
-# Plot hisogram, of KS values and show that they are derived from a uniform distribution
-# Stats
-chi_test <- chisq.test(hist(p_val_abs_n2fn, breaks=20)$counts/n_obs, 
-                       simulate.p.value = TRUE)
-chi_test$p.value
-# Plotting
-p_1i <- ggplot(tibble(x=p_val_abs_n2fn), aes(x=x)) +
-  geom_histogram(aes(y=stat(width*density)), bins=20, fill="grey") +
-  theme_classic(base_size=8) + theme(legend.position="none") +
-  xlab("P-Values |N| : FN") + ylab("Probablitly") +
-  geom_hline(yintercept=1/20, linetype=1, color="black",alpha=0.5, size=.5)
-p_1i            
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "i_dist_comparison_hist.tiff", sep = ""), 
-          p_1i, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 1.5, dpi = 600)
 
 
 
@@ -349,13 +345,12 @@ lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
                       function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
                       simplify = TRUE ))
-cl_fits <- quantile(fits, c(.025, .975)) 
-df_fits <- tibble(x=as.factor("|N|:FN"),y=mean(fits),y_min = 0.99,y_max = 1.1)
+ttest_fits <- t.test(fits, mu = 1)
 
-p_1k <- ggplot(data=df_fits, aes(x=x,y=y)) +
+# cl_fits <- quantile(fits, c(.025, .975)) 
+df_fits <- tibble(x=as.factor("|N|:FN"),y=mean(fits))
   geom_point() +
-  #geom_hline(yintercept = 1, linetype = 2, color = "red", alpha = .2) +
-  geom_linerange(aes(ymin = cl_fits[1], ymax = cl_fits[2])) +
+  geom_linerange(aes(ymin = ttest_fits$conf.int[1], ymax = cl_fits$conf.int[2])) +
   ylab("Q-Q Slopes") + xlab("") +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_blank(aes(y = y_min)) +

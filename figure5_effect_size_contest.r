@@ -525,6 +525,22 @@ dev.off()
 
 
 
+
+# png(paste("figure/F", fig_num, "/F", fig_num, "es_contest relative scale.png",sep=""),    
+#     width = 5*300, height = 2.55*300, res = 300, pointsize = 8)  
+# heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = TRUE, density.info="none",
+#           add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 
+#           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
+#           labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
+#           cellnote=matrix(sapply(rscale_scores,function(x) sprintf("%0.2+f",x)),
+#                           nrow = dim(rscale_scores)[1]),
+#           notecol="black",notecex=1, lwid=c(3,5),lhei=c(2.5,5),margins =c(10,10))
+# dev.off()
+
+
+
+
+
 # Contest 7) which metric is best at discerning experiments below a threshold 
 # difference in means
 #
