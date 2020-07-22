@@ -16,7 +16,7 @@ library(VGAM)
 library(boot)
 library(dplyr)
 library(cowplot)
-
+library(VGAM)
 source("R/stat_helper.r")
 
 # choose colors for plotting
@@ -35,7 +35,8 @@ sig_char_size = 3
 norm2fnorm_plot_height = 1.75
 plot_height = 1.25
 
-# 1A Show examples of histograms of normals transformed into 
+# Figure 1A: Example of normal distribution before and after absolute folding
+# at various mu values
 set.seed(rand_seed)
 sample_1a = rnorm(nsamples, mean = 0, sd = 1)
 df_1a = rbind(tibble(group = 2, mu = "mu==0", x = sample_1a), 
@@ -67,7 +68,7 @@ p_1a <- ggplot(df_1a, aes(x = x)) +
   ylab("f(x)") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1a
-# Export to TIF
+# Export to TIF 
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff", sep = ""),
           p_1a, ncol = 1, nrow = 1, base_height = 1.2,
           base_asp = 3, base_width = 6.5, dpi = 600) 
@@ -75,15 +76,15 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff
 
 
 
-# B-E) Absolute of normal samples follow folded normal under null hypothesis
+# Figure B:  Absolute of normal samples follow folded normal under null hypothesis
 #_______________________________________________________________________________
 # Randomly generate normal data for     
 #     Normal data,                      |
 #     Normal data, then apply ABS()     |   x   1000
 #     Folded normal data
 set.seed(rand_seed)
-n_trials <- 1e4
-mus <- rep(0, n_trials)#mrunif(1e4, min = -5, max = 5)
+n_sims <- 1e3
+mus <- rep(0, n_sims)
 n_obs <- 1000
 
 # Generate random samples based on random mu values
@@ -141,11 +142,11 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "b dist_comparison_violin.ti
 
 # Show % of trials that have significant p-values ---------------------------------------------
 # Under null distribution it would be expected to equal alpha
-bin_n_an <- prop.test(sum(p_val_n2abs_n<0.05), n_trials, p=0.05, 
+bin_n_an <- prop.test(sum(p_val_n2abs_n<0.05), n_sims, p=0.05, 
                       conf.level=1-0.05/3, correct = FALSE)
-bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_trials, p=0.05, 
+bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_sims, p=0.05, 
                       conf.level=1-0.05/3, correct = FALSE)
-bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_trials, p=0.05, 
+bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_sims, p=0.05, 
                        conf.level=1-0.05/3, correct = FALSE)
 
 comp_levels <- c("N : |N|","N : FN","|N| : FN")
@@ -177,17 +178,21 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "c dist_comparison_facet.tif
 
 # Plot a single line comparing output between FN and |N|
 # Plot difference between P(N) and P(FN) over mu
+# sort_x_norm <- sort(x_norm[1,])
 sort_x_abs_norm = sort(x_abs_norm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
+q_sort_x_abs_norm <- cumsum(sort_x_abs_norm)/sum(sort_x_abs_norm)
+q_sort_x_fnorm    <- cumsum(sort_x_fnorm)/sum(sort_x_fnorm)
+  
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
 fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
 
 # Define data for plotting
-df_1e = tibble(x = sort_x_fnorm, y = sort_x_abs_norm)
+df_1e = tibble(x = q_sort_x_fnorm, y = q_sort_x_abs_norm)
 p_1e <- ggplot(df_1e, aes(x=x, y=y)) + 
-  geom_point(size=0.5) + xlab(expression("Sorted Sample FN")) + ylab("Sorted Sample |N|   ") +
+  geom_point(size=0.5) + xlab(expression("Sample Quantiles FN")) + ylab("Sample Quantile |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
@@ -198,7 +203,9 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "e dist_comp_qq_plot.tiff",s
 # Fit a line for each of the simulations
 lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
-                      function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
+                      function(i) lin_model(
+                        cumsum(sort(x_fnorm[i,]))   /sum(x_fnorm[i,]), 
+                        cumsum(sort(x_abs_norm[i,]))/sum(x_fnorm[i,]) ),
                       simplify = TRUE ))
 ttest_fits <- t.test(fits, mu = 1)
 
@@ -284,11 +291,11 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "g dist_comparison_violin.ti
 
 # Show % of trials that have significant p-values ---------------------------------------------
 # Under null disctribution it would be expected to equal alpha
-bin_n_an <- prop.test(sum(p_val_n2abs_n<0.05), n_trials, p=0.05, 
+bin_n_an <- prop.test(sum(p_val_n2abs_n<0.05), n_sims, p=0.05, 
                       conf.level=1-0.05/3, correct = FALSE)
-bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_trials, p=0.05, 
+bin_n_fn <- prop.test(sum(p_val_n2fn<0.05), n_sims, p=0.05, 
                       conf.level=1-0.05/3, correct = FALSE)
-bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_trials, p=0.05, 
+bin_an_fn <- prop.test(sum(p_val_abs_n2fn<0.05), n_sims, p=0.05, 
                        conf.level=1-0.05/3, correct = FALSE)
 
 comp_levels <- c("N : |N|","N : FN","|N| : FN")
@@ -325,14 +332,17 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "h dist_comparison_facet.tif
 sort_x_abs_norm = sort(x_abs_norm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
+q_sort_x_abs_norm <- cumsum(sort_x_abs_norm)/sum(sort_x_abs_norm)
+q_sort_x_fnorm    <- cumsum(sort_x_fnorm)/sum(sort_x_fnorm)
+
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
-fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
+fit <- unname(lm(formula = q_sort_x_abs_norm ~ 0 +q_sort_x_fnorm)$coefficients[1])
 
 # Define data for plotting
-df_1j = tibble(x=sort_x_fnorm, y=sort_x_abs_norm)
+df_1j = tibble(x=q_sort_x_fnorm, y=q_sort_x_abs_norm)
 p_1j <- ggplot(df_1j, aes(x=x, y=y)) + 
-  geom_point(size=0.5) + xlab("Sorted Sample FN") + ylab("Sorted Sample |N|   ") +
+  geom_point(size=0.5) + xlab("Sample Quantile FN") + ylab("Sorted Sample |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1j
@@ -343,18 +353,20 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "j dist_comp_qq_plot.tiff",s
 # Fit a line for each of the simulations
 lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
-                      function(i) lin_model(sort(x_fnorm[i,]), sort(x_abs_norm[i,])),
+                      function(i) lin_model(
+                        cumsum(sort(x_fnorm[i,]))   /sum(x_fnorm[i,]), 
+                        cumsum(sort(x_abs_norm[i,]))/sum(x_fnorm[i,])),
                       simplify = TRUE ))
 ttest_fits <- t.test(fits, mu = 1)
 
 # cl_fits <- quantile(fits, c(.025, .975)) 
-df_fits <- tibble(x=as.factor("|N|:FN"),y=mean(fits))
+p_1k <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y)) +
   geom_point() +
-  geom_linerange(aes(ymin = ttest_fits$conf.int[1], ymax = cl_fits$conf.int[2])) +
+  geom_linerange(aes(ymin = ttest_fits$conf.int[1], ymax = ttest_fits$conf.int[2])) +
   ylab("Q-Q Slopes") + xlab("") +
   theme_classic(base_size=8) + theme(legend.position="none") +
-  geom_blank(aes(y = y_min)) +
-  geom_blank(aes(y = y_max)) 
+  geom_blank(aes(y = 0.999)) +
+  geom_blank(aes(y = 1.001)) 
 p_1k
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "k dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1k, ncol = 1, nrow = 1, base_height = 1.5,
