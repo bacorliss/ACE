@@ -45,11 +45,13 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
   }
   error_rate_codes <- matrix(mapply(assign_code, is_error_rate_zero, is_error_rate_alpha, SIMPLIFY = TRUE,
          USE.NAMES = FALSE), nrow = dim(is_error_rate_zero)[1], ncol = dim(is_error_rate_zero)[2])
+  colnames(error_rate_codes) <- colnames(is_error_rate_zero)
+  rownames(error_rate_codes) <- rownames(is_error_rate_zero)
   return(error_rate_codes)
 }
 
 stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path, 
-                              mu_ov_sigmas = NULL) {
+                              mu_ov_sigmas = NULL, overrride = TRUE) {
   #' Perform parameter sweep with specified mus and sigmas
   #' 
   #' @description QUantifies stats of a series of simulations of normal random 
@@ -70,20 +72,31 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
 
   # Store results to disk since calculations are significant
   set.seed(rand_seed)
-  if (!file.exists(out_path)) {
+  if (!file.exists(out_path) || overrride) {
     n_mus = max(c(length(mus), length(mu_ov_sigmas)))
     # Matrix diff and error of mmd
+    
+    if (!is.null(mus)) {dimnames = list(sigmas,mus)
+    } else {dimnames = list(sigmas,mu_ov_sigmas)}
+
     df <- tibble(
       sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus),
       mu = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mu_over_sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mean_diff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mean_rdiff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mean_mmd_error = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      error_rate_tests = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      p_val_mmd_eq_zero = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      p_val_mmd_eq_alpha = matrix(0L, nrow = length(sigmas), ncol = n_mus))
-    
+      mu_over_sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                             dimnames = dimnames),
+      mean_diff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                dimnames = dimnames),
+      mean_rdiff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                 dimnames = dimnames),
+      mean_mmd_error = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                              dimnames = dimnames),
+      error_rate_tests = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                dimnames = dimnames),
+      p_val_mmd_eq_zero = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                 dimnames = dimnames),
+      p_val_mmd_eq_alpha = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                  dimnames = dimnames))
+    # browser()
     # Generate random samples based on random mu values
     for (r in seq(1, length(sigmas), by = 1)) {
       # With a vector of mu/sigma and sigma known, calculate mu
@@ -137,125 +150,119 @@ n_samples <- 1e3
 rand_seed <- 0
 
 
-# MMD test
-
-
-
-# x1 <- matrix(rnorm(1e6, mean = 10, sd = 1), ncol = 100, nrow = 1e6/100)
-# x_bar = rowMeans(x1)
-# s_x = sqrt(RowVar(x1))
-#   
-# mmd <-   apply(x1, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
-# 
-# ci_t90 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.90)$conf.int)))
-# ci_t95 <- apply(x1, 1, function (x) max(abs(t.test(x, conf.level = 0.95)$conf.int)))
-# ci_90 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.950), mean = mean(x), sd = sd(x)/sqrt(100)))))
-# ci_95 <- apply(x1, 1, function (x) max(abs(qnorm( c(0.975), mean = mean(x), sd = sd(x)/sqrt(100)))))
-# # ci_90 <-  x_bar + qnorm(0.950)*s_x/sqrt(100)
-# # ci_95 <-  x_bar + qnorm(0.975)*s_x/sqrt(100)
-# 10+qnorm(0.950)*s_x/sqrt(100)
-# sum(x_bar<10)
-# sum(s_x<1)
-# sum(ci_t90<10)
-# sum(mmd<10)/(1e6/100)
-# sum(ci_90<10)/(1e6/100)
-# sum(ci_95<10)/(1e6/100)
-
 
 # 2D visualization of mmd difference and error rate over mu and sigma
 #                                                                              #
 #______________________________________________________________________________#
 mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
-# n_samples <- 1e4
 n_obs <- 50
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds") 
 
-# Visualize difference between mmd and mu
-# https://sebastianraschka.com/Articles/heatmaps_in_r.html
-png(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.png",sep=""),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
-# (optional) defines the color breaks manually for a "skewed" color transition
-max_val = ceiling(max(df_results$mean_diff_mmd_mu))
-col_breaks = NULL             
-heatmap.2(df_results$mean_diff_mmd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow=rev(round(sigmas,1)), labCol= round(mus,1),
-          col = my_palette, density.info='none', scale="none",
-          cexRow = 1, cexCol = 1, denscol="black", keysize=1,
-          key.par=list(mar=c(3.5,0,3,0)), breaks = col_breaks,
-          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-          lhei=c(2, 6), lwid=c(1, 10, 1),
-          key.title = "", na.color = "black", key.xlab = "", main = NULL,
-          xlab(expression(mu)), ylab(expression(sigma)))
-dev.off()
+
+# Difference MMD from Mu
+# COnvert from matrix to dataframe
+df <- cbind(sigma = sigmas, as.tibble(df_results$mean_diff_mmd_mu)) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+# Plot heatmap
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size=8) +
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                         ticks.colour = "black",  direction = "horizontal"),
+                       limits=c(0,2)) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
 
 
-# Visualize relative difference between mmd and mu
-png(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.png", sep=""),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("white", "red"))(n = 199)
-# (optional) defines the color breaks manually for a "skewed" color transition
-max_val = ceiling(max(df_results$mean_diff_mmd_mu))
-col_breaks = NULL #c(seq(0, .3, length=100), seq(0.31, .4, length=100))             
-heatmap.2(df_results$mean_rdiff_mmd_mu, Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow = rev(round(sigmas,1)), labCol= round(mus,1),
-          col = my_palette, density.info = 'none', scale="none",
-          cexRow = 1, cexCol = 1, denscol = "black", keysize=1,
-          key.par = list(mar=c(3.5,0,3,0)), breaks = col_breaks,
-          lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-          lhei=c(2, 6), lwid=c(1, 10, 1),
-          key.title = "", na.color = "black", key.xlab = "", main = NULL,
-          xlab(expression(mu)), ylab(expression(sigma)))
-dev.off()
+# Difference MMD from Mu
+# COnvert from matrix to dataframe
+df <- cbind(sigma = sigmas, as.tibble(df_results$mean_rdiff_mmd_mu)) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+# Plot heatmap
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size=8) +
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                         ticks.colour = "black",  direction = "horizontal")) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+
+# Difference MMD from Mu
+# COnvert from matrix to dataframe
+df <- cbind(sigma = sigmas, as.tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+# Plot heatmap
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size=8) +
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                         ticks.colour = "black",  direction = "horizontal"),
+                       limits=c(0,.1)) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
-# Visualize error rate of mmd
-png(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.png", sep=""),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("blue","white", "red"))(n = 299)
-# (optional) defines the color breaks manually for a "skewed" color transition
-max_val = ceiling(max(df_results$mean_mmd_error))
-min_val = floor(max(df_results$mean_mmd_error))
-col_breaks = c(seq(0, 0.039, length=100), seq(0.04, 0.06, length=100),seq(0.061, 0.08,length=100)) 
-color_cull <- function(x) x[seq(1,round(length(x)*.73), by = 1)]
-heatmap.2(df_results$mean_mmd_error, Rowv = FALSE, Colv = FALSE, trace = "none", dendrogram = "none", 
-          labRow = rev(round(sigmas,1)), labCol = round(mus,1),
-          col = my_palette, density.info='none', scale="none",
-          cexRow = 1, cexCol = 1, denscol="black", keysize=1, 
-          key.par = list( mar = c(3.5,0,3,0)),
-          lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins = c(3,0),
-          lhei = c(2, 6), lwid = c(1, 10, 1),
-          breaks = col_breaks, key.title = "",key.xlab = "", main = NULL, 
-          xlab( expression(mu)), ylab( expression(sigma)))
-dev.off()
 
-
-
-# 2D Heatmap of error (1) p == 0.05), (2) p == 1, (3) p == 0.05 & p == 1
-png(paste("figure/F", fig_num, "/F", fig_num, "_a4 mmd error test.png", sep=""),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("white","blue", "red", "purple"))(n = 399)
-col_breaks = c(seq(0, .5, length=100), seq(0.6, 1.5, length=100), 
-               seq(1.6,2.5,length=100), seq(2.6,3.5,length=100))    
-heatmap.2(error_test_codes(df_results$p_val_mmd_eq_zero > 0.05, df_results$p_val_mmd_eq_alpha > 0.05),
-          Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-          labRow=rev(round(sigmas,1)), labCol= round(mus,1),
-          col = my_palette, breaks = col_breaks, density.info='none', scale="none",
-          cexRow = 1, cexCol = 1, denscol="black", keysize=1,
-          key = FALSE, lmat=rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-          lhei=c(2, 6), lwid=c(1, 10, 1),
-          # key.title = expression(paste("Difference",~mmd~-abs(phantom(.)*mu*phantom(.)))),
-          na.color = "black", main = NULL,
-          xlab(expression(mu)), ylab(expression(sigma)))
-dev.off()
+# Difference MMD from Mu
+# COnvert from matrix to data frame
+df <- cbind(sigma = sigmas, as.tibble(error_test_codes(
+  df_results$p_val_mmd_eq_zero > 0.05, 
+  df_results$p_val_mmd_eq_alpha > 0.05))) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+df$z <- factor(df$z,levels = c("0","1","2","3"))
+# Plot heat map
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size = 8) +
+  scale_fill_manual(values=c("white", "blue","red","purple"),drop=FALSE) +
+  geom_vline(xintercept=0, color="black", size=0.2) +
+  theme(legend.position="none")
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a4 mmd error test.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2,
+          base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
@@ -271,26 +278,28 @@ set.seed(rand_seed)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs, 
                            "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
-
-# 2D Heatmap of error (1) p == 0.05), (2) p == 1, (3) p == 0.05 & p == 1
-png(paste("figure/F", fig_num, "/F", fig_num, "_a5 mmd error test mu_over_sigma.png", sep=""),    
-    width = 2.3*300, height = 3*300, res = 300, pointsize = 8)       
-# creates a own color palette from red to green
-my_palette <- colorRampPalette(c("white","blue", "red", "purple"))(n = 399)
-col_breaks = c(seq(0, .5, length=100), seq(0.6, 1.5, length=100), 
-               seq(1.6,2.5,length=100), seq(2.6,3.5,length=100))  
-heatmap.2(
-  error_test_codes(df_results$p_val_mmd_eq_zero > 0.05, df_results$p_val_mmd_eq_alpha > 0.05),
-  Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-  labRow=rev(round(sigmas,1)), labCol= round(mu_ov_sigmas,2),
-  col = my_palette, breaks = col_breaks,
-  density.info = 'none', scale = "none", cexRow = 1, cexCol = 1,
-  denscol = "black", keysize = 1, key = FALSE,
-  lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-  lhei = c(2, 6), lwid = c(1, 10, 1),
-  na.color = "black", main = NULL,
-  xlab(expression(mu)), ylab(expression(sigma)))
-dev.off()
+# Difference MMD from Mu
+# COnvert from matrix to data frame
+df <- cbind(sigma = sigmas, as.tibble(error_test_codes(
+  df_results$p_val_mmd_eq_zero > 0.05, 
+  df_results$p_val_mmd_eq_alpha > 0.05))) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+df$z <- factor(df$z,levels = c("0","1","2","3"))
+# Plot heat map
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu/sigma)) + ylab(expression(sigma)) +
+  theme_classic(base_size = 8) +
+  scale_fill_manual(values=c("white", "blue","red","purple"),drop=FALSE) +
+  geom_vline(xintercept=0, color="black", size=0.2) +
+  theme(legend.position="none")
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a5 mmd error test mu_over_sigma.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2,
+          base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
@@ -315,7 +324,7 @@ df_left <- stats_param_sweep(
 df_left$side <- as.factor("Left")
 
 false_positive_min_threshold <- function(vect, vals) {
-  #' For a binary vector, find a threshold that seperates TRUE and FALSE with balanced
+  #' For a binary vector, find a threshold that separates TRUE and FALSE with balanced
   #' degree of false positives.
   #' vect is input vectors of TRUE and FALSE
   #' vals: TRUe or FALSE for each side of vector
@@ -348,7 +357,10 @@ false_positive_min_threshold <- function(vect, vals) {
   return(balance_ind)
 }
 
- 
+# Take test 0 and test 0.05 matrices and splits them in middle, locate transition boundaries
+# Location: +mu, - mu, Error:0, 95
+
+
 # Equivalence test versus middle column of same row
 p_threshold = 0.05 /length(right_mu_ov_sigmas)
 zero_df <- rbind(
@@ -399,7 +411,7 @@ crit_df <- rbind(zero_df,alpha_df)
 
 
 
-# Basic violin plot
+# Box and Whiskers of Coverage Error Transition Region
 p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side), 
                          y = critical_mu_over_sigma)) + 
   #geom_violin( position = position_dodge( width = 0.9)) + 

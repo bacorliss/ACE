@@ -15,35 +15,50 @@ library(dplyr)
 library(cowplot)
 
 
-
-fig_num = "2"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
-           showWarnings = FALSE)
-
 # dnorm: density function: proability for a specific value of x/zscore of PDF
 # pnorm: cum. probability/quantile for a given zscore
 # qnorm: return z_score for a given cum. probability/quantile
 
 
+# User functions
+#------------------------------------------------------------------------------
+# CDF for folded normal, three different functions
+# Folded normal
+fun_pfoldnorm <- function (x, mu, sigma) {
+  p = pnorm(x,mean=mu, sd=sigma) - pnorm(0,mean=mu, sd=sigma) +
+    pnorm(0,mean=mu, sd=sigma) - pnorm(-x,mean=mu, sd=sigma)
+}
+# Nonstandard Normal
+fun_pnstandnorm <- function (x, mu, sigma) {pnorm(x, mean = mu, sd = sigma) -
+    pnorm(-x, mu, sigma)}
+# Standard Normal
+fun_pstandnorm <- function (x, mu, sigma) {pnorm((x-mu)/sigma, mean = 0, sd = 1) -
+    pnorm((-x - mu)/sigma, mean = 0, sd = 1)}
 
+
+# Script parameters
+fig_num = "2"
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
+           showWarnings = FALSE)
 tri_color <- brewer.pal(n = 3, name = "Set1")
 distrs=c("FN", "NN","SN")
+rand.seed <- 0
 
 # Subfigure A: Compare FN,NN,SN with mu = 1 and swept sigma
 #------------------------------------------------------------------------------
-mus=c(0,0,0)
-sigmas=c(1,5,10)
+mus = c(0,0,0)
+sigmas = c(1,5,10)
 x <- seq(0,10,by = 0.5)
 
 list_df <- list()
 for (n in seq(1, length(mus), by=1)) {
   list_df[[n]] <- rbind(
     tibble(x = x, n=n, d = distrs[1], 
-           y = pfoldnorm(x, mus[n], sigmas[n])),
-    tibble(x = x, n=n, d = distrs[2],  
-           y = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])),
+           y = fun_pfoldnorm(x, mu = mus[n], sigma = sigmas[n])),
+    tibble(x = x, n = n, d = distrs[2],  
+           y = fun_pnstandnorm(x, mu = mus[n], sigma = sigmas[n])),
     tibble(x = x, n=n, d = distrs[3], 
-           y = pnorm((x-mus[n])/sigmas[n], 0, 1) - pnorm((-x - mus[n])/sigmas[n], 0, 1)))
+           y = fun_pstandnorm(x, mu = mus[n], sigma = sigmas[n])))
 }
 df <- do.call("rbind", list_df)
 df$n <- as.factor(df$n)
@@ -65,19 +80,19 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "a integration_cdf_central.t
 
 # Subfigure B: Compare FN,NN,SN with mu = 1 and several sigmas
 #------------------------------------------------------------------------------
-mus=c(1,2,4)
-sigmas=c(1,1,1)
+mus = c(1,2,4)
+sigmas = c(1,1,1)
 x <- seq(0,5,by = 0.5)
 
 list_df <- list()
 for (n in seq(1, length(mus), by=1)) {
   list_df[[n]] <- rbind(
     tibble(x = x, n=n, d = distrs[1], 
-           y = pfoldnorm(x, mus[n], sigmas[n])),
-    tibble(x = x, n=n, d = distrs[2],  
-           y = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])),
+           y = fun_pfoldnorm(x, mu = mus[n], sigma = sigmas[n])),
+    tibble(x = x, n = n, d = distrs[2],  
+           y = fun_pnstandnorm(x, mu = mus[n], sigma = sigmas[n])),
     tibble(x = x, n=n, d = distrs[3], 
-           y = pnorm((x-mus[n])/sigmas[n], 0, 1) - pnorm((-x - mus[n])/sigmas[n], 0, 1)))
+           y = fun_pstandnorm(x, mu = mus[n], sigma = sigmas[n])))
 }
 df <- do.call("rbind", list_df)
 df$n <- as.factor(df$n)
@@ -100,35 +115,43 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "b integration_cdf_central.t
 
 
 # Generate samples for mu and Sd, calculate all three curves for each, the calculate SSE
+set.seed(rand.seed)
 n_samples <- 1e4
-mus=runif(1e4,-5,5)
-sigmas=runif(1e4,.1,5)
+mus = runif(n_samples,-5,5)
+sigmas = runif(n_samples,.1,5)
 x <- seq(0,10,by = 0.5)
 
 df <- tibble( #rmse_FF_vs_FN = rep(0,n_samples),rmse_FF_vs_FS = rep(0,n_samples),
-             r_FN_vs_NN= rep(0,n_samples), r_FN_vs_SN= rep(0,n_samples))
+             r_FN_vs_NN= rep(0,n_samples), r_FN_vs_SN= rep(0,n_samples),
+             a_FN_vs_NN= rep(0,n_samples), a_FN_vs_SN= rep(0,n_samples))
 
 for (n in seq(1, n_samples, by=1)) {
   # FN Folded normal
-  a = pfoldnorm(x, mus[n], sigmas[n])
+  F_FN = pfoldnorm(x, mus[n], sigmas[n])
   # NN Nonstandard normal
-  b = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])
+  F_NN = pnorm(x, mus[n], sigmas[n]) - pnorm(-x, mus[n], sigmas[n])
   # SN Standard normal
-  c = pnorm( (x-mus[n]) / sigmas[n], 0, 1) - pnorm( (-x-mus[n]) / sigmas[n], 0, 1)
+  F_SN = pnorm( (x-mus[n]) / sigmas[n], 0, 1) - pnorm( (-x-mus[n]) / sigmas[n], 0, 1)
   
   # df$rmse_FF_vs_FN[n] = sqrt(mean((a-b)^2))
-  df$r_FN_vs_NN[n] = cor.test(a, b, method = "pearson")$estimate
-  
   # df$rmse_FF_vs_FS[n] = sqrt(mean((a-c)^2))
-  df$r_FN_vs_SN[n] = cor.test(a, c, method = "pearson")$estimate
+  df$r_FN_vs_NN[n] = cor.test(F_FN, F_NN, method = "pearson")$estimate
+  df$r_FN_vs_SN[n] = cor.test(F_FN, F_SN, method = "pearson")$estimate
+  
+  lm_FN_vs_NN <- lm(F_FN~0+F_NN)
+  df$a_FN_vs_NN[n] = lm_FN_vs_NN$coefficients[1]
+  
+  lm_FN_vs_SN <- lm(F_FN~0+F_SN)
+  df$a_FN_vs_SN[n] = lm_FN_vs_SN$coefficients[1]
+
 }
 
 
 
 # QQ plot comparing Folded Normal (FN) with nonstandard normal (NN)
-gg <- ggplot(data = tibble(x = a, y = b), aes(x=x, y = y)) +
+gg <- ggplot(data = tibble(x = F_FN, y = F_NN), aes(x=x, y = y)) +
   geom_point(size=0.5) +
-  ylab(expression(CDF~F[NN])) + xlab(expression(CDF~F[FN])) +
+  ylab(expression(Prob.~F[NN])) + xlab(expression(Prob.~F[FN])) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept = 0, show.legend = NA)
 gg
@@ -143,12 +166,10 @@ gg <- ggplot(data = tibble(y = mean(df$r_FN_vs_NN), sd_y = sd(df$r_FN_vs_NN)),
   geom_point(size=0.5) +
   geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
                      ymax = y + 1.96*sd_y/sqrt(n_samples))) +
-  ylab("Q-Q PCC") + 
-  xlab(expression(paste(F[FN], " : ", F[NN], "  ", sep=""))) +
+  ylab("Slope") + 
+  xlab(expression(paste(F[FN], " : ", F[NN], "    ", sep=""))) +
   theme_classic(base_size=8) + theme(legend.position="none",
-                                     axis.text.x=element_blank()) +
-  geom_blank(aes(y = 0.985)) +
-  geom_blank(aes(y = 1.015))
+                                     axis.text.x=element_blank())
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
@@ -158,9 +179,9 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FN_vs_NN.
 
 
 # QQ plot comparing Folded Normal (FN) with standard normal (SN)
-gg <- ggplot(data = tibble(x = a, y = c), aes(x=x, y = y)) +
+gg <- ggplot(data = tibble(x = F_FN, y = F_SN), aes(x=x, y = y)) +
   geom_point(size=0.5) +
-  ylab(expression(CDF~F[SN])) + xlab(expression(CDF~F[FN])) +
+  ylab(expression(Prob.~F[SN])) + xlab(expression(Prob.~F[FN])) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept =0, show.legend = NA)
 gg
@@ -170,18 +191,161 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "e Q-Q FN_vs_SN.tiff",
 
 
 # Correlation between FN and NN over large number of QQ plots
-gg <- ggplot(data = tibble(y = mean(df$r_FN_vs_SN), sd_y = sd(df$r_FN_vs_SN)),
+gg <- ggplot(data = tibble(y = mean(df$a_FN_vs_SN), sd_y = sd(df$a_FN_vs_SN)),
              aes(x=as.factor(""), y = y)) +
   geom_point(size=0.5) +
   geom_linerange(aes(ymin = y - 1.96*sd_y/sqrt(n_samples), 
                      ymax = y + 1.96*sd_y/sqrt(n_samples))) +
-  ylab("Q-Q PCC") + 
-  xlab(expression(paste(F[FN], " : ", F[SN], "  ", sep="")))    +
+  ylab("Slope") + 
+  xlab(expression(paste(F[FN], " : ", F[SN], "    ", sep="")))    +
   theme_classic(base_size=8) + theme(legend.position="none",
-                                     axis.text.x=element_blank()) +
-  geom_blank(aes(y = 0.985)) +
-  geom_blank(aes(y = 1.015))
+                                     axis.text.x=element_blank())
+  # geom_blank(aes(y = 1+1e-17)) +
+  # geom_blank(aes(y = 1-1e-17))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = .75, dpi = 600)  
+
+
+
+
+
+
+
+
+
+
+# Calculate MMD with three different integration methods
+#-------------------------------------------------------------------------------
+n_samples <- 1e3
+mus=runif(n_samples,-5,5)
+sigmas=runif(n_samples,.1,5)
+conf.level = 0.95
+
+
+mmd_fn   <- rep(0,length(mus))
+mmd_nn <- rep(0,length(mus))
+mmd_sn <- rep(0,length(mus))
+for (n in seq_along(mus)) {
+  mmd_fn [n] <- uniroot(function(x) fun_pfoldnorm(x, mus[n],sigmas[n])-0.95, 
+                              c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
+                              tol = .Machine$double.eps)$root
+  mmd_nn [n] <- uniroot(function(x) fun_pnstandnorm(x, mus[n],sigmas[n])-0.95, 
+                                c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
+                                tol = .Machine$double.eps)$root
+  mmd_sn [n] <- uniroot(function(x) fun_pstandnorm(x, mus[n],sigmas[n])-0.95, 
+                               c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
+                               tol = .Machine$double.eps)$root
+}
+
+# Compare FN vs NN
+df_fn_vs_nn <- tibble(x = (mmd_fn + mmd_nn)/2, y = (mmd_fn - mmd_nn) / 
+                        (mmd_fn + mmd_nn)/2)
+gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
+  geom_hline(yintercept = 1.96*sd(df_fn_vs_nn$y), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = -1.96*sd(df_fn_vs_nn$y), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = 0, color="blue", size=0.25)+
+  geom_point(size=0.1) +
+  xlab('Mean') + 
+  ylab('Rel. Diff') +
+  theme_classic(base_size=8) +
+  geom_blank(aes(y = -0.6E-15)) +
+  geom_blank(aes(y = .6E-15))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_NN.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 2, dpi = 600)  
+# Compare FN vs SN
+df_fn_vs_sn <- tibble(x = (mmd_fn + mmd_sn)/2, y = (mmd_fn - mmd_sn) / 
+                        (mmd_fn + mmd_sn)/2)
+gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
+  geom_hline(yintercept = 1.96*sd(df_fn_vs_sn$y), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = -1.96*sd(df_fn_vs_sn$y), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = 0, color="blue", size=0.25)+
+  geom_point(size=0.1) +
+  xlab('Mean') + 
+  ylab('Rel. Diff') +
+  theme_classic(base_size=8) +
+  geom_blank(aes(y = -0.6E-15)) +
+  geom_blank(aes(y = 0.6E-15))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_SN.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+source("R/mmd.R")
+library(equivalence)
+library(TOSTER)
+
+
+# Test if reverse TOST equivalent to MMD
+#-------------------------------------------------------------------------------
+
+# Generate samples for mu and Sd, calculate all three curves for each, the calculate SSE
+n_samples <- 1e4
+mus=runif(n_samples,-5,5)
+sigmas=runif(n_samples,.1,5)
+n_obs = 1000
+salpha = 0.05
+
+xs = mapply(function(x,y) rnorm(n_obs, mean = x, sd=y), mus, sigmas)
+dim(xs)
+
+inv_tost_es <- rep(0, n_samples)
+inv_tost_es2 <- rep(0, n_samples)
+mmd_es <- rep(0, n_samples)
+
+for (n in seq(1, n_samples,1)){
+  inv_tost_es[n] <- uniroot(function(x) tost(xs[n,], y = NULL, epsilon = x, paired = FALSE, var.equal = FALSE,
+                           conf.level = 0.95, alpha = salpha)$tost.p.value - salpha,
+          interval = c(abs(mean(xs[n,])), abs(mean(xs[n,])) + 6*sd(xs[n,]) ))$root
+  # inv_tost_es2[n] <- 
+  mmd_es[n] <- mmd_normal_tdist(xs[n,])
+  
+}
+plot(sigmas, mmd_es - inv_tost_es)
+
+x=seq(0,10,.1)
+y_sweep <- sapply(x, function(x) tost(xs[n,], y = NULL, epsilon = x, paired = FALSE, var.equal = FALSE, 
+               conf.level = 0.95, alpha = salpha)$tost.p.value - salpha, simplify = TRUE)
+y_sweep <- sapply(x, function(x) tost_zdist(xs[1,], epsilon = x) - salpha, simplify = TRUE)
+plot(x,y_sweep)
+
+
+
+tost_zdist <- function(x, epsilon, conf.level = 0.95) {
+  # Equivalence: -epsilon <=  u1 < epsilon
+  z_low  <- (mean(x) - -epsilon)/(sd(x) / sqrt(length(x)))
+  z_high <- (mean(x) - +epsilon)/(sd(x) / sqrt(length(x)))
+  
+  # H01: z_stat < -epsilon
+  # HA1: z_stat >=  -epsilon
+  p1 <- pnorm(-z_low)
+  
+  # H02: z_stat > epsilon
+  # HA2: z_stat <=  epsilon
+  p2 <- pnorm(z_high)
+  
+  p = max(c(p1,p2))
+  return(p)
+}
+
+# plot(rowMeans(cbind(inv_tost_es,mmd_es)), inv_tost_es - mmd_es)
+# inv_tost_es <- apply(x, 1, function(x) equiv.p(x,alpha=0.05))
+# equiv.p(x, y, alpha = 0.05)
+

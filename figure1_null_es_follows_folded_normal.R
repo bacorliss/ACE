@@ -91,14 +91,14 @@ n_obs <- 1000
 # row: ntrials, col: n_obs
 x_norm <- t(sapply(mus, function (x) rnorm(n_obs, mean = x, sd = 1),
                    simplify = TRUE))
-x_abs_norm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)),
+x_absnorm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)),
                        simplify = TRUE))
 x_fnorm <- t(sapply(mus, function (x) rfoldnorm(n_obs, mean = x, sd = 1),
                     simplify = TRUE))
 
-# Test if norm is different from abs_norm
+# Test if norm is different from absnorm
 p_val_n2abs_n <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]), 
-                                as.vector(x_abs_norm[i,]), alternative = "two.sided", 
+                                as.vector(x_absnorm[i,]), alternative = "two.sided", 
                                 exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 
 # Test if norm is different from folded norm
@@ -106,8 +106,8 @@ p_val_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]),
                              as.vector(x_fnorm[i,]), alternative = "two.sided", 
                              exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 
-# Test if abs_norm is different from folded norm
-p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_abs_norm[i,]),
+# Test if absnorm is different from folded norm
+p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_absnorm[i,]),
                                  as.vector(x_fnorm[i,]), alternative = "two.sided",
                                  exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 df_1b <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
@@ -178,20 +178,32 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "c dist_comparison_facet.tif
 
 # Plot a single line comparing output between FN and |N|
 # Plot difference between P(N) and P(FN) over mu
-# sort_x_norm <- sort(x_norm[1,])
-sort_x_abs_norm = sort(x_abs_norm[1,])
+sort_x_norm <- sort(x_norm[1,])
+sort_x_absnorm = sort(x_absnorm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
-q_sort_x_abs_norm <- cumsum(sort_x_abs_norm)/sum(sort_x_abs_norm)
+
+q_sort_x_absnorm <- cumsum(sort_x_absnorm)/sum(sort_x_absnorm)
 q_sort_x_fnorm    <- cumsum(sort_x_fnorm)/sum(sort_x_fnorm)
-  
+
+
+## TODO Change QQ plot to compare sample to theoretical quantile, not working yet
+# abs_sort_x_norm <- abs(sort_x_norm)
+# z_sort_x_norm <- scale(sort_x_norm, center = TRUE, scale = TRUE)
+# q_abs_sort_x_norm <- cumsum(abs_sort_x_norm)/sum(abs_sort_x_norm)
+# qt_fnorm <-qfoldnorm(abs(z_sort_x_norm))
+# plot(qt_fnorm,q_abs_sort_x_norm)
+
+
+# Calculate theoretical quantiles of x_absnorm  
+qfoldnorm(scale(sort_x_absnorm, center = TRUE, scale = TRUE))
+
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
-fit <- unname(lm(formula = sort_x_abs_norm ~ 0 +sort_x_fnorm)$coefficients[1])
+fit <- unname(lm(formula = sort_x_absnorm ~ 0 +sort_x_fnorm)$coefficients[1])
 
 # Define data for plotting
-df_1e = tibble(x = q_sort_x_fnorm, y = q_sort_x_abs_norm)
-p_1e <- ggplot(df_1e, aes(x=x, y=y)) + 
+p_1e <- ggplot(tibble(x = q_sort_x_fnorm, y = q_sort_x_absnorm), aes(x=x, y=y)) + 
   geom_point(size=0.5) + xlab(expression("Sample Quantiles FN")) + ylab("Sample Quantile |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
@@ -205,7 +217,7 @@ lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
                       function(i) lin_model(
                         cumsum(sort(x_fnorm[i,]))   /sum(x_fnorm[i,]), 
-                        cumsum(sort(x_abs_norm[i,]))/sum(x_fnorm[i,]) ),
+                        cumsum(sort(x_absnorm[i,]))/sum(x_fnorm[i,]) ),
                       simplify = TRUE ))
 ttest_fits <- t.test(fits, mu = 1)
 
@@ -215,9 +227,9 @@ p_1f <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y
   geom_linerange(aes(ymin =  ttest_fits$conf.int[1], ymax =  ttest_fits$conf.int[2])) +
   ylab("Q-Q Slopes") + xlab("") +
   #xlab(expression("|N| : FN")) +
-  theme_classic(base_size=8) + theme(legend.position="none") +
-  geom_blank(aes(y = 0.999)) +
-  geom_blank(aes(y = 1.001))
+  theme_classic(base_size=8) + theme(legend.position="none")
+  # geom_blank(aes(y = 0.999)) +
+  # geom_blank(aes(y = 1.001))
 p_1f
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
@@ -241,21 +253,21 @@ n_obs <- 1000
 # Generate random samples based on random mu values
 x_norm <- t(sapply(mus, function (x) rnorm(n_obs, mean = x, sd = 1), 
                    simplify = TRUE))
-x_abs_norm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)), 
+x_absnorm <- t(sapply(mus, function (x) abs(rnorm(n_obs, mean = x, sd = 1)), 
                        simplify = TRUE))
 x_fnorm <- t(sapply(mus, function (x) rfoldnorm(n_obs, mean = x, sd = 1), 
                     simplify = TRUE))
 
-# Test if norm is different from abs_norm
+# Test if norm is different from absnorm
 p_val_n2abs_n <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]), 
-                                as.vector(x_abs_norm[i,]), alternative = "two.sided",
+                                as.vector(x_absnorm[i,]), alternative = "two.sided",
                                 exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 # Test if norm is different from folded norm
 p_val_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_norm[i,]), 
                                 as.vector(x_fnorm[i,]), alternative = "two.sided", 
                                 exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
-# Test if abs_norm is different from folded norm
-p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_abs_norm[i,]),
+# Test if absnorm is different from folded norm
+p_val_abs_n2fn <- sapply(1:nrow(x_norm), function(i) ks.test(as.vector(x_absnorm[i,]),
                                 as.vector(x_fnorm[i,]), alternative = "two.sided", 
                                 exact = TRUE, tol=1e-8, simulate.p.value=FALSE)$p)
 df_1g <- rbind(tibble(d = factor("N : |N|"), x = p_val_n2abs_n),
@@ -329,18 +341,18 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "h dist_comparison_facet.tif
 
 # Plot a single line comparing output between FN and |N|
 # Plot difference between P(N) and P(F[N]) over mu
-sort_x_abs_norm = sort(x_abs_norm[1,])
+sort_x_absnorm = sort(x_absnorm[1,])
 sort_x_fnorm = sort(x_fnorm[1,])
 
-q_sort_x_abs_norm <- cumsum(sort_x_abs_norm)/sum(sort_x_abs_norm)
+q_sort_x_absnorm <- cumsum(sort_x_absnorm)/sum(sort_x_absnorm)
 q_sort_x_fnorm    <- cumsum(sort_x_fnorm)/sum(sort_x_fnorm)
 
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
-fit <- unname(lm(formula = q_sort_x_abs_norm ~ 0 +q_sort_x_fnorm)$coefficients[1])
+fit <- unname(lm(formula = q_sort_x_absnorm ~ 0 +q_sort_x_fnorm)$coefficients[1])
 
 # Define data for plotting
-df_1j = tibble(x=q_sort_x_fnorm, y=q_sort_x_abs_norm)
+df_1j = tibble(x=q_sort_x_fnorm, y=q_sort_x_absnorm)
 p_1j <- ggplot(df_1j, aes(x=x, y=y)) + 
   geom_point(size=0.5) + xlab("Sample Quantile FN") + ylab("Sorted Sample |N|   ") +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
@@ -355,7 +367,7 @@ lin_model <- function(x,y) lm(formula = y ~ 0 + x)$coefficients[1];
 fits <- unname(sapply(1:dim(x_fnorm)[1], 
                       function(i) lin_model(
                         cumsum(sort(x_fnorm[i,]))   /sum(x_fnorm[i,]), 
-                        cumsum(sort(x_abs_norm[i,]))/sum(x_fnorm[i,])),
+                        cumsum(sort(x_absnorm[i,]))/sum(x_fnorm[i,])),
                       simplify = TRUE ))
 ttest_fits <- t.test(fits, mu = 1)
 
@@ -364,9 +376,9 @@ p_1k <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y
   geom_point() +
   geom_linerange(aes(ymin = ttest_fits$conf.int[1], ymax = ttest_fits$conf.int[2])) +
   ylab("Q-Q Slopes") + xlab("") +
-  theme_classic(base_size=8) + theme(legend.position="none") +
-  geom_blank(aes(y = 0.999)) +
-  geom_blank(aes(y = 1.001)) 
+  theme_classic(base_size=8) + theme(legend.position="none")
+  # geom_blank(aes(y = 0.999)) +
+  # geom_blank(aes(y = 1.001)) 
 p_1k
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "k dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1k, ncol = 1, nrow = 1, base_height = 1.5,
