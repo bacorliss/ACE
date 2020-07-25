@@ -20,6 +20,8 @@ library(binom)
 library(VGAM)
 library(gplots)
 library(RColorBrewer)
+library(tidyr)
+
 # https://cran.r-project.org/web/packages/equivalence/equivalence.pdf
 library(equivalence)
 # https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
@@ -164,7 +166,7 @@ df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2
 
 # Difference MMD from Mu
 # COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as.tibble(df_results$mean_diff_mmd_mu)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_diff_mmd_mu)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # Plot heatmap
@@ -190,7 +192,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.tiff",sep=""),
 
 # Difference MMD from Mu
 # COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as.tibble(df_results$mean_rdiff_mmd_mu)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rdiff_mmd_mu)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # Plot heatmap
@@ -215,7 +217,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.tiff",sep="")
 
 # Difference MMD from Mu
 # COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as.tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # Plot heatmap
@@ -243,7 +245,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff"
 
 # Difference MMD from Mu
 # COnvert from matrix to data frame
-df <- cbind(sigma = sigmas, as.tibble(error_test_codes(
+df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
   df_results$p_val_mmd_eq_zero > 0.05, 
   df_results$p_val_mmd_eq_alpha > 0.05))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
@@ -280,7 +282,7 @@ df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
                            "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas) 
 # Difference MMD from Mu
 # COnvert from matrix to data frame
-df <- cbind(sigma = sigmas, as.tibble(error_test_codes(
+df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
   df_results$p_val_mmd_eq_zero > 0.05, 
   df_results$p_val_mmd_eq_alpha > 0.05))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
@@ -305,28 +307,135 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a5 mmd error test mu_over_
 
 
 
-# 2D visualization of mmd difference and error rate over sigma and mu/sigma
+
+# Identify location of coverage error boundaries with mu space
 #                                                                              #
 #______________________________________________________________________________#
 n_obs <- 50
 sigmas <- seq(.1, 5, by = .1); 
+mus <- seq (.1/5, 2, by=0.01)
 
-# Run simulations calculating error of mmd with mu and sigma swept
-right_mu_ov_sigmas <- seq (0.15, 0.35, by=0.001)
-df_right <- stats_param_sweep(
-  NULL, sigmas, n_samples, n_obs, "temp/mmd_Error_right_mu_over_sigma_vs_sigma.rds", right_mu_ov_sigmas) 
-df_right$side <- as.factor("Right")
+crit_df <- locate_bidir_binary_thresh(sigmas = sigmas, n_obs = n_obs, 
+                                      temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                                      mu_ov_sigmas = mu_ov_sigmas)
 
-# Run simulations calculating error of mmd with mu and sigma swept
-left_mu_ov_sigmas <- seq (-0.15, -0.35, by=-0.001)
-df_left <- stats_param_sweep(
-  NULL, sigmas, n_samples, n_obs, "temp/mmd_Error_left_mu_over_sigma_vs_sigma.rds", left_mu_ov_sigmas) 
-df_left$side <- as.factor("Left")
 
-false_positive_min_threshold <- function(vect, vals) {
+# Box and Whiskers of Coverage Error Transition Region
+p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side), 
+                         y = critical_mu_over_sigma)) + 
+  #geom_violin( position = position_dodge( width = 0.9)) + 
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  theme_classic(base_size = 8) + theme(legend.position="none", 
+                                       axis.title.x = element_blank()) +
+  xlab("Error Rate Null Hypothesis") + 
+  ylab(expression(mu/sigma))
+p
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_f mmd transition values.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600)
+
+res.aov2 <- aov(critical_mu_over_sigma ~ er + side, data = crit_df)
+summary(res.aov2)
+
+
+
+# Identify location of coverage error boundaries wiht mu/sigma
+#                                                                              #
+#______________________________________________________________________________#
+n_obs <- 50
+sigmas <- seq(.1, 5, by = .1); 
+mu_ov_sigmas <- seq (0.15, 0.35, by=0.001)
+
+crit_df <- locate_bidir_binary_thresh(sigmas = sigmas, n_obs = n_obs, 
+                                      temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                                      mu_ov_sigmas = mu_ov_sigmas)
+
+
+# Box and Whiskers of Coverage Error Transition Region
+p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side), 
+                         y = critical_mu_over_sigma)) + 
+  #geom_violin( position = position_dodge( width = 0.9)) + 
+  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
+  theme_classic(base_size = 8) + theme(legend.position="none", 
+                                       axis.title.x = element_blank()) +
+  xlab("Error Rate Null Hypothesis") + 
+  ylab(expression(mu/sigma))
+p
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_f mmd transition values.tiff", 
+                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600)
+
+res.aov2 <- aov(critical_mu_over_sigma ~ er + side, data = crit_df)
+summary(res.aov2)
+
+
+
+
+
+
+
+locate_bidir_binary_thresh <- function(sigmas,n_obs,temp_name, mu_ov_sigmas){
+  #' Locate all 4 error transition boundaries
+  #' Positive and negative direction, 0 and alpha error
+  
+  # Run simulations calculating error of mmd with mu and sigma swept
+  right_mu_ov_sigmas <- mu_ov_sigmas
+  df_right <- stats_param_sweep(
+    NULL, sigmas, n_samples, n_obs, paste("temp/right_", temp_name,".rds"),
+    right_mu_ov_sigmas) 
+  df_right$side <- as.factor("Right")
+
+  # Run simulations calculating error of mmd with mu and sigma swept
+  left_mu_ov_sigmas <- -mu_ov_sigmas
+  df_left <- stats_param_sweep(
+    NULL, sigmas, n_samples, n_obs, paste("temp/right_", temp_name,".rds"),
+    left_mu_ov_sigmas) 
+  df_left$side <- as.factor("Left")
+  
+
+  # Equivalence test versus middle column of same row
+  p_threshold = 0.05 /length(right_mu_ov_sigmas)
+  zero_df <- rbind(
+    tibble(er = "0", side = "right", sigma = sigmas, 
+           critical_mu_over_sigma_ind = apply(
+             df_right$p_val_mmd_eq_zero  < p_threshold, 1, 
+             locate_binary_thresh, vals = c(FALSE,TRUE))),
+    tibble(er = "alpha", side = "right", sigma = sigmas, 
+           critical_mu_over_sigma_ind = apply(
+             df_right$p_val_mmd_eq_alpha  < p_threshold,1,
+             locate_binary_thresh, vals = c(FALSE,TRUE))))
+  # COnvert index of error rate transition to mu/sigma value
+  zero_df$critical_mu_over_sigma <- 
+    approx(x=seq_along(right_mu_ov_sigmas),y = abs(right_mu_ov_sigmas),
+           xout = zero_df$critical_mu_over_sigma_ind, 
+           n = length(mu_ov_sigmas)*2L-1L)$y
+  
+  alpha_df <- rbind(
+    tibble(er = "0", side = "left", sigma = sigmas, 
+           critical_mu_over_sigma_ind = apply(
+             df_left$p_val_mmd_eq_zero  < p_threshold, 1, 
+             locate_binary_thresh, vals = c(FALSE,TRUE))),
+    tibble(er = "alpha", side = "left", sigma = sigmas, 
+           critical_mu_over_sigma_ind = apply(
+             df_left$p_val_mmd_eq_alpha  < p_threshold, 1, 
+             locate_binary_thresh, vals = c(FALSE,TRUE))))
+  # COnvert index of error rate transition to mu/sigma value
+  alpha_df$critical_mu_over_sigma <- 
+    approx(x=seq_along(left_mu_ov_sigmas),y = abs(left_mu_ov_sigmas),
+           xout = alpha_df$critical_mu_over_sigma_ind, 
+           n = length(mu_ov_sigmas)*2L-1L)$y
+  # Concatenate right and left dataframes of results
+  crit_df <- rbind(zero_df,alpha_df)
+  
+  return(crit_df)
+  
+}
+
+
+locate_binary_thresh <- function(vect, vals) {
   #' For a binary vector, find a threshold that separates TRUE and FALSE with balanced
   #' degree of false positives.
-  #' vect is input vectors of TRUE and FALSE
+  #' @param vect is input vectors of TRUE and FALSE
   #' vals: TRUe or FALSE for each side of vector
   #' Example input
   #' vect = df_right$p_val_mmd_eq_zero[1,] < 0.05
@@ -361,69 +470,10 @@ false_positive_min_threshold <- function(vect, vals) {
 # Location: +mu, - mu, Error:0, 95
 
 
-# Equivalence test versus middle column of same row
-p_threshold = 0.05 /length(right_mu_ov_sigmas)
-zero_df <- rbind(
-  tibble(er = "0", side = "right", sigma = sigmas, 
-         critical_mu_over_sigma_ind = apply(
-           df_right$p_val_mmd_eq_zero  < p_threshold, 1, 
-           false_positive_min_threshold, vals = c(FALSE,TRUE))),
-  tibble(er = "alpha", side = "right", sigma = sigmas, 
-         critical_mu_over_sigma_ind = apply(
-           df_right$p_val_mmd_eq_alpha  < p_threshold,1,
-           false_positive_min_threshold, vals = c(FALSE,TRUE))))
-# COnvert index of error rate transition to mu/sigma value
-zero_df$critical_mu_over_sigma <- 
-  approx(x=seq_along(right_mu_ov_sigmas),y = abs(right_mu_ov_sigmas),
-         xout = zero_df$critical_mu_over_sigma_ind, 
-         n = length(mu_ov_sigmas)*2L-1L)$y
-
-alpha_df <- rbind(
-  tibble(er = "0", side = "left", sigma = sigmas, 
-         critical_mu_over_sigma_ind = apply(
-           df_left$p_val_mmd_eq_zero  < p_threshold, 1, 
-           false_positive_min_threshold, vals = c(FALSE,TRUE))),
-  tibble(er = "alpha", side = "left", sigma = sigmas, 
-         critical_mu_over_sigma_ind = apply(
-           df_left$p_val_mmd_eq_alpha  < p_threshold, 1, 
-           false_positive_min_threshold, vals = c(FALSE,TRUE))))
-# COnvert index of error rate transition to mu/sigma value
-alpha_df$critical_mu_over_sigma <- 
-  approx(x=seq_along(left_mu_ov_sigmas),y = abs(left_mu_ov_sigmas),
-         xout = alpha_df$critical_mu_over_sigma_ind, 
-         n = length(mu_ov_sigmas)*2L-1L)$y
-# Concatenate right and left datafgrames of results
-crit_df <- rbind(zero_df,alpha_df)
 
 
 
-# heatmap.2(
-#   matrix(as.numeric(mc_eq_alpha), nrow = length(sigmas), ncol = length(mu_ov_sigmas)),
-#   Rowv=FALSE, Colv=FALSE, trace="none", dendrogram = "none", 
-#   labRow=rev(round(sigmas,1)), labCol= round(mu_ov_sigmas,2),
-#   density.info = 'none', scale = "none", cexRow = 1, cexCol = 1,
-#   denscol = "black", keysize = 1, key = FALSE,
-#   lmat = rbind(c(5, 4, 2), c(6, 1, 3)), margins=c(3,0),
-#   lhei = c(2, 6), lwid = c(1, 10, 1),
-#   na.color = "black", main = NULL,
-#   xlab(expression(mu)), ylab(expression(sigma)))
-# dev.off()
 
 
 
-# Box and Whiskers of Coverage Error Transition Region
-p <- ggplot(crit_df, aes(x=er,  color = er, group = interaction(er, side), 
-                         y = critical_mu_over_sigma)) + 
-  #geom_violin( position = position_dodge( width = 0.9)) + 
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9)) +
-  theme_classic(base_size = 8) + theme(legend.position="none", 
-                                       axis.title.x = element_blank()) +
-  xlab("Error Rate Null Hypothesis") + 
-  ylab(expression(mu/sigma))
-p
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_f mmd transition values.tiff", 
-                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 2, dpi = 600)
 
-res.aov2 <- aov(critical_mu_over_sigma ~ er + side, data = crit_df)
-summary(res.aov2)
