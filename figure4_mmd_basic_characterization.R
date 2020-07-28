@@ -189,7 +189,7 @@ df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) /
 
 # Plot look up table results
 gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=coeff_mmd_95)) +
-  geom_point(size=0.25) +
+  geom_line(size=0.15) +
   xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigmas)) +
   ylab(expression(Coeff.~MMD[95])) +
   theme_classic(base_size=8)
@@ -245,7 +245,7 @@ gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   geom_hline(yintercept = 1.96*sd(df_compare$diffs), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_compare$diffs), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = 0, color="blue", size=0.25)+
-  geom_point(size=0.1) +
+  geom_point(size=0.05) +
   xlab(expression((MMD[root]+MMD[lut])/2)) + 
   ylab(expression(MMD[root]-MMD[lut])) +
   theme_classic(base_size=8)
@@ -275,12 +275,14 @@ for (n in 1:100) {
 }
 
 1- 60*mean(mmd_lut_time)/(60*mean(mmd_root_time))
-gg <- ggplot(data = tibble(x = c(rep("MMD[root]",100),rep("MMD[lut]",100)),
-                     mmd_root = c(mmd_root_time, mmd_lut_time)*60), aes(x=x, y=mmd_root)) + 
-  geom_boxplot() + theme_classic(base_size = 8) +
+df_speed <- tibble(x = as.factor(c(rep("MMD[root]",100),rep("MMD[lut]",100))),
+                   mmd_root = c(mmd_root_time, mmd_lut_time)*60)
+gg <- ggplot(data = df_speed,  aes(x=x, y=mmd_root)) + 
+  geom_boxplot( outlier.size = 1) + theme_classic(base_size = 8) +
   ylab("Time (Sec./1000 Runs)") + xlab("Algorithm") +
-  scale_x_discrete(labels = c('MMD[root]' = expression(MMD[ROOT]),
-                              'MMD[lut]'   = expression(MMD[lut])));
+  scale_x_discrete(limits = rev(levels(df_speed$x)),
+                   labels = c('MMD[root]' = expression(MMD[ROOT]),
+                              'MMD[lut]'   = expression(MMD[lut])))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
