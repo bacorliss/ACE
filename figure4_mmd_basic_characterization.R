@@ -74,9 +74,9 @@ y_sweep <- sweep(y_expanded,1, df$x,'+')
 df$mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
 # Max absolute confidence level
 df$mcl_90   <- apply(y_sweep, 1, function (x)  
-  max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
+  max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
 df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( 
-  max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )))
+  max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )))
 
 # T test p value
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
@@ -152,35 +152,33 @@ graphics.off()
 # Calculate MMD transition as LUT between CL95 and CL90 across post-normalized samples
 # -----------------------------------------------------------------------------
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
-mu = c(seq(0,0.25,0.001),5, 10, 20,50, 100, 500, 1000, 10000)
-sigma = runif(length(mu),0.5, 2)
+mus = c(seq(0,0.5,0.001))#,5, 10, 20,50, 100, 500, 1000, 10000)
+sigmas = runif(length(mus),0.5, 2)
 n_samples = 1
 n_obs = 50
 set.seed(0)
-df_coeff <- data.frame(mu=mu, sigma=sigma, mean_mmd_96 = rep(0,length(mu)),
-                       sd_mmd_95 = rep(0,length(mu)), mean_mabs_cl_95 = rep(0,length(mu)),
-                       sd_mabs_cl_95 = rep(0,length(mu)), mean_maabs_cl_90 = rep(0,length(mu)), 
-                       sd_mabs_cl_90 = rep(0,length(mu)))
+df_coeff <- data.frame(mu=mus, sigma=sigmas, mean_mmd_96 = rep(0,length(mus)),
+                       sd_mmd_95 = rep(0,length(mus)), mean_mabs_cl_95 = rep(0,length(mus)),
+                       sd_mabs_cl_95 = rep(0,length(mus)), mean_maabs_cl_90 = rep(0,length(mus)), 
+                       sd_mabs_cl_90 = rep(0,length(mus)))
 # Sample around mean
-for (n in seq_along(mu)) {  # print(mu[n])
+for (n in seq_along(mus)) {  # print(mus[n])
   # For each mu, generate samples, align them, calculate mean MMD, CI_95, CL_90
-  xi <- matrix(rnorm(n_samples*n_obs,mean = mu[n],sd=sigma), nrow = n_samples, byrow = TRUE)
+  xi <- matrix(rnorm(n_samples*n_obs,mean = mus[n],sd=sigmas), nrow = n_samples, byrow = TRUE)
   
   # Normalize samples (x_bar = mu and sd = 1)
-  xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mu[n]
+  xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mus[n]
   
   # Calculate MMD
   mmd_95 <- apply(xnorm, 1, mmd_normal_zdist)
   df_coeff$mean_mmd_95[n] <-  mean(mmd_95)
   df_coeff$sd_mmd_95[n] <-    sd(mmd_95)
   # Calculate 90% max abs CL
-  mabs_cl_90 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z_nonstandard(
-    mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
+  mabs_cl_90 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.10) )
   df_coeff$mean_mabs_cl_90[n] <- mean(mabs_cl_90)
   df_coeff$sd_mabs_cl_90[n] <-   sd(mabs_cl_90)
   # Calculate 95% max abs CL
-  mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z_nonstandard(
-    mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
+  mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.05) )
   df_coeff$mean_mabs_cl_95[n] <- mean(mabs_cl_95)
   df_coeff$sd_mabs_cl_95[n] <-   sd(mabs_cl_95)
 
@@ -192,7 +190,7 @@ df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) /
 # Plot look up table results
 gg <- ggplot(data = subset(df_coeff,mu<5),aes(x=mu, y=coeff_mmd_95)) +
   geom_point(size=0.25) +
-  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
+  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigmas)) +
   ylab(expression(Coeff.~MMD[95])) +
   theme_classic(base_size=8)
 gg
@@ -202,7 +200,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "2C_Coeff_mmd_CLa_CL2a.tiff"
 graphics.off()
 
 # Export LU table to disk
-df_lut = data.frame(nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
+df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
 write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 
 
@@ -210,21 +208,22 @@ write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 
 # Test agreement with MMD lut to MMD root
 #-------------------------------------------------------------------------------
-n_samples = 1000
-mus = runif(n_samples, -100,100)
-sigmas = runif(n_samples,1,1)
-n_obs = 50
+# n_samples = 1000
+# mus = runif(n_samples, -100,100)
+# sigmas = runif(n_samples,1,1)
+# n_obs = 50
 set.seed(0)
 # Sample around mean
 x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLIFY = TRUE))
+
 # Load csv Look up table to convert to spline interp function
 df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
   
 # Function to determine 95% MMD with LUT
 mmd_95_lut <- function (x,interp_fun) {
-  mabs_cl_90 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10)
-  mabs_cl_95 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05)
+  mabs_cl_90 <- max_abs_cl_mean_z(x=x, alpha=0.10)
+  mabs_cl_95 <- max_abs_cl_mean_z(x=x, alpha=0.05)
   # Normalized mu
   abs_nmu = abs(mean(x)/sd(x))
   coeff_mmd <- interp_fun(abs_nmu)
@@ -247,8 +246,6 @@ gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   xlab(expression((MMD[root]+MMD[lut])/2)) + 
   ylab(expression(MMD[root]-MMD[lut])) +
   theme_classic(base_size=8)
-  # geom_blank(aes(y = -0.6E-15)) +
-  # geom_blank(aes(y = .6E-15))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
@@ -314,9 +311,9 @@ for (n in seq(1,length(mu),1)) {
   mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
   # Two tailed confidenc eintervals
   mcl_90   <- apply(y_sweep, 1, function (x)  
-    max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
+    max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
   mcl_95  <- apply(y_sweep, 1, function (x)  
-    max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
+    max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
   # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.10)$conf.int )))
   # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.05)$conf.int )))
 

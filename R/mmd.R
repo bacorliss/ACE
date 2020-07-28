@@ -220,8 +220,8 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
         pnorm( (-d_bar - x)/sem_d, mean = 0, sd = 1) - conf.level - d_bar}
     
   } else if (method =="nonstandard") {
-    lower_bounds = max_abs_cl_mean_z_nonstandard(d_bar, sem_d, 2*alpha)
-    upper_bounds = max_abs_cl_mean_z_nonstandard(d_bar, sem_d, alpha)
+    lower_bounds = max_abs_cl_mean_z(d_bar, sem_d, 2*alpha)
+    upper_bounds = max_abs_cl_mean_z(d_bar, sem_d, alpha)
     
     # Integration of folded z-distribution from standard central z-distribution
     z_star_fcn <- function(x) {pnorm( +x, mean = d_bar, sd = sem_d) - 
@@ -323,7 +323,12 @@ ucl_tdist_mean <- function(x_bar, sx, n_x, dfx, semx = NULL, alpha = 0.05) {
 
 
 
-max_abs_cl_mean_z_nonstandard <-  function(x_bar, sem_x, alpha) {
+max_abs_cl_mean_z <-  function(x_bar, sem_x, alpha, x=NULL) {
+  
+  if (!is.null(x)) {
+    x_bar <- mean(x); sem_x <- sd(x)/sqrt(length(x))
+  }
+  
   conf.lims <- qnorm( c(alpha/2, 1 - alpha/2), mean = x_bar, sd = sem_x)
   max_abs_cl <- max(abs(conf.lims))
   return(max_abs_cl)
