@@ -14,6 +14,9 @@ library(cowplot)
 clr_set = brewer.pal(n = 8, name = "Set1")
 # Calculate conifdence intervals
 source("R/mmd.R")
+source("R/row_effect_sizes.R")
+
+
 
 fig_num = "4"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
@@ -145,6 +148,139 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep="
 graphics.off()
 
 
+# Examine MMD transition between CL95 and CL90 across post-normalized samples
+# -----------------------------------------------------------------------------
+# Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
+
+mu = seq(0,0.25,0.001)
+sigma = runif(length(mu),0.5, 2)
+n_samples = 1
+n_obs = 50
+set.seed(0)
+df_coeff <- data.frame(mu=mu, sigma=sigma, mean_mmd_96 = rep(0,length(mu)),
+                       sd_mmd_95 = rep(0,length(mu)), mean_mabs_cl_95 = rep(0,length(mu)),
+                       sd_mabs_cl_95 = rep(0,length(mu)), mean_maabs_cl_90 = rep(0,length(mu)), 
+                       sd_mabs_cl_90 = rep(0,length(mu)))
+# Sample around mean
+for (n in seq_along(mu)) {  # print(mu[n])
+  # For each mu, generate samples, align them, calculate mean MMD, CI_95, CL_90
+  xi <- matrix(rnorm(n_samples*n_obs,mean = mu[n],sd=sigma), nrow = n_samples, byrow = TRUE)
+  
+  # Normalize samples (mean set to mu and sd to 1)
+  xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mu[n]
+  
+  # Calculate MMD
+  mmd_95 <- apply(xnorm, 1, mmd_normal_zdist)
+  df_coeff$mean_mmd_95[n] <-  mean(mmd_95)
+  df_coeff$sd_mmd_95[n] <-    sd(mmd_95)
+  # Calculate 90% max abs CL
+  mabs_cl_90 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z_nonstandard(
+    mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
+  df_coeff$mean_mabs_cl_90[n] <- mean(mabs_cl_90)
+  df_coeff$sd_mabs_cl_90[n] <-   sd(mabs_cl_90)
+  # Calculate 95% max abs CL
+  mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z_nonstandard(
+    mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
+  df_coeff$mean_mabs_cl_95[n] <- mean(mabs_cl_95)
+  df_coeff$sd_mabs_cl_95[n] <-   sd(mabs_cl_95)
+
+}
+# Calculate Coefficient for mmd
+df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) / 
+  (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
+
+# Plot look up table results
+gg <- ggplot(data = df_coeff,aes(x=mu, y=coeff_mmd_95)) +
+  geom_point(size=0.25) +
+  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
+  ylab(expression(Coeff.~MMD[95])) +
+  theme_classic(base_size=8)
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "2C_Coeff_mmd_CLa_CL2a.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 2, dpi = 600) # paper="letter"
+graphics.off()
+
+# Export LU table to disk
+df_lut = data.frame(nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
+write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
+
+
+# Test agreement with MMD lut to MMD root
+#-------------------------------------------------------------------------------
+n_samples = 1000
+mus = runif(n_samples, -1,1)
+sigmas = runif(n_samples,1,1)
+n_obs = 50
+set.seed(0)
+# Sample around mean
+x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLIFY = TRUE))
+# Load csv Look up table to convert to spline interp function
+df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
+interp_fun = splinefun(x=df_lut$nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
+  
+# Function to determine 95% MMD with LUT
+mmd_95_lut <- function (x,interp_fun) {
+  mabs_cl_90 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10)
+  mabs_cl_95 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05)
+  # Normalized mu
+  abs_nmu = abs(mean(x/sd(x)))
+  coeff_mmd <- spline_interp(nmu)
+  mmd_95 <- coeff_mmd * (mabs_cl_95 - mabs_cl_90) + mabs_cl_90
+  return(mmd_95)
+}
+# Compare MMD root and MMD lut
+df_compare <- data.frame(mmd_root = apply(x_samples, 1, mmd_normal_zdist), 
+                         mmd_lut  = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun)))
+df_compare$diff = df_compare$mmd_root - df_compare$mmd_lut
+df_compare$mean = rowMeans(cbind(df_compare$mmd_root,df_compare$mmd_lut ))
+# Bland altman of agreement between MMD algorithms
+gg <- ggplot(df_compare, aes(x=mean,y=diff)) +
+  geom_hline(yintercept = 1.96*sd(df_compare$diff), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = -1.96*sd(df_compare$diff), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = 0, color="blue", size=0.25)+
+  geom_point(size=0.1) +
+  xlab(expression((MMD[root]+MMD[lut])/2)) + 
+  ylab(expression(MMD[root]-MMD[lut])) +
+  theme_classic(base_size=8) +
+  geom_blank(aes(y = -0.6E-15)) +
+  geom_blank(aes(y = .6E-15))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+
+
+# Speed benchmark between MMD algorithms
+#-------------------------------------------------------------------------------
+mmd_root_time = rep(0,100)
+mmd_lut_time = rep(0,100)
+for (n in 1:100) {
+  start_time <- Sys.time()
+  mmd_root = apply(x_samples, 1, mmd_normal_zdist)
+  end_time <- Sys.time()
+  mmd_root_time[n] = end_time - start_time
+  
+  start_time <- Sys.time()
+  mmd_lut = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun))
+  end_time <- Sys.time()
+  mmd_lut_time[n] = end_time - start_time
+}
+
+gg <- ggplot(data = tibble(x = c(rep("MMD[root]",100),rep("MMD[lut]",100)),
+                     mmd_root = c(mmd_root_time, mmd_lut_time)*60), aes(x=x, y=mmd_root)) + 
+  geom_boxplot() + theme_classic(base_size = 8) +
+  ylab("Time (Sec./1000 Runs)") + xlab("Algorithm") +
+  scale_x_discrete(labels = c('MMD[root]' = expression(MMD[ROOT]),
+                              'MMD[lut]'   = expression(MMD[lut])));
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 
+                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+
+
 
 ## Explore trends between MMD and CI at a population level
 #--------------------------------------------------------------------------------------#
@@ -158,10 +294,6 @@ set.seed(0)
 # Sample around mean
 y_samples <- matrix(rnorm(n_samples*n_obs,0,sigma), nrow = n_samples, byrow = TRUE)
 
-# Most confidence limit: max(abs( confident limits() ))
-# conf_interval_fcn = function(x, alpha) mean(x) + c(qt(1-(alpha/2), df = length(x)-1) * sd(x)/sqrt(length(x)),
-#                                                    qt(alpha/2, df = length(x)-1) * sd(x)/sqrt(length(x)))
-
 # Make list of data frames to be concatenated at end of computations
 df_list <- list()
 for (n in seq(1,length(mu),1)) {
@@ -173,23 +305,16 @@ for (n in seq(1,length(mu),1)) {
   }else {
     y_sweep = y_samples+shift
   }
-  
   # Calculate MMD and max abs confidence intervals
   mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
+  # Two tailed confidenc eintervals
   mcl_90   <- apply(y_sweep, 1, function (x)  
     max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
-  
   mcl_95  <- apply(y_sweep, 1, function (x)  
     max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
-  
-  # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs( 
-  #   t.test(x, conf.level = 1-0.10)$conf.int )))
-  # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs( 
-  #   t.test(x, conf.level = 1-0.05)$conf.int )))
-  
-  
-  # ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
-  
+  # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.10)$conf.int )))
+  # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.05)$conf.int )))
+
   mmd_diff <- mmd_95 - mcl_90
   ci_diff <- mcl_95 - mcl_90
   fract_mmd_95 <- mmd_diff/ci_diff
@@ -198,7 +323,6 @@ for (n in seq(1,length(mu),1)) {
                         fract_mmd_95 = fract_mmd_95, mmd_95 = mmd_95, 
                         mcl_90 = mcl_90, mcl_95 = mcl_95)
 }
-
 df <- ldply(df_list, rbind)
 
 # Get groups means and CI of mean
@@ -213,17 +337,17 @@ df_plotted$unique_sig = as.factor(rep("#",length(mu)))
 ptest_result <- pairwise.t.test(df$fract_mmd_95, df$mu, p.adjust.method = "bonferroni",
                                 paired = TRUE, alternative = "two.sided")
 
+# unique_sig = 11:18
+# names(unique_sig) <- levels(df$mu)
+# unique_sig = levels(df$mu)
+# names(unique_sig) <- as.factor(rep("#",length(mu)))
+# # Plotting
+# g1C <- ggplot(df, aes(x=mu, y=mean_fract_mmd_95)) + 
+#   geom_point(data = df_plotted, aes(x=mu, y=mean_fract_mmd_95)) +
+#   facet_grid(.~mu,labeller = unique_sig) 
+# g1C 
 
-
-hospital_labeller <- function(variable,ind){
-  return(df_plotted$unique_sig[value])
-}
-
-
-unique_sig = as.factor(mu)
-names(unique_sig) <- as.factor(rep("#",length(mu)))
-
-# Plotting
+# Plotting MMD vs coefficient population level
 g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) + 
   geom_hline(aes(yintercept=1, col="CI_90"), linetype="dotted", size=0.8) + 
   geom_hline(aes(yintercept=0, col="CI_95"), linetype="dotted", size=0.8) +
@@ -233,7 +357,7 @@ g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) +
   theme_minimal() +
   facet_grid(.~mu, scales = "free", switch = "y") + 
   theme(strip.background = element_blank(), strip.text.y = element_blank(),legend.text.align=0,
-       strip.text.x = labeller(mu=rep("#",length(mu))),
+       strip.text.x = element_blank(),
        axis.title.y = element_text(size = 8), axis.title.x = element_text(size = 10),
        legend.key.size = unit(.5,"line"), legend.spacing.y = unit(0, "cm"),
        legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
@@ -242,7 +366,10 @@ g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) +
                      values=c(lighten("blue",0.4), lighten("red",0.4))) + 
   guides(color = guide_legend(override.aes = list(
     linetype = c("solid","solid"))))
-#g1C
+# g1C
+# for(ii in 1:7)
+#   grid.gedit(gPath(paste0("strip_t-", ii), "strip.text"), 
+#              grep=TRUE, label=bquote(gamma[.(ii)]))
 gg1C <- ggplotGrob(g1C)
 gg1C$widths[18] = 6*gg1C$widths[18]
 grid.draw(gg1C)
@@ -252,19 +379,6 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "2C_MMD_vs_CI95.tiff",sep=""
           gg1C, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 6, dpi = 600) # paper="letter"
 graphics.off()
-# 
-# sample_data %>%
-#   group_by(Location) %>%                       
-#   summarise(res = list(tidy(t.test(temp, mu=35)))) %>%
-#   #unnest()
-
-# library(tidyr)
-# library(broom)
-# dt_res <- df %>%
-#   group_by(mu) %>%                      
-#   summarise_each(funs(mean, sd, p_val_0 = t.test(fract_mmd_95,mu=0,conf.level = 1-0.05/(2*length(mu)))$p.value,
-#         p_val_1 = t.test(fract_mmd_95,mu=1,conf.level = 1-0.05/(2*length(mu)))$p.value),fract_mmd_95) 
-
 
 
 
