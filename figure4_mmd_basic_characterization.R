@@ -152,9 +152,9 @@ graphics.off()
 # Calculate MMD transition as LUT between CL95 and CL90 across post-normalized samples
 # -----------------------------------------------------------------------------
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
-mus = c(seq(0,0.5,0.001))#,5, 10, 20,50, 100, 500, 1000, 10000)
-sigmas = runif(length(mus),0.5, 2)
-n_samples = 1
+mus = c(seq(0-0.00001,0.33,0.00001), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
+sigmas = runif(length(mus),0.1, 2)
+n_samples = 35
 n_obs = 50
 set.seed(0)
 df_coeff <- data.frame(mu=mus, sigma=sigmas, mean_mmd_96 = rep(0,length(mus)),
@@ -188,7 +188,7 @@ df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) /
   (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
 
 # Plot look up table results
-gg <- ggplot(data = subset(df_coeff,mu<5),aes(x=mu, y=coeff_mmd_95)) +
+gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=coeff_mmd_95)) +
   geom_point(size=0.25) +
   xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigmas)) +
   ylab(expression(Coeff.~MMD[95])) +
@@ -208,9 +208,10 @@ write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 
 # Test agreement with MMD lut to MMD root
 #-------------------------------------------------------------------------------
-# n_samples = 1000
-# mus = runif(n_samples, -100,100)
-# sigmas = runif(n_samples,1,1)
+mus = seq(0,0.5,0.001)
+n_samples = 1000
+mus = runif(n_samples, -100,100)
+sigmas = runif(n_samples,.1,10)
 # n_obs = 50
 set.seed(0)
 # Sample around mean
@@ -231,6 +232,8 @@ mmd_95_lut <- function (x,interp_fun) {
   
   return(mmd_95)
 }
+
+
 
 # Compare MMD root and MMD lut
 df_compare <- data.frame(mmd_root = apply(x_samples, 1, mmd_normal_zdist), 
@@ -253,23 +256,25 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.ti
 
 
 
-
+library(rbenchmark)
 # Speed benchmark between MMD algorithms
 #-------------------------------------------------------------------------------
 mmd_root_time = rep(0,100)
 mmd_lut_time = rep(0,100)
 for (n in 1:100) {
-  start_time <- Sys.time()
-  mmd_root = apply(x_samples, 1, mmd_normal_zdist)
-  end_time <- Sys.time()
-  mmd_root_time[n] = end_time - start_time
-  
-  start_time <- Sys.time()
-  mmd_lut = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun))
-  end_time <- Sys.time()
-  mmd_lut_time[n] = end_time - start_time
+  results <- benchmark("mmd_root" = {
+    mmd_root = apply(x_samples, 1, mmd_normal_zdist)
+  },
+  "mmd_lut" = {
+    mmd_lut = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun))
+  },
+  replications = 1,
+  columns = c("user.self"))
+  mmd_root_time[n] <- results$user.self[2]
+  mmd_lut_time[n] <- results$user.self[1]
 }
 
+1- 60*mean(mmd_lut_time)/(60*mean(mmd_root_time))
 gg <- ggplot(data = tibble(x = c(rep("MMD[root]",100),rep("MMD[lut]",100)),
                      mmd_root = c(mmd_root_time, mmd_lut_time)*60), aes(x=x, y=mmd_root)) + 
   geom_boxplot() + theme_classic(base_size = 8) +
