@@ -148,11 +148,11 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep="
 graphics.off()
 
 
-# Examine MMD transition between CL95 and CL90 across post-normalized samples
+
+# Calculate MMD transition as LUT between CL95 and CL90 across post-normalized samples
 # -----------------------------------------------------------------------------
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
-
-mu = seq(0,0.25,0.001)
+mu = c(seq(0,0.25,0.001),5, 10, 20,50, 100, 500, 1000, 10000)
 sigma = runif(length(mu),0.5, 2)
 n_samples = 1
 n_obs = 50
@@ -166,7 +166,7 @@ for (n in seq_along(mu)) {  # print(mu[n])
   # For each mu, generate samples, align them, calculate mean MMD, CI_95, CL_90
   xi <- matrix(rnorm(n_samples*n_obs,mean = mu[n],sd=sigma), nrow = n_samples, byrow = TRUE)
   
-  # Normalize samples (mean set to mu and sd to 1)
+  # Normalize samples (x_bar = mu and sd = 1)
   xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mu[n]
   
   # Calculate MMD
@@ -190,7 +190,7 @@ df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) /
   (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
 
 # Plot look up table results
-gg <- ggplot(data = df_coeff,aes(x=mu, y=coeff_mmd_95)) +
+gg <- ggplot(data = subset(df_coeff,mu<5),aes(x=mu, y=coeff_mmd_95)) +
   geom_point(size=0.25) +
   xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
   ylab(expression(Coeff.~MMD[95])) +
@@ -206,10 +206,12 @@ df_lut = data.frame(nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
 write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 
 
+
+
 # Test agreement with MMD lut to MMD root
 #-------------------------------------------------------------------------------
 n_samples = 1000
-mus = runif(n_samples, -1,1)
+mus = runif(n_samples, -100,100)
 sigmas = runif(n_samples,1,1)
 n_obs = 50
 set.seed(0)
@@ -217,38 +219,41 @@ set.seed(0)
 x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLIFY = TRUE))
 # Load csv Look up table to convert to spline interp function
 df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
-interp_fun = splinefun(x=df_lut$nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
+interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
   
 # Function to determine 95% MMD with LUT
 mmd_95_lut <- function (x,interp_fun) {
   mabs_cl_90 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.10)
   mabs_cl_95 <- max_abs_cl_mean_z_nonstandard(mean(x), sd(x)/sqrt(length(x)), alpha=0.05)
   # Normalized mu
-  abs_nmu = abs(mean(x/sd(x)))
-  coeff_mmd <- spline_interp(nmu)
+  abs_nmu = abs(mean(x)/sd(x))
+  coeff_mmd <- interp_fun(abs_nmu)
   mmd_95 <- coeff_mmd * (mabs_cl_95 - mabs_cl_90) + mabs_cl_90
+  
   return(mmd_95)
 }
+
 # Compare MMD root and MMD lut
 df_compare <- data.frame(mmd_root = apply(x_samples, 1, mmd_normal_zdist), 
                          mmd_lut  = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun)))
-df_compare$diff = df_compare$mmd_root - df_compare$mmd_lut
-df_compare$mean = rowMeans(cbind(df_compare$mmd_root,df_compare$mmd_lut ))
+df_compare$diffs = df_compare$mmd_root - df_compare$mmd_lut
+df_compare$means = rowMeans(cbind(df_compare$mmd_root,df_compare$mmd_lut ))
 # Bland altman of agreement between MMD algorithms
-gg <- ggplot(df_compare, aes(x=mean,y=diff)) +
-  geom_hline(yintercept = 1.96*sd(df_compare$diff), color = "red", linetype="dashed", size=0.25) +
-  geom_hline(yintercept = -1.96*sd(df_compare$diff), color = "red", linetype="dashed", size=0.25) +
+gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
+  geom_hline(yintercept = 1.96*sd(df_compare$diffs), color = "red", linetype="dashed", size=0.25) +
+  geom_hline(yintercept = -1.96*sd(df_compare$diffs), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = 0, color="blue", size=0.25)+
   geom_point(size=0.1) +
   xlab(expression((MMD[root]+MMD[lut])/2)) + 
   ylab(expression(MMD[root]-MMD[lut])) +
-  theme_classic(base_size=8) +
-  geom_blank(aes(y = -0.6E-15)) +
-  geom_blank(aes(y = .6E-15))
+  theme_classic(base_size=8)
+  # geom_blank(aes(y = -0.6E-15)) +
+  # geom_blank(aes(y = .6E-15))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600) 
+
 
 
 
