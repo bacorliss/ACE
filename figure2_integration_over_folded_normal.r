@@ -44,6 +44,8 @@ tri_color <- brewer.pal(n = 3, name = "Set1")
 distrs=c("FN", "NN","SN")
 rand.seed <- 0
 
+
+
 # Subfigure A: Compare FN,NN,SN with mu = 1 and swept sigma
 #------------------------------------------------------------------------------
 mus = c(0,0,0)
@@ -279,73 +281,4 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_SN
 
 
 
-
-
-
-
-
-
-
-
-
-source("R/mmd.R")
-library(equivalence)
-library(TOSTER)
-
-
-# Test if reverse TOST equivalent to MMD
-#-------------------------------------------------------------------------------
-
-# Generate samples for mu and Sd, calculate all three curves for each, the calculate SSE
-n_samples <- 1e4
-mus=runif(n_samples,-5,5)
-sigmas=runif(n_samples,.1,5)
-n_obs = 1000
-salpha = 0.05
-
-xs = mapply(function(x,y) rnorm(n_obs, mean = x, sd=y), mus, sigmas)
-dim(xs)
-
-inv_tost_es <- rep(0, n_samples)
-inv_tost_es2 <- rep(0, n_samples)
-mmd_es <- rep(0, n_samples)
-
-for (n in seq(1, n_samples,1)){
-  inv_tost_es[n] <- uniroot(function(x) tost(xs[n,], y = NULL, epsilon = x, paired = FALSE, var.equal = FALSE,
-                           conf.level = 0.95, alpha = salpha)$tost.p.value - salpha,
-          interval = c(abs(mean(xs[n,])), abs(mean(xs[n,])) + 6*sd(xs[n,]) ))$root
-  # inv_tost_es2[n] <- 
-  mmd_es[n] <- mmd_normal_tdist(xs[n,])
-  
-}
-plot(sigmas, mmd_es - inv_tost_es)
-
-x=seq(0,10,.1)
-y_sweep <- sapply(x, function(x) tost(xs[n,], y = NULL, epsilon = x, paired = FALSE, var.equal = FALSE, 
-               conf.level = 0.95, alpha = salpha)$tost.p.value - salpha, simplify = TRUE)
-y_sweep <- sapply(x, function(x) tost_zdist(xs[1,], epsilon = x) - salpha, simplify = TRUE)
-plot(x,y_sweep)
-
-
-
-tost_zdist <- function(x, epsilon, conf.level = 0.95) {
-  # Equivalence: -epsilon <=  u1 < epsilon
-  z_low  <- (mean(x) - -epsilon)/(sd(x) / sqrt(length(x)))
-  z_high <- (mean(x) - +epsilon)/(sd(x) / sqrt(length(x)))
-  
-  # H01: z_stat < -epsilon
-  # HA1: z_stat >=  -epsilon
-  p1 <- pnorm(-z_low)
-  
-  # H02: z_stat > epsilon
-  # HA2: z_stat <=  epsilon
-  p2 <- pnorm(z_high)
-  
-  p = max(c(p1,p2))
-  return(p)
-}
-
-# plot(rowMeans(cbind(inv_tost_es,mmd_es)), inv_tost_es - mmd_es)
-# inv_tost_es <- apply(x, 1, function(x) equiv.p(x,alpha=0.05))
-# equiv.p(x, y, alpha = 0.05)
 
