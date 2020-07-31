@@ -153,6 +153,8 @@ graphics.off()
 # -----------------------------------------------------------------------------
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
 mus = c(seq(0-0.00001,0.33,0.00001), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
+mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
+
 sigmas = runif(length(mus),0.1, 2)
 n_samples = 35
 n_obs = 50
