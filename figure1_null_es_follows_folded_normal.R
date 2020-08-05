@@ -83,7 +83,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff
 #     Normal data, then apply ABS()     |   x   1000
 #     Folded normal data
 set.seed(rand_seed)
-n_sims <- 1e3
+n_sims <- 1e4
 mus <- rep(0, n_sims)
 n_obs <- 1000
 
@@ -194,13 +194,15 @@ q_sort_x_fnorm    <- cumsum(sort_x_fnorm)/sum(sort_x_fnorm)
 # qt_fnorm <-qfoldnorm(abs(z_sort_x_norm))
 # plot(qt_fnorm,q_abs_sort_x_norm)
 
-
 # Calculate theoretical quantiles of x_absnorm  
-qfoldnorm(scale(sort_x_absnorm, center = TRUE, scale = TRUE))
+# qfoldnorm(scale(sort_x_absnorm, center = TRUE, scale = TRUE))
 
 # Fit line to difference and show 95% CI is equal to zero
 # Fit line (not used) to show correspondence
-fit <- unname(lm(formula = sort_x_absnorm ~ 0 +sort_x_fnorm)$coefficients[1])
+# fit <- unname(lm(formula = sort_x_absnorm ~ 0 +sort_x_fnorm)$coefficients[1])
+
+
+
 
 # Define data for plotting
 p_1e <- ggplot(tibble(x = q_sort_x_fnorm, y = q_sort_x_absnorm), aes(x=x, y=y)) + 

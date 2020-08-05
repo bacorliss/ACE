@@ -153,10 +153,10 @@ graphics.off()
 # -----------------------------------------------------------------------------
 # Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
 mus = c(seq(0-0.00001,0.33,0.00001), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
-mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
+# mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
 
 sigmas = runif(length(mus),0.1, 2)
-n_samples = 35
+n_samples = 50
 n_obs = 50
 set.seed(0)
 df_coeff <- data.frame(mu=mus, sigma=sigmas, mean_mmd_96 = rep(0,length(mus)),
@@ -183,15 +183,21 @@ for (n in seq_along(mus)) {  # print(mus[n])
   mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.05) )
   df_coeff$mean_mabs_cl_95[n] <- mean(mabs_cl_95)
   df_coeff$sd_mabs_cl_95[n] <-   sd(mabs_cl_95)
-
+  # Calcualte mmd coeff
+  coeffs_mmd_95 <- (mmd_95 - mabs_cl_90)/ (mabs_cl_95 - mabs_cl_90)
+  df_coeff$mean_coeff_mmd_95[n] <- mean(coeffs_mmd_95)
+  df_coeff$sd_coeff_mmd_95[n] <- sd(coeffs_mmd_95)
+  
 }
-# Calculate Coefficient for mmd
-df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) / 
-  (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
+# # Calculate Coefficient for mmd
+# df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) / 
+#   (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
 
 # Plot look up table results
-gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=coeff_mmd_95)) +
+gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mmd_95)) +
   geom_line(size=0.15) +
+  geom_ribbon(aes(ymin = mean_coeff_mmd_95-1.96*sd_coeff_mmd_95,
+                  ymax=mean_coeff_mmd_95+1.96*sd_coeff_mmd_95), fill = "grey") +
   xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigmas)) +
   ylab(expression(Coeff.~MMD[95])) +
   theme_classic(base_size=8)
@@ -212,10 +218,11 @@ write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 #-------------------------------------------------------------------------------
 mus = seq(0,0.5,0.001)
 n_samples = 1000
-mus = runif(n_samples, -100,100)
+set.seed(0)
+mus = runif(n_samples, -50,50)
 sigmas = runif(n_samples,.1,10)
 # n_obs = 50
-set.seed(0)
+
 # Sample around mean
 x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLIFY = TRUE))
 
@@ -248,8 +255,10 @@ gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   geom_hline(yintercept = -1.96*sd(df_compare$diffs), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = 0, color="blue", size=0.25)+
   geom_point(size=0.05) +
-  xlab(expression((MMD[root]+MMD[lut])/2)) + 
-  ylab(expression(MMD[root]-MMD[lut])) +
+  # xlab(expression((MMD[root]+MMD[lut])/2)) + 
+  # ylab(expression(MMD[root]-MMD[lut])) +
+  xlab("Mean") + 
+  ylab("Diff.") +
   theme_classic(base_size=8)
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
@@ -283,7 +292,7 @@ gg <- ggplot(data = df_speed,  aes(x=x, y=mmd_root)) +
   geom_boxplot( outlier.size = 1) + theme_classic(base_size = 8) +
   ylab("Time (Sec./1000 Runs)") + xlab("Algorithm") +
   scale_x_discrete(limits = rev(levels(df_speed$x)),
-                   labels = c('MMD[root]' = expression(MMD[ROOT]),
+                   labels = c('MMD[root]' = expression(MMD[root]),
                               'MMD[lut]'   = expression(MMD[lut])))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 

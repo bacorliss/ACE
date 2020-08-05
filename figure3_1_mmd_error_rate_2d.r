@@ -53,7 +53,7 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
 }
 
 stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path, 
-                              mu_ov_sigmas = NULL, overrride = TRUE) {
+                              mu_ov_sigmas = NULL, overrride = TRUE, rand.seed=0) {
   #' Perform parameter sweep with specified mus and sigmas
   #' 
   #' @description QUantifies stats of a series of simulations of normal random 
@@ -73,7 +73,7 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
   #'  @return dataframe that stores input parameters 
 
   # Store results to disk since calculations are significant
-  set.seed(rand_seed)
+  set.seed(rand.seed)
   if (!file.exists(out_path) || overrride) {
     n_mus = max(c(length(mus), length(mu_ov_sigmas)))
     # Matrix diff and error of mmd
@@ -238,6 +238,34 @@ locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_o
 
 
 
+rowcol_pearson <- function(m, row_vals, col_vals) {
+  #' Calculate pearson correlation on a heatmap row by row and column by column,
+  #' return bonferroni corrected p values
+  #' 
+  bonf_corr = dim(m)[1] + dim(m)[2]
+  
+  row_pearson_p = rep(0, dim(m)[1])
+  for (r in seq( dim(m)[1])) {
+    row_pearson_p[r] = cor.test(unname(m[r,]),abs(col_vals),method = "pearson")$p.value/bonf_corr  
+  }
+  # print(row_pearson_p)
+  col_pearson_p = rep(0, dim(m)[2])
+  for (c in seq(dim(m)[2])){
+    col_pearson_p[c] = cor.test(unname(m[,c]),row_vals,method = "pearson")$p.value/bonf_corr     
+  } 
+  # print(col_pearson_p)
+  
+  row_sig_labels <- ifelse(row_pearson_p<0.05, "*","")
+  col_sig_labels <- ifelse(col_pearson_p<0.05, "*","")
+  
+  pear_stats <- list(row_sig_labels,col_sig_labels,row_pearson_p,col_pearson_p)
+  names(pear_stats)<-c("row_sig_labels","col_sig_labels","row_pearson_p","col_pearson_p")
+  return(pear_stats)
+}
+
+
+
+
 
 # General variables
 fig_num = "3"
@@ -245,6 +273,8 @@ dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = 
 
 n_samples <- 1e3
 rand.seed <- 0
+
+
 
 
 
@@ -258,7 +288,8 @@ n_obs <- 50
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds") 
 
-
+# Assemble results into square matrix
+df_pear <- rowcol_pearson(df_results$mean_diff_mmd_mu, sigmas, mus)
 # Difference MMD from Mu
 # COnvert from matrix to dataframe
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_diff_mmd_mu)) %>% gather(mu, z, -sigma)
@@ -271,10 +302,14 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu)) + ylab(expression(sigma)) +
   theme_classic(base_size=8) +
+  # annotate("text", x=max(mus), y=sigmas+.02, label = df_pear$row_sig_labels, size=2,vjust=1) +
+  # annotate("text", x=mus, y=max(sigmas)+.02, label = df_pear$col_sig_labels, size=2,vjust=1) +
   scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
                          ticks.colour = "black",  direction = "horizontal"),
                        limits=c(0,2)) +
+  # coord_cartesian(xlim = c(min(mus)+0.1, max(mus)+0.1), # This focuses the x-axis on the range of interest
+  #                 clip = 'off') +
   theme(legend.position="top", legend.title = element_blank(),
         legend.justification = "left",  legend.key.height = unit(.05, "inch"),
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
@@ -290,6 +325,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.tiff",sep=""),
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rdiff_mmd_mu)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
+df_pear <- rowcol_pearson(df_results$mean_rdiff_mmd_mu, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -297,6 +333,8 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu)) + ylab(expression(sigma)) +
   theme_classic(base_size=8) +
+  # annotate("text", x=max(mus), y=sigmas+.02, label = df_pear$row_sig_labels, size=2,vjust=1) +
+  # annotate("text", x=mus, y=max(sigmas)+.02, label = df_pear$col_sig_labels, size=2,vjust=1) +
   scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
                          ticks.colour = "black",  direction = "horizontal")) +
@@ -315,6 +353,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.tiff",sep="")
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
+df_pear <- rowcol_pearson(df_results$mean_mmd_error, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -322,6 +361,8 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu)) + ylab(expression(sigma)) +
   theme_classic(base_size=8) +
+  # annotate("text", x=max(mus), y=sigmas+.02, label = df_pear$row_sig_labels, size=2,vjust=1) +
+  # annotate("text", x=mus, y=max(sigmas)+.02, label = df_pear$col_sig_labels, size=2,vjust=1) +
   scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
                          ticks.colour = "black",  direction = "horizontal"),
@@ -371,7 +412,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_b4 mmd error test.tiff",se
 sigmas <- seq(.1, 5, by = .1)
 mu_ov_sigmas <- seq (-.5, .5, by=0.01)
 n_obs <- 50
-set.seed(rand_seed)
+set.seed(rand.seed)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
                            "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas)
@@ -421,15 +462,17 @@ df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 df_pearson <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu, sigma,method = "pearson")$p.value)
 df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
-gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu, color = merge)) +
+gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
+                                 shape = er, color = side)) +
   # facet_grid(rows = vars(er)) +
-  geom_point(size=0.5) +
+  geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  xlab(expression("sigma")) + 
+  xlab(expression(sigma)) + 
   ylab(expression(mu)) + 
   theme(legend.position="none") +
-  scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  ")) +
+  scale_color_manual(values = c("#66c2a5", "#fc8d62"))+
+  # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  ")) +
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu.tiff", 
@@ -437,20 +480,21 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu.t
           base_asp = 3, base_width = 2.5, dpi = 600)
 
 # Box and Whiskers of Coverage Error Transition Region
-p <- ggplot(df_crit_mu, aes(x=er, group = interaction(er, side), 
+p <- ggplot(df_crit_mu, aes(x=er, color = side,#group = interaction(er, side), 
                          y = abs(critical_mu))) + 
   #geom_violin( position = position_dodge( width = 0.9)) + 
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
   theme_classic(base_size = 8) + theme(legend.position="none", 
                                        axis.title.x = element_blank()) +
   xlab("Error Rate Null Hypothesis") + 
-  ylab(expression(abs(~mu~phantom(.))))
+  ylab(expression(abs(~mu~phantom(.))))+
+  scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 p
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu.tiff", 
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
-res.aov2 <- aov(abs(critical_mu) ~ side + er, data = df_crit_mu)
+res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
 summary_mu <- summary(res.aov2)
 capture.output(summary_mu, file = paste("figure/F", fig_num, "/F", fig_num,
                                         "_c mmd transition over mu.txt", sep=""))
@@ -473,35 +517,38 @@ df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$si
 df_pearson <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu_over_sigma, sigma,method = "pearson")$p.value)
 df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
-gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma, color = merge)) +
+gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma,
+                                          shape = er, color = side)) +
   # facet_grid(rows = vars(er)) +
-  geom_point(size=.5) +
+  geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  xlab(expression("sigma")) + 
+  xlab(expression(sigma)) + 
   ylab(expression(mu*phantom(.)*phantom(.)/sigma)) + 
   theme(legend.position="none") +
-  scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
+  scale_color_manual(values = c("#66c2a5", "#fc8d62"))
+  # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu_sigma.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
 # Box and Whiskers of Coverage Error Transition Region
-p <- ggplot(df_crit_mu_ov_sigma, aes(x=er, group = interaction(er, side), 
+p <- ggplot(df_crit_mu_ov_sigma, aes(x=er, color = side,#group = interaction(er, side), 
                          y = abs(critical_mu_over_sigma))) + 
   #geom_violin( position = position_dodge( width = 0.9)) + 
   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
   theme_classic(base_size = 8) + theme(legend.position="none", 
                                        axis.title.x = element_blank()) +
-  xlab("Error Rate Null Hypothesis") + 
-  ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))
+  xlab("Error Rate Null Hypothesis") +  
+  ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
+scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 p
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu sigma.tiff", 
                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
-res.aov2 <- aov(abs(critical_mu_over_sigma) ~ side + er, data = df_crit_mu_ov_sigma)
+res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
 summary_mu_ov_sigma <- summary(res.aov2)
 capture.output(summary_mu_ov_sigma, file = paste("figure/F", fig_num, "/F", fig_num,
                                         "_c mmd transition over mu sigma.txt", sep=""))
