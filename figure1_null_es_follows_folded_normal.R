@@ -61,10 +61,18 @@ df_1a %>%
   group_by(group,mu) %>%
   summarise(mean = mean(x), n = n())
 
+df_summary <- df_1a %>%
+  group_by(mu) %>%
+  summarize(ks_p_value = min(ks.test(x[group == 1], x[group == 2])$p.value*6,1))
+
+
+
+
 p_1a <- ggplot(df_1a, aes(x = x)) +
   geom_histogram(aes(fill = group,y=..density..), binwidth = .2, boundary = 0, 
                  position = "identity", alpha = 0.5) + 
   facet_grid(. ~ mu, scales = "free_x", labeller=label_parsed) + 
+  # geom_text(label = df_summary$ks_p_value, aes(y=0.07)) + 
   ylab("f(x)") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1a

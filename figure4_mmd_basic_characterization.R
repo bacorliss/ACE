@@ -88,7 +88,7 @@ x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 ci_labels = c(bquote(max((~abs(CI[95])))~" "),
               bquote(max((~abs(CI[90])))), 
               bquote(MMD[95]))
-                            
+
 ## Subplot A,B: MMD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
 g1A = ggplot(data=df,mapping = aes(x=x,y=mmd_95))
 g1A <- g1A + theme_classic() +
@@ -192,13 +192,16 @@ for (n in seq_along(mus)) {  # print(mus[n])
 # # Calculate Coefficient for mmd
 # df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) / 
 #   (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
+mean(df_coeff$sd_mmd_95)
+mean(df_coeff$sd_mabs_cl_90)
+mean(df_coeff$sd_mabs_cl_95)
 
 # Plot look up table results
 gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mmd_95)) +
   geom_line(size=0.15) +
   geom_ribbon(aes(ymin = mean_coeff_mmd_95-1.96*sd_coeff_mmd_95,
                   ymax=mean_coeff_mmd_95+1.96*sd_coeff_mmd_95), fill = "grey") +
-  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigmas)) +
+  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
   ylab(expression(Coeff.~MMD[95])) +
   theme_classic(base_size=8)
 gg
@@ -229,7 +232,7 @@ x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLI
 # Load csv Look up table to convert to spline interp function
 df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
-  
+
 # Function to determine 95% MMD with LUT
 mmd_95_lut <- function (x,interp_fun) {
   mabs_cl_90 <- max_abs_cl_mean_z(x=x, alpha=0.10)
@@ -334,7 +337,7 @@ for (n in seq(1,length(mu),1)) {
     max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
   # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.10)$conf.int )))
   # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.05)$conf.int )))
-
+  
   mmd_diff <- mmd_95 - mcl_90
   ci_diff <- mcl_95 - mcl_90
   fract_mmd_95 <- mmd_diff/ci_diff
@@ -377,11 +380,11 @@ g1C <- ggplot(df, aes(x=mu, y=fract_mmd_95)) +
   theme_minimal() +
   facet_grid(.~mu, scales = "free", switch = "y") + 
   theme(strip.background = element_blank(), strip.text.y = element_blank(),legend.text.align=0,
-       strip.text.x = element_blank(),
-       axis.title.y = element_text(size = 8), axis.title.x = element_text(size = 10),
-       legend.key.size = unit(.5,"line"), legend.spacing.y = unit(0, "cm"),
-       legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
- ylab('Norm. Units') + xlab(expression(mu)) +
+        strip.text.x = element_blank(),
+        axis.title.y = element_text(size = 8), axis.title.x = element_text(size = 10),
+        legend.key.size = unit(.5,"line"), legend.spacing.y = unit(0, "cm"),
+        legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm")) +
+  ylab('Norm. Units') + xlab(expression(mu)) +
   scale_color_manual("", labels=c( expression(max((~abs(CI[95])))), expression(max((~abs(CI[90]))))), 
                      values=c(lighten("blue",0.4), lighten("red",0.4))) + 
   guides(color = guide_legend(override.aes = list(
