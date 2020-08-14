@@ -92,6 +92,7 @@ rfnorm_swept_param <- function (pop_mu,pop_sigma,n_samples=1e4, n_obs=100) {
   lu_table <- get(param_names[param_ind])
   df_results[[(param_names[param_ind])]] <- as.factor(unname(lu_table[as.numeric(df_results[[(param_names[param_ind])]])]))
   
+  # browser();
   return(df_results)
 }
 
@@ -119,17 +120,18 @@ norm_fnorm_stats <- function (df_results, ind_varname) {
   
   
   # Initiialize output struct to store labels of significant for plots
-  df_out <- tibble(prox_mean_sig_str = rep("",length(levels(df_results[[ind_varname]]))),
-                   prox_sd_sig_str = rep("",length(levels(df_results[[ind_varname]]))),
-                   prepost_mean_sig_str = rep("",length(levels(df_results[[ind_varname]]))),
-                   prepost_sd_sig_str = rep("",length(levels(df_results[[ind_varname]]))))
+  df_out <- tibble(prox_mean_sig_str = rep("",length(unique(df_results[[ind_varname]]))),
+                   prox_sd_sig_str = rep("",length(unique(df_results[[ind_varname]]))),
+                   prepost_mean_sig_str = rep("",length(unique(df_results[[ind_varname]]))),
+                   prepost_sd_sig_str = rep("",length(unique(df_results[[ind_varname]]))))
   
+
   # Calculate adjacent significance
   df_out$prox_mean_sig_str <- adjacent_compare_str(pw_sample_mean,'#')
   df_out$prox_sd_sig_str <- adjacent_compare_str(pw_sample_sd,'#')
 
   # Perform paired ttest between groups at each of the values for swept indepdent variable
-  ind_var_levels <- levels(df_results[[ind_varname]])
+  ind_var_levels <- unique(df_results[[ind_varname]])
   p_values_mean <- rep(0,length(ind_var_levels))
   p_values_sd <- rep(0,length(ind_var_levels))
   
@@ -146,11 +148,13 @@ norm_fnorm_stats <- function (df_results, ind_varname) {
     
   }
   # Add chars of significance to groups that are siginificantly different
-  df_out$prepost_mean_sig_str = rep('\u00F8', length(ind_var_levels))
-  df_out$prepost_mean_sig_str[(p.adjust(p_values_mean, method = "bonferroni") < 0.05)] <- ""
+  df_out$prepost_mean_sig_str = rep('*', length(ind_var_levels))
+  df_out$prepost_mean_sig_str[(p.adjust(p_values_mean, method = "bonferroni") > 0.05)] <- ""
   
-  df_out$prepost_sd_sig_str = rep('\u00F8',length(ind_var_levels))
-  df_out$prepost_sd_sig_str[(p.adjust(p_values_sd, method = "bonferroni") <0.05)] <- ""
+  df_out$prepost_sd_sig_str = rep('*',length(ind_var_levels))
+  df_out$prepost_sd_sig_str[(p.adjust(p_values_sd, method = "bonferroni") > 0.05)] <- ""
+  
+  # browser();
   
   return(df_out)
   
@@ -161,21 +165,24 @@ adjacent_compare_str <- function (pw_mat,sig_char) {
 #  Given pairwsie comparison table, look for each study group whether it has siginifance with the 
 # group before and after
   
-  bw_adj_sig = logical(length = dim(pw_mat)[1]+1)
+  # browser();
   
-  bw_adj_sig[1] <- pw_mat[1,1]
+  bw_adj_sig = logical(length = dim(pw_mat)[1])
   
-  bw_adj_sig[length(bw_adj_sig)] <- pw_mat[dim(pw_mat)[1],dim(pw_mat)[2]]
+  # bw_adj_sig[1] <- pw_mat[1,1]
+  
+  # bw_adj_sig[length(bw_adj_sig)] <- pw_mat[dim(pw_mat)[1],dim(pw_mat)[2]]
   
   
   
-  for (n in seq(2,dim(pw_mat)[1],1)) {
-    bw_adj_sig[n] <- pw_mat[n-1,n-1] & pw_mat[n,n]
+  for (n in seq(1,dim(pw_mat)[1],1)) {
+    bw_adj_sig[n] <- pw_mat[n,n] #pw_mat[n-1,n-1] | pw_mat[n,n]
   }
   
-
-  bw_adj_sig_str = rep((sig_char),dim(pw_mat)[1]+1)
+  # bw_adj_sig <- pw_mat[,1]
+  bw_adj_sig_str = c(rep((sig_char),dim(pw_mat)[1]),"")
   bw_adj_sig_str[!bw_adj_sig] <- ""
   
+  # browser();
   return(bw_adj_sig_str)
 }

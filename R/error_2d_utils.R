@@ -24,7 +24,7 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
 }
 
 stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path, 
-                               mu_ov_sigmas = NULL, overrride = TRUE, rand.seed=0) {
+                               mu_ov_sigmas = NULL, overwrite = FALSE, rand.seed=0) {
   #' Perform parameter sweep with specified mus and sigmas
   #' 
   #' @description QUantifies stats of a series of simulations of normal random 
@@ -45,7 +45,7 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
   
   # Store results to disk since calculations are significant
   set.seed(rand.seed)
-  if (!file.exists(out_path) || overrride) {
+  if (!file.exists(out_path) || overwrite) {
     n_mus = max(c(length(mus), length(mu_ov_sigmas)))
     # Matrix diff and error of mmd
     
@@ -59,8 +59,10 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
                              dimnames = dimnames),
       mean_diff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
                                 dimnames = dimnames),
-      mean_rdiff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+      mean_rdiff_mmd_mu_ov_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
                                  dimnames = dimnames),
+      mean_rdiff_mmd_mu_ov_sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
+                                       dimnames = dimnames),
       mean_mmd_error = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
                               dimnames = dimnames),
       error_rate_tests = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
@@ -89,7 +91,8 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
         # Difference mmd to mu
         df$mean_diff_mmd_mu[r, c] <- mean(mmd) - abs(mus[c])
         # Relative difference mmd to mu
-        df$mean_rdiff_mmd_mu[r, c] <- df$mean_diff_mmd_mu[r, c] / sigmas[r]
+        df$mean_rdiff_mmd_mu_ov_mu[r, c] <- df$mean_diff_mmd_mu[r, c] / mus[c]
+        df$mean_rdiff_mmd_mu_ov_sigma[r, c] <- df$mean_diff_mmd_mu[r, c] / sigmas[r]
         # Error rate mmd and mu
         n_successes <- sum(mmd < abs(mus[c]))
         df$mean_mmd_error[r, c] <- n_successes / n_samples
@@ -104,7 +107,8 @@ stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path,
       }
     }
     # Replace INF with NaNs
-    df$mean_rdiff_mmd_mu[!is.finite(df$mean_rdiff_mmd_mu)] <- NaN
+    df$mean_rdiff_mmd_mu_ov_mu[!is.finite(df$mean_rdiff_mmd_mu_ov_mu)] <- NaN
+    df$mean_rdiff_mmd_mu_ov_sigma[!is.finite(df$mean_rdiff_mmd_mu_ov_sigma)] <- NaN
     # Save an object to a file
     saveRDS(df, file = out_path)
   } else {

@@ -22,9 +22,9 @@ library(gplots)
 library(RColorBrewer)
 library(tidyr)
 # https://cran.r-project.org/web/packages/equivalence/equivalence.pdf
-library(equivalence)
+# library(equivalence)
 # https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
-library(TOSTER)
+# library(TOSTER)
 library(docstring)
 
 # Script Parameters
@@ -32,6 +32,7 @@ fig_num = "3"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
 n_samples <- 1e3
 rand.seed <- 0
+overwrite <- FALSE
 
 # Helper Functions
 source("R/mmd.R")
@@ -50,98 +51,15 @@ sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
 
 # Run simulations calculating error of mmd with mu and sigma swept
-df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds") 
-
+df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
+                                overwrite = overwrite)
 # Assemble results into square matrix
 grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
-# Difference MMD from Mu
-# COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_diff_mmd_mu)) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df$mu)
-df$sigma <- as.numeric(df$sigma)
-# Plot heatmap
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
-  theme_classic(base_size=8) +
-  # annotate("text", x=max(mus), y=sigmas+.02, label = df_slopes$row_sig_labels, size=2,vjust=1) +
-  # annotate("text", x=mus, y=max(sigmas)+.02, label = df_slopes$col_sig_labels, size=2,vjust=1) +
-  scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
-                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-                         ticks.colour = "black",  direction = "horizontal"),
-                       limits=c(0,2)) +
-  # coord_cartesian(xlim = c(min(mus)+0.1, max(mus)+0.1), # This focuses the x-axis on the range of interest
-  #                 clip = 'off') +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
-# Plot slope of heatmap by column
-gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
-  xlab(expression(mu)) + ylab("Slope By Column") + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff_vs_mus.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
-# Plot slope of heatmap by row
-gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
-  xlab(expression(sigma)) + ylab("Slope By Row") + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 mmd diff_vs_sigmas.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
+# # Difference MMD from Mu
 
 
 
 
-# Difference MMD from Mu
-# COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rdiff_mmd_mu)) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df$mu)
-df$sigma <- as.numeric(df$sigma)
-grid_slopes <- rowcol_slopes(df_results$mean_rdiff_mmd_mu, sigmas, mus)
-# Plot heatmap
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
-  theme_classic(base_size=8) +
-  # annotate("text", x=max(mus), y=sigmas+.02, label = df_slopes$row_sig_labels, size=2,vjust=1) +
-  # annotate("text", x=mus, y=max(sigmas)+.02, label = df_slopes$col_sig_labels, size=2,vjust=1) +
-  scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
-                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-                         ticks.colour = "black",  direction = "horizontal")) +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
-          base_asp = 3, base_width = 2, dpi = 600) 
-# Plot slope of heatmap by column
-gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
-  xlab(expression(mu)) + ylab("Slope By Column") + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff_vs_mus.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
-# Plot slope of heatmap by row
-gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
-  xlab(expression(sigma)) + ylab("Slope By Row") + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 mmd rdiff_vs_sigmas.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 
 # Difference MMD from Mu
 # COnvert from matrix to dataframe
@@ -158,7 +76,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   theme_classic(base_size=8) +
   # annotate("text", x=max(mus), y=sigmas+.02, label = df_slopes$row_sig_labels, size=2,vjust=1) +
   # annotate("text", x=mus, y=max(sigmas)+.02, label = df_slopes$col_sig_labels, size=2,vjust=1) +
-  scale_fill_gradientn(colors=c("blue","white", "#C00000"), guide = guide_colorbar
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
                          ticks.colour = "black",  direction = "horizontal"),
                        limits=c(0,.1)) +
@@ -174,7 +92,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff"
 gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
   geom_line(size=0.5) + geom_point(size=0.4) + 
   geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
-  xlab(expression(mu)) + ylab("Slope By Column") + theme_classic(base_size=8)
+  xlab(expression(mu)) + ylab(expression(paste("Slope By Row  (ER ~ ",sigma,")"))) + theme_classic(base_size=8)
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_mus.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
@@ -182,7 +100,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_mu
 gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
   geom_line(size=0.5) + geom_point(size=0.4) + 
   geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
-  xlab(expression(sigma)) + ylab("Slope By Row") + theme_classic(base_size=8)
+  xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (ER ~ ",abs(~mu*phantom(.))," )"))) + theme_classic(base_size=8)
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_sigmas.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
@@ -190,37 +108,37 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_si
 
 
 
-# Difference MMD from Mu
+# 2D visualization of hypothesized coverage error of MMD in mu space
+#                                                                              #
+#______________________________________________________________________________#
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$p_val_mmd_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)), 
-  df_results$p_val_mmd_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% gather(mu, z, -sigma)
+  df_results$p_val_mmd_eq_zero > 0.05/(length(sigmas)*length(mus)),
+  df_results$p_val_mmd_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))
 # Plot heat map
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
+gg<- ggplot(df, aes(mu, sigma, fill= z)) +
+  geom_tile()+
+  scale_x_continuous(expand=c(0,0)) +
   scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu)) + ylab(expression(sigma)) +
   theme_classic(base_size = 8) +
-  scale_fill_manual(values=c("white", "#C00000", "blue","purple"),drop=FALSE) +
+  scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_b4 mmd error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
-          base_asp = 3, base_width = 2, dpi = 600) 
+          base_asp = 3, base_width = 2, dpi = 600)
 
 
 
 
 
 
-
-
-# 2D visualization of hypotehsized coverage error of MMD
+# 2D visualization of hypothesized coverage error of MMD in mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
 sigmas <- seq(.1, 5, by = .1)
@@ -246,7 +164,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu/sigma)) + ylab(expression(sigma)) +
   theme_classic(base_size = 8) +
-  scale_fill_manual(values=c("white", "#C00000", "blue","purple"),drop=FALSE) +
+  scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
@@ -276,7 +194,7 @@ df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 df_slopes <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu, sigma,method = "pearson")$p.value)
 # Plot of each boundary separate
-df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
+# df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
 gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
                                  shape = er, color = side)) +
   # facet_grid(rows = vars(er)) +
