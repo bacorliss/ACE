@@ -86,20 +86,19 @@ row_mmd_2s <- function(m1, m2, ...) {
 }
 
 
+
 row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
-  
   # Ignore diagnostic messages during function call.
   wrap_fun <- function(x1,x2)   {
-    suppressMessages(ttestBF(x1, x2)@bayesFactor$bf)
+    suppressMessages(extractBF(ttestBF(x = x1,  y = x2, onlybf = TRUE))$bf)
   }
-
   # if (parallelize) {
   #   bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
   # } else {
-    bf <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+    bfx <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
   # }
-    # browser();
-  return(bf)
+  # browser();
+  return(bfx)
 }
 
 

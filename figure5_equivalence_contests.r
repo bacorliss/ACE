@@ -32,7 +32,7 @@ p_load(readr)
 p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
-source("R/effect_size_contests.R")
+source("R/equivalence_contests.R")
 
 
 # Figure parameters

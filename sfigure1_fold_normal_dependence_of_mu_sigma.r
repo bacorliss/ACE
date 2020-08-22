@@ -24,12 +24,10 @@ source("R/norm_versus_fnorm.R")
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
 
-
 # Parameters
 rand_seed <- 0
 dist_text_size=3;
 equ_font_size=8;
-
 
 
 # Initial parameters

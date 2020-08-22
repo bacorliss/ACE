@@ -166,7 +166,6 @@ adjacent_compare_str <- function (pw_mat,sig_char) {
 # group before and after
   
   # browser();
-  
   bw_adj_sig = logical(length = dim(pw_mat)[1])
   
   # bw_adj_sig[1] <- pw_mat[1,1]

@@ -775,7 +775,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
-    xlab("Effect Size Metric") +
+    xlab("Statistic") +
     ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str,"~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
