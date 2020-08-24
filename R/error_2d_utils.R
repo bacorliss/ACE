@@ -23,92 +23,138 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
   return(error_rate_codes)
 }
 
-stats_param_sweep <- function( mus, sigmas, n_samples, n_obs, out_path, 
-                               mu_ov_sigmas = NULL, overwrite = FALSE, rand.seed=0) {
+stats_param_sweep <-
+  function( mus_ao, sigmas_ao, n_samples, n_obs, out_path, 
+            mu_vsigmas_ao = NULL, overwrite = FALSE, rand.seed=0,
+            mus_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao)))),
+            sigmas_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao))))) {
   #' Perform parameter sweep with specified mus and sigmas
   #' 
   #' @description QUantifies stats of a series of simulations of normal random 
   #' samples (n_samples) with a specified number of observations (n_obs) with 
-  #' the specified values for mu (mus) and sigma (sigmas) for a normal 
+  #' the specified values for mu (mus_ao) and sigma (sigmas_ao) for a normal 
   #' distribution.
   #'  
-  #'  @param mus vector of mu values
-  #'  @param sigmas vector of sigma values
+  #'  @param mus_ao offset value between mus_a and mus_b, see project notes why 
+  #'  this is used instead of mus_d. mus_b = mus_a + mus_ao
+  #'  @param sigmas_ao offset between sigmas_a and sigmas_b. 
+  #'  sigmas_b = sigmas_ao - sigmas_a
   #'  @param n_samples number of samples (collection of measurements to simulate
   #'   one experiment)
   #'  @param n_obs number of observations
   #'  @param out_path output path to store results of calculation so simulations
   #'   do not have to be rerun
-  #'  @param mu_ov_sigmas 
+  #'  @param mu_vsigmas_ao used in place of the mus_ao vector when looking at 
+  #'  normalized values of mu
   #'  
   #'  @return dataframe that stores input parameters 
   
   # Store results to disk since calculations are significant
   set.seed(rand.seed)
   if (!file.exists(out_path) || overwrite) {
-    n_mus = max(c(length(mus), length(mu_ov_sigmas)))
+    n_mus_ao = max(c(length(mus_ao), length(mu_vsigmas_ao)))
     # Matrix diff and error of mmd
     
-    if (!is.null(mus)) {dimnames = list(sigmas,mus)
-    } else {dimnames = list(sigmas,mu_ov_sigmas)}
+    if (!is.null(mus_ao)) {dimnames = list(sigmas_ao,mus_ao)
+    } else {dimnames = list(sigmas_ao,mu_vsigmas_ao)}
     
-    df <- tibble(
-      sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mu = matrix(0L, nrow = length(sigmas), ncol = n_mus),
-      mu_over_sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                             dimnames = dimnames),
-      mean_diff_mmd_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                dimnames = dimnames),
-      mean_rdiff_mmd_mu_ov_mu = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                 dimnames = dimnames),
-      mean_rdiff_mmd_mu_ov_sigma = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                       dimnames = dimnames),
-      mean_mmd_error = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                              dimnames = dimnames),
-      error_rate_tests = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                dimnames = dimnames),
-      p_val_mmd_eq_zero = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                 dimnames = dimnames),
-      p_val_mmd_eq_alpha = matrix(0L, nrow = length(sigmas), ncol = n_mus, 
-                                  dimnames = dimnames))
-    # browser()
+    # Same matrix used to initialize matrices of dataframe
+    init_mat = matrix(NA, nrow = length(sigmas_ao), ncol = n_mus_ao, dimnames = dimnames)
+    
+    col_list <- c("mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d","mu_vsigma_ao","mu_vsigma_a",
+                  
+                  "mean_diff_mmd_mu","mean_diff_mmd_mu_vmu","mean_diff_mmd_mu_vsigma",
+                  "mean_mmd_error",  "p_val_mmd_eq_zero", "p_val_mmd_eq_alpha",
+                  
+                  "mean_diff_rmmd_rmu", "mean_rmmd_error", "p_val_rmmd_eq_zero", "p_val_rmmd_eq_alpha")
+    df <- tibble(mu_a = init_mat);
+    for (n in seq_along(col_list)) { df[[col_list[n]]] <- init_mat }
+    
+    
     # Generate random samples based on random mu values
-    for (r in seq(1, length(sigmas), by = 1)) {
+    for (r in seq(1, length(sigmas_ao), by = 1)) {
       # With a vector of mu/sigma and sigma known, calculate mu
-      if (!is.null(mu_ov_sigmas)) { mus = mu_ov_sigmas * sigmas[r]}
+      if (!is.null(mu_vsigmas_ao)) { mus_ao = mu_vsigmas_ao * sigmas_ao[r]}
       
-      for (c in seq(1, length(mus), by = 1)) {
+      for (c in seq(1, length(mus_ao), by = 1)) {
+        print(sprintf('%i,%i',r,c))
+        # 
+        # if(r==50 & c==51) {browser();}
         
-        df$sigma[r, c] = sigmas[r]
-        df$mu[r, c] = mus[c]
-        df$mu_over_sigma[r, c] = mus[c]/sigmas[r]
+        # Record population parameters
+        # Offset group
+        df$mu_ao[r,c]     <- mus_ao[c]
+        df$sigma_ao[r,c] <- sigmas_ao[r]
+        df$mu_vsigma_ao[r,c] = df$mu_ao[r,c] /df$sigma_ao[r,c]
+        # Control group  
+        df$mu_a[r,c]     <- mus_a[c]
+        df$sigma_a[r,c]  <- sigmas_a[r]
+        # Difference group
+        df$mu_d[r,c]    <- df$mu_a[r,c] + df$mu_ao[r,c]
+        df$sigma_d[r,c] <- sqrt(df$sigma_a[r,c]^2 + (df$sigma_a[r,c] + df$sigma_ao[r,c])^2 )
+        df$mu_vsigma_ao[r,c] <- df$mu_d[r,c]/df$sigma_d[r,c]
         
-        # Get samples, where each row is a seperate sample, columns are observations
-        x1 <- matrix(rnorm(n_samples * n_obs, mus[c], sigmas[r]), nrow = n_obs)
-        # Calculate the mmd
-        mmd = apply(x1, 2, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
+        # Get samples, where each row is a separate sample, columns are observations
+        # Control sample group (For use with two sample cases)
+        x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a[r,c], df$sigma_a[r,c]), ncol = n_obs)
+        # Difference sample (for simplicity experiment sample not calculated)
+        x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d[r,c], df$sigma_d[r,c]), ncol = n_obs)
+        
+        # print(sprintf('1'))
+        # Calculate the mmd from samples from the difference distribution
+        mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
         
         # Difference mmd to mu
-        df$mean_diff_mmd_mu[r, c] <- mean(mmd) - abs(mus[c])
+        #----------------------------------------------------------------------
+        df$mean_diff_mmd_mu[r,c] <- mean(mmd_d) - abs(df$mu_d[r,c])
         # Relative difference mmd to mu
-        df$mean_rdiff_mmd_mu_ov_mu[r, c] <- df$mean_diff_mmd_mu[r, c] / mus[c]
-        df$mean_rdiff_mmd_mu_ov_sigma[r, c] <- df$mean_diff_mmd_mu[r, c] / sigmas[r]
-        # Error rate mmd and mu
-        n_successes <- sum(mmd < abs(mus[c]))
-        df$mean_mmd_error[r, c] <- n_successes / n_samples
+        df$mean_diff_mmd_mu_vmu[r,c] <- df$mean_diff_mmd_mu[r,c] / abs(df$mu_d[r,c])
+        df$mean_diff_mmd_mu_vsigma[r,c] <- df$mean_diff_mmd_mu[r,c] / df$sigma_d[r,c]
+        # Error rate mmd_d and mu
+        n_successes <- sum(mmd_d < abs(df$mu_d[r,c]))
+        df$mean_mmd_error[r,c] <- n_successes / n_samples
         # Caluate p-values for test against error rate == 0
-        df$p_val_mmd_eq_zero[r, c] <- binom.test(
+        df$p_val_mmd_eq_zero[r,c] <- binom.test(
           n_successes, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
         # Caluate p-values for test against error rate == alpha
-        df$p_val_mmd_eq_alpha[r, c] <- binom.test(
+        df$p_val_mmd_eq_alpha[r,c] <- binom.test(
           n_successes, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-        # # Fraction of monte carlo tries where mmd was in error
-        # df$mean_mmd_error[r, c] <- n_successes / n_samples
+        
+        # print(sprintf('2'))
+        # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
+        #----------------------------------------------------------------------
+        diff_rmmd_rmu <- mmd_d/rowMeans(x_a) - df$mu_d[r,c]/df$mu_a[r,c]
+        # if (all(is.na(diff_rmmd_rmu) | is.nan(diff_rmmd_rmu ))) {diff_rmmd_rmu = rep(Inf, length(diff_rmmd_rmu))}
+        df$mean_diff_rmmd_rmu[r,c] <- mean(diff_rmmd_rmu)
+        # Error rate rmmd and rmu
+        n_successes <- sum(diff_rmmd_rmu > 0)
+        # if (is.na(n_successes)) {n_successes=Inf}
+        # if (is.na(n_successes)) {browser()}
+        df$mean_rmmd_error[r,c] <- n_successes / n_samples
+        # Caluate p-values for test rmmd error rate == 0
+        # print(sprintf('%i',n_successes)) 
+        if (is.nan(n_successes) || is.na(n_successes) || is.infinite(n_successes)) {
+          
+        } else{
+        df$p_val_rmmd_eq_zero[r,c] <- binom.test(
+          n_successes, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+        # Caluate p-values for test rmmd error rate == alpha
+        df$p_val_rmmd_eq_alpha[r,c] <- binom.test(
+          n_successes, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+        }
       }
     }
-    # Replace INF with NaNs
-    df$mean_rdiff_mmd_mu_ov_mu[!is.finite(df$mean_rdiff_mmd_mu_ov_mu)] <- NaN
-    df$mean_rdiff_mmd_mu_ov_sigma[!is.finite(df$mean_rdiff_mmd_mu_ov_sigma)] <- NaN
+    # Replace INF with NaNs so downstream analysis does not error
+    # browser()
+    # 
+    # for (n in seq_along(colnames(df))) {
+    #   df[[colnames(df)[n]]][isna]
+    #   
+    # }
+    # df[df==Inf]<-NA
+    # df$mean_rdiff_mmd_mu_ov_mu[!is.finite(df$mean_rdiff_mmd_mu_ov_mu)] <- NaN
+    # df$mean_rdiff_mmd_mu_ov_sigma[!is.finite(df$mean_rdiff_mmd_mu_ov_sigma)] <- NaN
+    
     # Save an object to a file
     saveRDS(df, file = out_path)
   } else {
@@ -159,15 +205,15 @@ locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_o
   }
   
   # Run simulations calculating error of mmd with mu and sigma swept
-  df_right <- stats_param_sweep(mus = mus, sigmas = sigmas, 
+  df_right <- stats_param_sweep(mus_ao = mus, sigmas_ao = sigmas, 
                                 n_samples, n_obs, paste("temp/right_", temp_name,".rds"),
-                                mu_ov_sigmas) 
+                                mu_vsigmas_ao = mu_ov_sigmas) 
   df_right$side <- as.factor("Right")
   
   # Run simulations calculating error of mmd with mu and sigma swept
-  df_left <- stats_param_sweep(mus = mus, sigmas = sigmas, n_samples, n_obs, 
+  df_left <- stats_param_sweep(mus_ao = mus, sigmas_ao = sigmas, n_samples, n_obs, 
                                paste("temp/right_", temp_name,".rds"), 
-                               mu_ov_sigmas= neg_mu_ov_sigmas) 
+                               mu_vsigmas_ao= neg_mu_ov_sigmas) 
   df_left$side <- as.factor("Left")
   
   

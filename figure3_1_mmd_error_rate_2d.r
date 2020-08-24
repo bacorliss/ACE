@@ -32,7 +32,7 @@ fig_num = "3"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
 n_samples <- 1e3
 rand.seed <- 0
-overwrite <- FALSE
+overwrite <- TRUE
 
 # Helper Functions
 source("R/mmd.R")
@@ -50,6 +50,7 @@ mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
 
+
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
                                 overwrite = overwrite)
@@ -60,8 +61,8 @@ grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
 
 
 
-
 # Difference MMD from Mu
+#------------------------------------------------------------------------------
 # COnvert from matrix to dataframe
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
@@ -185,7 +186,7 @@ sigmas <- seq(.1, 5, by = .1);
 mus <- seq (.1/5, 2, by=0.02)
 mu_ov_sigmas = NULL
 
-df_crit_mu <- locate_bidir_binary_thresh(mus = mus,sigmas = sigmas, n_obs = n_obs, 
+df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_obs = n_obs, 
                                          temp_name = "mmd_Error_mu_vs_sigma.rds",
                                          mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
