@@ -27,7 +27,7 @@ library(tidyr)
 library(docstring)
 
 # Script Parameters
-fig_num = "3"
+fig_num = "8"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
 n_samples <- 1e3
 rand.seed <- 0
@@ -46,21 +46,24 @@ mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
 
+
+# debug(stats_param_sweep)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
-                                overwrite = overwrite)
+                                overwrite=overwrite, mus_a=10, sigmas_a=1)
+load("temp/debug_space.RData")
+
 # Assemble results into square matrix
 grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
-# # Difference MMD from Mu
 
 
 # Difference MMD from Mu
 #------------------------------------------------------------------------------
 # COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rmmd_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-grid_slopes <- rowcol_slopes(df_results$mean_mmd_error, sigmas, mus)
+grid_slopes <- rowcol_slopes(df_results$mean_rmmd_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -77,7 +80,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a1 rmmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 # Plot slope of heatmap by column
@@ -86,7 +89,7 @@ gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
   xlab(expression(mu)) + ylab(expression(paste("Slope By Row  (ER ~ ",sigma,")"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_mus.tiff",sep=""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a2 rmmd error rate 2D_vs_mus.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 # Plot slope of heatmap by row
 gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
@@ -94,7 +97,7 @@ gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
   xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (ER ~ ",abs(~mu*phantom(.))," )"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_sigmas.tiff",sep=""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 rmmd error rate 2D_vs_sigmas.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 
 
