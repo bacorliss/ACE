@@ -69,7 +69,8 @@ stats_param_sweep <-
       # Same matrix used to initialize matrices of dataframe
       init_mat = matrix(NA, nrow = length(sigmas_ao), ncol = n_mus_ao, dimnames = dimnames)
       
-      col_list <- c("mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d","mu_vsigma_ao","mu_vsigma_a",
+      col_list <- c("mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d",
+                    "mu_vsigma_ao","mu_vsigma_a",
                     "mean_rmmd", "mean_rmu",
                     
                     "mean_diff_mmd_mu","mean_diff_mmd_mu_vmu","mean_diff_mmd_mu_vsigma",
@@ -104,13 +105,32 @@ stats_param_sweep <-
           # Difference sample (for simplicity experiment sample not calculated)
           x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d[r,c], df$sigma_d[r,c]), ncol = n_obs)
           
+          # Difference x_bar to mu
+          diff_xbar_mu <- rowMeans(x_d) - df$mu_d[r,c]
+          df$mean_diff_xbar_mu[r,c] <- mean(diff_xbar_mu)
+          n_errors <- sum(diff_xbar_mu < abs(df$mu_d[r,c]))
+          df$mean_xbar_error_rate[r,c] <- n_errors / n_samples
+          df$p_val_xbar_eq_alpha[r,c] <- binom.test(
+            n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+          
+          # Difference rx_bar to rmu
+          diff_rxbar_mu <- rowMeans(x_d)/rowMeans(x_a) - df$mu_d[r,c]/df$mu_a[r,c]
+          df$mean_diff_xbar_mu[r,c] <- mean(diff_rxbar_mu)
+          n_errors <- sum(diff_rxbar_mu < abs(df$mu_d[r,c]))
+          df$mean_xbar_error_rate[r,c] <- n_errors / n_samples
+          df$p_val_rxbar_eq_alpha[r,c] <- binom.test(
+            n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+          
+          
           # Calculate the mmd from samples from the difference distribution
           mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
           
+          
           # Difference mmd to mu
           #----------------------------------------------------------------------
-          df$mean_diff_mmd_mu[r,c] <- mean(mmd_d) - abs(df$mu_d[r,c])
+          diff_mmd_mu <- mmd_d - abs(df$mu_d[r,c])
           # Relative difference mmd to mu
+          df$mean_diff_mmd_mu[r,c] <- mean(diff_mmd_mu)
           df$mean_diff_mmd_mu_vmu[r,c] <- df$mean_diff_mmd_mu[r,c] / abs(df$mu_d[r,c])
           df$mean_diff_mmd_mu_vsigma[r,c] <- df$mean_diff_mmd_mu[r,c] / df$sigma_d[r,c]
           # Error rate mmd_d and mu
