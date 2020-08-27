@@ -98,11 +98,11 @@ stats_param_sweep <-
           df$sigma_d[r,c] <- sqrt(df$sigma_a[r,c]^2 + (df$sigma_a[r,c] + df$sigma_ao[r,c])^2 )
           df$mu_vsigma_ao[r,c] <- df$mu_d[r,c]/df$sigma_d[r,c]
           
-          # Get samples, where each row is a separate sample, columns are observations
-          # Control sample group (For use with two sample cases)
+          # Control group (For use with two sample cases)
           x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a[r,c], df$sigma_a[r,c]), ncol = n_obs)
-          # Difference sample (for simplicity experiment sample not calculated)
+          # Difference group (for simplicity experiment sample not calculated)
           x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d[r,c], df$sigma_d[r,c]), ncol = n_obs)
+          # Each row is a separate sample, columns are observations
           
           # Calculate the mmd from samples from the difference distribution
           mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
