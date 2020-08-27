@@ -29,7 +29,6 @@ library(docstring)
 # Script Parameters
 fig_num = "8"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
-n_samples <- 1e3
 rand.seed <- 0
 overwrite <- TRUE
 
@@ -45,13 +44,12 @@ source("R/error_2d_utils.R")
 mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
-
+n_samples <- 1e2
 
 # debug(stats_param_sweep)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
-                                overwrite=overwrite, mus_a=10, sigmas_a=1)
-load("temp/debug_space.RData")
+                                overwrite=overwrite, mus_a=100, sigmas_a=1)
 
 # Assemble results into square matrix
 grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
