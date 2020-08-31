@@ -56,8 +56,8 @@ grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
 
 # Difference MMD from Mu
 #------------------------------------------------------------------------------
-# COnvert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error)) %>% gather(mu, z, -sigma)
+# Convert from matrix to dataframe
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 grid_slopes <- rowcol_slopes(df_results$mean_mmd_error, sigmas, mus)
@@ -105,8 +105,8 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_si
 #______________________________________________________________________________#
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$p_val_mmd_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$p_val_mmd_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_mmd_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_mmd_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))
@@ -143,8 +143,8 @@ df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
 # Difference MMD from Mu
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$p_val_mmd_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
-  df_results$p_val_mmd_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
+  df_results$pval_mmd_err_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
+  df_results$pval_mmd_err_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
   gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
