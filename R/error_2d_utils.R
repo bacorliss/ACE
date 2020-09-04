@@ -56,7 +56,7 @@ stats_param_sweep <-
     n_mus_ao = max(c(length(mus_ao), length(mu_vsigmas_ao)))
     # Fill out arguments for control sample
     if (length(mus_a)==1) {mus_a = rep(mus_a,n_mus_ao)}
-    if (length(sigmas_a)==1) {sigmas_a = rep(mus_a,n_mus_ao)}
+    if (length(sigmas_a)==1) {sigmas_a = rep(sigmas_a,n_mus_ao)}
     
     # Store results to disk since calculations are significant
     set.seed(rand.seed)
@@ -71,15 +71,15 @@ stats_param_sweep <-
       
       col_list <- c(
         #    Population statistics
-        "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d", "mu_vsigma_ao","mu_vsigma_a",
+        "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d", "mu_vsigma_d","fract_neg_x_bar_a",
         #    Sample Mean and relative mean
-        "mean_diff_xbar_mu", "mean_xbar_error_rate", "pval_xbar_err_eq_zero", "pval_xbar_err_eq_alpha",
-        "mean_diff_rxbar_mu", "mean_rxbar_error_rate", "pval_rxbar_err_eq_zero", "pval_rxbar_err_eq_alpha",
+        "mean_abs_diff_xbar_mu", "mean_xbar_error_rate", "pval_xbar_err_eq_zero", "pval_xbar_err_eq_alpha",
+        "mean_abs_diff_rxbar_mu", "mean_rxbar_error_rate", "pval_rxbar_err_eq_zero", "pval_rxbar_err_eq_alpha",
         #    MMD
         "mean_diff_mmd_mu","mean_diff_mmd_mu_vmu","mean_diff_mmd_mu_vsigma",
         "mean_mmd_error_rate",  "pval_mmd_err_eq_zero", "pval_mmd_err_eq_alpha",
         #    RMMD
-        "mean_rmmd", "mean_rmu", "mean_diff_rmmd_rmu", 
+        "mean_rmmd", "rmu", "mean_diff_rmmd_rmu", 
         "mean_rmmd_error_rate", "pval_rmmd_err_eq_zero", "pval_rmmd_err_eq_alpha")
       
       df <- tibble(mu_a = init_mat);
@@ -95,14 +95,14 @@ stats_param_sweep <-
           # Offset group
           df$mu_ao[r,c]        <- mus_ao[c]
           df$sigma_ao[r,c]     <- sigmas_ao[r]
-          df$mu_vsigma_ao[r,c] <- df$mu_ao[r,c] /df$sigma_ao[r,c]
           # Control group  
           df$mu_a[r,c]     <- mus_a[c]
           df$sigma_a[r,c]  <- sigmas_a[r]
           # Difference group
           df$mu_d[r,c]    <- df$mu_ao[r,c]
           df$sigma_d[r,c] <- sqrt(df$sigma_a[r,c]^2 + (df$sigma_a[r,c] + df$sigma_ao[r,c])^2 )
-          df$mu_vsigma_ao[r,c] <- df$mu_d[r,c]/df$sigma_d[r,c]
+          df$mu_vsigma_d[r,c] <- df$mu_d[r,c]/df$sigma_d[r,c]
+          df$rmu[r,c] <- df$mu_d[r,c] / df$mu_a[r,c]
           
           # Control group (For use with two sample cases)
           x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a[r,c], df$sigma_a[r,c]), ncol = n_obs)
@@ -110,19 +110,20 @@ stats_param_sweep <-
           x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d[r,c], df$sigma_d[r,c]), ncol = n_obs)
           # Each row is a separate sample, columns are observations
           
-          # Difference x_bar to mu
-          diff_xbar_mu <- rowMeans(x_d) - df$mu_d[r,c]
-          df$mean_diff_xbar_mu[r,c]      <- mean(diff_xbar_mu)
-          n_errors <- sum(diff_xbar_mu < abs(df$mu_d[r,c]))
+          # Difference x_bar to mu: Success is x_bar > mu
+          abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d[r,c])
+          df$mean_abs_diff_xbar_mu[r,c]  <- mean(abs_diff_xbar_mu)
+          n_errors                       <- sum(abs_diff_xbar_mu < 0)
           df$mean_xbar_error_rate[r,c]   <- n_errors / n_samples
           df$pval_xbar_err_eq_zero[r,c]  <- binom.test(
             n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
           df$pval_xbar_err_eq_alpha[r,c] <- binom.test(
             n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
           # Difference rx_bar to rmu
-          diff_rxbar_mu <- rowMeans(x_d)/rowMeans(x_a) - df$mu_d[r,c]/df$mu_a[r,c]
-          df$mean_diff_rxbar_mu[r,c]      <- mean(diff_rxbar_mu)
-          n_errors <- sum(diff_rxbar_mu < abs(df$mu_d[r,c]))
+          abs_diff_rxbar_mu               <- abs(rowMeans(x_d)/rowMeans(x_a)) -
+                                                       abs(df$mu_d[r,c]/df$mu_a[r,c])
+          df$mean_abs_diff_rxbar_mu[r,c]  <- mean(abs_diff_rxbar_mu)
+          n_errors                        <- sum(abs_diff_rxbar_mu < 0)
           df$mean_rxbar_error_rate[r,c]   <- n_errors / n_samples
           if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
           df$pval_rxbar_err_eq_zero[r,c]  <- binom.test(
@@ -135,14 +136,14 @@ stats_param_sweep <-
           mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
           # Difference mmd to mu
           #----------------------------------------------------------------------
-          diff_mmd_mu <- mmd_d - abs(df$mu_d[r,c])
+          abs_diff_mmd_mu <- mmd_d - abs(df$mu_d[r,c])
           # Relative difference mmd to mu
-          df$mean_diff_mmd_mu[r,c] <- mean(diff_mmd_mu)
-          df$mean_diff_mmd_mu_vmu[r,c] <- df$mean_diff_mmd_mu[r,c] / abs(df$mu_d[r,c])
+          df$mean_diff_mmd_mu[r,c]        <- mean(abs_diff_mmd_mu)
+          df$mean_diff_mmd_mu_vmu[r,c]    <- df$mean_diff_mmd_mu[r,c] / abs(df$mu_d[r,c])
           df$mean_diff_mmd_mu_vsigma[r,c] <- df$mean_diff_mmd_mu[r,c] / df$sigma_d[r,c]
           # Error rate mmd_d and mu
-          n_errors <- sum(mmd_d < abs(df$mu_d[r,c]))
-          df$mean_mmd_error_rate[r,c] <- n_errors / n_samples
+          n_errors                        <- sum(abs_diff_mmd_mu < 0)
+          df$mean_mmd_error_rate[r,c]     <- n_errors / n_samples
           # Caluate p-values for test against error rate == 0
           df$pval_mmd_err_eq_zero[r,c] <- binom.test(
             n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
@@ -152,14 +153,14 @@ stats_param_sweep <-
           
           # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
           #----------------------------------------------------------------------
-          df$mean_rmmd[r,c] <- abs(mean(mmd_d/rowMeans(x_a)))
-          df$mean_rmu[r,c] <- abs(df$mu_d[r,c]/df$mu_a[r,c])
-          
-          diff_rmmd_rmu <- abs(mmd_d/rowMeans(x_a)) - abs(df$mu_d[r,c]/df$mu_a[r,c])
-          # if (all(is.na(diff_rmmd_rmu) | is.nan(diff_rmmd_rmu ))) {diff_rmmd_rmu = rep(Inf, length(diff_rmmd_rmu))}
-          df$mean_diff_rmmd_rmu[r,c] <- mean(diff_rmmd_rmu)
-          # Error rate rmmd and rmu
-          n_errors <- sum(diff_rmmd_rmu < 0)
+          rmmd                         <- mmd_d / abs(rowMeans(x_a))
+          df$mean_rmmd[r,c]            <- mean(rmmd)
+          # Quality check: no means of group a should be below zero for relative change
+          df$fract_neg_x_bar_a [r,c]   <- sum(rowMeans(x_a)<0) / n_samples
+          diff_rmmd_rmu                <- rmmd - abs(df$rmu[r,c])
+          df$mean_diff_rmmd_rmu[r,c]   <- mean(diff_rmmd_rmu)
+          # Error rate rmmd > rmu
+          n_errors                     <- sum(diff_rmmd_rmu < 0)
           df$mean_rmmd_error_rate[r,c] <- n_errors / n_samples
           # Calculate p-values for test rmmd error rate == 0
           if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
@@ -171,6 +172,7 @@ stats_param_sweep <-
           }
         }
       }
+      # browser();
       # Binomial test returns FALSE if below min p-value, set to min p-value instead
       df$pval_rmmd_err_eq_zero[df$pval_rmmd_err_eq_zero==FALSE]  <- 2.2E-16
       df$pval_rmmd_err_eq_zero[df$pval_rmmd_err_eq_alpha==FALSE] <- 2.2E-16

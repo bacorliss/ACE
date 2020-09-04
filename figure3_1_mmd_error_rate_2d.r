@@ -50,17 +50,17 @@ n_obs <- 50
 df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
                                 overwrite = overwrite)
 # Assemble results into square matrix
-grid_slopes <- rowcol_slopes(df_results$mean_diff_mmd_mu, sigmas, mus)
+grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
 # # Difference MMD from Mu
 
 
-# Difference MMD from Mu
+# Error rate of rMMD < rmu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-grid_slopes <- rowcol_slopes(df_results$mean_mmd_error, sigmas, mus)
+grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -139,7 +139,8 @@ n_obs <- 50
 set.seed(rand.seed)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
-                           "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas)
+                           "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas,
+                           overwrite = overwrite)
 # Difference MMD from Mu
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
