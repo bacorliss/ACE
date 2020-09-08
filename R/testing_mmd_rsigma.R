@@ -1,17 +1,19 @@
 
 
-
-library(ggplot2)
-library(tibble)
-library(RColorBrewer)
-library(broom)
-# library(gridExtra)
-# library(grid)
-library(tidyr)
-library(cowplot)
-library(dplyr)
-# library(effsize)
-library(boot)
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+# Load packages
+p_load(ggplot2)
+p_load(tibble)
+p_load(RColorBrewer)
+p_load(broom)
+# p_load(gridExtra)
+# p_load(grid)
+p_load(tidyr)
+p_load(cowplot)
+p_load(dplyr)
+# p_load(effsize)
+p_load(boot)
 # User defined libraries
 source("mmd.R")
 source("effect_size_contests.R")

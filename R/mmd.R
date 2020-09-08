@@ -4,8 +4,10 @@
 # or difference between two distributions.
 
 # TODO var.equal = TRUE not coded yet
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
-library(docstring)
+p_load(docstring)
 
 
 

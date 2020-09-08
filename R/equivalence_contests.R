@@ -4,19 +4,21 @@
 
 # TODO: for specifying offset distribution in generateData(), should the standard
 # deviation for the control group be added by stds or variances?
-
-library(ggplot2)
-library(tibble)
-library(RColorBrewer)
-library(broom)
-library(tidyr)
-library(cowplot)
-library(dplyr)
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+# Load package manager
+p_load(ggplot2)
+p_load(tibble)
+p_load(RColorBrewer)
+p_load(broom)
+p_load(tidyr)
+p_load(cowplot)
+p_load(dplyr)
 # Parallel processing
-library(boot)
-library(foreach)
-library(doParallel)
-library(stringr)
+p_load(boot)
+p_load(foreach)
+p_load(doParallel)
+p_load(stringr)
 source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")

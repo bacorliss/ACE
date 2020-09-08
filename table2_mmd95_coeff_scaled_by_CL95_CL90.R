@@ -1,16 +1,16 @@
 
-
-
-library(broom)
-library(scales)
-library(ggplot2)
-library(plyr)
-library(dplyr)
-library(grid)
-library(gridExtra)
-library(colorspace)
-library("RColorBrewer")
-library(cowplot)
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+p_load(broom)
+p_load(scales)
+p_load(ggplot2)
+p_load(plyr)
+p_load(dplyr)
+p_load(grid)
+p_load(gridExtra)
+p_load(colorspace)
+p_load("RColorBrewer")
+p_load(cowplot)
 source("R/mmd.R")
 source("R/row_effect_sizes.R")
 

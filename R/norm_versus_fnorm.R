@@ -1,8 +1,9 @@
 
-
-library(dplyr)
-library(tibble)
-library(broom)
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+p_load(dplyr)
+p_load(tibble)
+p_load(broom)
 
 gglabel_height <- function (var,line_num, pad_mult) {
   line_ypos <- pad_mult*(max(var)-min(var)) + max(var) + line_num * pad_mult*(max(var)-min(var))

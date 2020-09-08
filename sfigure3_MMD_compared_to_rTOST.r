@@ -1,15 +1,15 @@
 
 
-
-
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
-library(ggplot2)
-library(tibble)
-library(equivalence)
-library(TOSTER)
-library(dplyr)
-library(tidyr)
-library(cowplot)
+p_load(ggplot2)
+p_load(tibble)
+p_load(equivalence)
+p_load(TOSTER)
+p_load(dplyr)
+p_load(tidyr)
+p_load(cowplot)
 
 source("R/row_effect_sizes.R")
 source("R/mmd.R")

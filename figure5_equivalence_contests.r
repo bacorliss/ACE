@@ -20,8 +20,9 @@
 # From #R Studio
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # setwd(getSrcDirectory()[1])
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
-library(pacman)
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)

@@ -1,6 +1,10 @@
 
-library(BayesFactor)
-library(TOSTER)
+
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+
+p_load(BayesFactor)
+p_load(TOSTER)
 
 
 ## User defined functions

@@ -1,7 +1,7 @@
 
 
-
-
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
 # Test how each metric responds to changing each characteristic of similarity
 

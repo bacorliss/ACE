@@ -1,31 +1,31 @@
 
 
 # p.adjust(p, method = p.adjust.methods, n = length(p))
-
-
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
-library(ggplot2)
-library(tibble)
-library(RColorBrewer)
-library(broom)
-library(gridExtra)
-library(grid)
-library(rlang)
-library(colorspace)
-library(VGAM)
-library(boot)
-library(dplyr)
-library(cowplot)
-library(binom)
-library(VGAM)
-library(gplots)
-library(RColorBrewer)
-library(tidyr)
+p_load(ggplot2)
+p_load(tibble)
+p_load(RColorBrewer)
+p_load(broom)
+p_load(gridExtra)
+p_load(grid)
+p_load(rlang)
+p_load(colorspace)
+p_load(VGAM)
+p_load(boot)
+p_load(dplyr)
+p_load(cowplot)
+p_load(binom)
+p_load(VGAM)
+p_load(gplots)
+p_load(RColorBrewer)
+p_load(tidyr)
 # https://cran.r-project.org/web/packages/equivalence/equivalence.pdf
-# library(equivalence)
+# p_load(equivalence)
 # https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
-# library(TOSTER)
-library(docstring)
+# p_load(TOSTER)
+p_load(docstring)
 
 # Script Parameters
 fig_num = "2"
