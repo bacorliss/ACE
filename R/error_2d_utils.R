@@ -1,10 +1,19 @@
 
+# Load package manager
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+p_load(foreach)
+p_load(doParallel)
 
+source("R/parallel_utils.R")
+source("R/mmd.R")
+mmd_functions <- parse_functions_source("R/mmd.R")
 
 RowVar <- function(x, ...) rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
-
 # Test if a value is within an interval (inclusive)
 within_ci <- function(ci, x) x >= ci[1] & x <= ci[2]
+
+
+
 
 error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
   #' Assign codes for error rate whether null hypothesis is rejected
@@ -26,11 +35,12 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
 
 
 
-stats_param_sweep <-
+quantify_coverage_errors <-
   function( mus_ao, sigmas_ao, n_samples, n_obs, out_path, 
             mu_vsigmas_ao = NULL, overwrite = FALSE, rand.seed=0,
             mus_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao)))),
-            sigmas_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao))))) {
+            sigmas_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao)))),
+            parallel_proc = TRUE) {
     #' Perform parameter sweep with specified mus and sigmas
     #' 
     #' @description QUantifies stats of a series of simulations of normal random 
@@ -65,127 +75,161 @@ stats_param_sweep <-
       # Matrix diff and error of mmd
       if (!is.null(mus_ao)) {dimnames = list(sigmas_ao,mus_ao)
       } else {dimnames = list(sigmas_ao,mu_vsigmas_ao)}
-      
-      # Same matrix used to initialize matrices of dataframe
-      init_mat = matrix(NA, nrow = length(sigmas_ao), ncol = n_mus_ao, dimnames = dimnames)
-      
-      col_list <- c(
-        #    Population statistics
-        "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d", "mu_vsigma_d","fract_neg_x_bar_a",
-        #    Sample Mean and relative mean
-        "mean_abs_diff_xbar_mu", "mean_xbar_error_rate", "pval_xbar_err_eq_zero", "pval_xbar_err_eq_alpha",
-        "mean_abs_diff_rxbar_mu", "mean_rxbar_error_rate", "pval_rxbar_err_eq_zero", "pval_rxbar_err_eq_alpha",
-        #    MMD
-        "mean_diff_mmd_mu","mean_diff_mmd_mu_vmu","mean_diff_mmd_mu_vsigma",
-        "mean_mmd_error_rate",  "pval_mmd_err_eq_zero", "pval_mmd_err_eq_alpha",
-        #    RMMD
-        "mean_rmmd", "rmu", "mean_diff_rmmd_rmu", 
-        "mean_rmmd_error_rate", "pval_rmmd_err_eq_zero", "pval_rmmd_err_eq_alpha")
-      
-      df <- tibble(mu_a = init_mat);
-      for (n in seq_along(col_list)) { df[[col_list[n]]] <- init_mat }
-      
-      # Generate random samples based on random mu values
+  
+      # Initialize matrix in data form
+      param_col_list <- c("mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d", 
+                    "mu_vsigma_d","rmu","fract_neg_x_bar_a")
+      df_mat <- tibble(mu_a = matrix(NA, nrow = length(sigmas_ao), 
+                                     ncol = n_mus_ao, dimnames = dimnames));
+      for (n in seq_along(param_col_list)) { df_mat[[param_col_list[n]]] <- init_mat }
       for (r in seq(1, length(sigmas_ao), by = 1)) {
         # Calculate mu if only mu/sigma and sigma are known
         if (!is.null(mu_vsigmas_ao)) { mus_ao = mu_vsigmas_ao * sigmas_ao[r]}
-        
         for (c in seq(1, length(mus_ao), by = 1)) {
-          # Record population parameters
-          # Offset group
-          df$mu_ao[r,c]        <- mus_ao[c]
-          df$sigma_ao[r,c]     <- sigmas_ao[r]
-          # Control group  
-          df$mu_a[r,c]     <- mus_a[c]
-          df$sigma_a[r,c]  <- sigmas_a[r]
+          df_mat$mu_ao[r,c]    <- mus_ao[c]
+          df_mat$sigma_ao[r,c] <- sigmas_ao[r]
+          # Control group
+          df_mat$mu_a[r,c]     <- mus_a[c]
+          df_mat$sigma_a[r,c]  <- sigmas_a[r]
           # Difference group
-          df$mu_d[r,c]    <- df$mu_ao[r,c]
-          df$sigma_d[r,c] <- sqrt(df$sigma_a[r,c]^2 + (df$sigma_a[r,c] + df$sigma_ao[r,c])^2 )
-          df$mu_vsigma_d[r,c] <- df$mu_d[r,c]/df$sigma_d[r,c]
-          df$rmu[r,c] <- df$mu_d[r,c] / df$mu_a[r,c]
-          
-          # Control group (For use with two sample cases)
-          x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a[r,c], df$sigma_a[r,c]), ncol = n_obs)
-          # Difference group (for simplicity experiment sample not calculated)
-          x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d[r,c], df$sigma_d[r,c]), ncol = n_obs)
-          # Each row is a separate sample, columns are observations
-          
-          # Difference x_bar to mu: Success is x_bar > mu
-          abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d[r,c])
-          df$mean_abs_diff_xbar_mu[r,c]  <- mean(abs_diff_xbar_mu)
-          n_errors                       <- sum(abs_diff_xbar_mu < 0)
-          df$mean_xbar_error_rate[r,c]   <- n_errors / n_samples
-          df$pval_xbar_err_eq_zero[r,c]  <- binom.test(
-            n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-          df$pval_xbar_err_eq_alpha[r,c] <- binom.test(
-            n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-          # Difference rx_bar to rmu
-          abs_diff_rxbar_mu               <- abs(rowMeans(x_d)/rowMeans(x_a)) -
-                                                       abs(df$mu_d[r,c]/df$mu_a[r,c])
-          df$mean_abs_diff_rxbar_mu[r,c]  <- mean(abs_diff_rxbar_mu)
-          n_errors                        <- sum(abs_diff_rxbar_mu < 0)
-          df$mean_rxbar_error_rate[r,c]   <- n_errors / n_samples
-          if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
-          df$pval_rxbar_err_eq_zero[r,c]  <- binom.test(
-            n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-          df$pval_rxbar_err_eq_alpha[r,c] <- binom.test(
-            n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+          df_mat$mu_d[r,c]     <- df_mat$mu_ao[r,c]
+          df_mat$sigma_d[r,c]  <- sqrt(df_mat$sigma_a[r,c]^2 + (df_mat$sigma_a[r,c] +
+                                                                  df_mat$sigma_ao[r,c])^2 )
+          df_mat$mu_vsigma_d[r,c] <- df_mat$mu_d[r,c]/df_mat$sigma_d[r,c]
+          df_mat$rmu[r,c] <- df_mat$mu_d[r,c] / df_mat$mu_a[r,c]
           }
-          
-          # Calculate the mmd from samples from the difference distribution
-          mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
-          # Difference mmd to mu
-          #----------------------------------------------------------------------
-          abs_diff_mmd_mu <- mmd_d - abs(df$mu_d[r,c])
-          # Relative difference mmd to mu
-          df$mean_diff_mmd_mu[r,c]        <- mean(abs_diff_mmd_mu)
-          df$mean_diff_mmd_mu_vmu[r,c]    <- df$mean_diff_mmd_mu[r,c] / abs(df$mu_d[r,c])
-          df$mean_diff_mmd_mu_vsigma[r,c] <- df$mean_diff_mmd_mu[r,c] / df$sigma_d[r,c]
-          # Error rate mmd_d and mu
-          n_errors                        <- sum(abs_diff_mmd_mu < 0)
-          df$mean_mmd_error_rate[r,c]     <- n_errors / n_samples
-          # Caluate p-values for test against error rate == 0
-          df$pval_mmd_err_eq_zero[r,c] <- binom.test(
-            n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-          # Caluate p-values for test against error rate == alpha
-          df$pval_mmd_err_eq_alpha[r,c] <- binom.test(
-            n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-          
-          # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
-          #----------------------------------------------------------------------
-          rmmd                         <- mmd_d / abs(rowMeans(x_a))
-          df$mean_rmmd[r,c]            <- mean(rmmd)
-          # Quality check: no means of group a should be below zero for relative change
-          df$fract_neg_x_bar_a [r,c]   <- sum(rowMeans(x_a)<0) / n_samples
-          diff_rmmd_rmu                <- rmmd - abs(df$rmu[r,c])
-          df$mean_diff_rmmd_rmu[r,c]   <- mean(diff_rmmd_rmu)
-          # Error rate rmmd > rmu
-          n_errors                     <- sum(diff_rmmd_rmu < 0)
-          df$mean_rmmd_error_rate[r,c] <- n_errors / n_samples
-          # Calculate p-values for test rmmd error rate == 0
-          if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
-            df$pval_rmmd_err_eq_zero[r,c] <- binom.test(
-              n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-            # Calculate p-values for test rmmd error rate == alpha
-            df$pval_rmmd_err_eq_alpha[r,c] <- binom.test(
-              n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-          }
+        } 
+      
+      # Linearize matrix dataframe
+      df_lin <- tibble(mu_a = as.vector(init_mat));
+      for (n in seq_along(param_col_list)) { df_lin[[col_list[n]]] <- as.vector(df_mat[[param_col_list[n]]]) }
+      
+      # Process parallel or serially
+      if (parallel_proc) { 
+        cl = makeCluster(detectCores()[1]-1)
+        registerDoParallel(cl)
+        df_lin2 <- foreach(n = seq(1,length(sigmas_ao)*length(mus_ao),1),
+                           .export = c(mmd_functions, "quantify_coverage_error"), 
+                           .combine = rbind) %dopar% {
+                             #calling a function
+                             tempMatrix <- quantify_coverage_error(df_lin[n,],n_samples, n_obs) 
+                             tempMatrix
+                           }
+        stopCluster(cl)
+      } else {            # Process effect sizes serially
+        df_list <- list()
+        for (n in seq(1,length(sigmas_ao)*length(mus_ao),1)) {
+          df_list[[n]] <- quantify_coverage_error(df_lin[n,],n_samples, n_obs) 
         }
+        df_lin2 <- do.call("rbind", df_list)
       }
-      # browser();
+      
+      # Convert linear data frame to dataframe of matrices
+      df_mat2 <- df_mat; col_list <- colnames(df_lin2)
+      for (n in seq_along(col_list)) { 
+        df_mat2[[col_list[n]]] <- matrix(df_lin2[[col_list[n]]], nrow = length(sigmas_ao), 
+                                            ncol = n_mus_ao, dimnames = dimnames)
+      }
+      
       # Binomial test returns FALSE if below min p-value, set to min p-value instead
-      df$pval_rmmd_err_eq_zero[df$pval_rmmd_err_eq_zero==FALSE]  <- 2.2E-16
-      df$pval_rmmd_err_eq_zero[df$pval_rmmd_err_eq_alpha==FALSE] <- 2.2E-16
+      df_mat2$pval_rmmd_err_eq_zero[df_mat2$pval_rmmd_err_eq_zero==FALSE]  <- 2.2E-16
+      df_mat2$pval_rmmd_err_eq_zero[df_mat2$pval_rmmd_err_eq_alpha==FALSE] <- 2.2E-16
+      
       # Save an object to a file
-      saveRDS(df, file = out_path)
+      saveRDS(df_mat2, file = out_path)
     } else {
       # Restore the object
-      df <- readRDS(file = out_path)
+      df_mat2 <- readRDS(file = out_path)
     }
-    save(list = ls(all.names = TRUE), file = "temp/debug_space.RData",envir = 
-           environment())
-    return(df)
+    # browser();
+    save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+    return(df_mat2)
   }
+
+
+quantify_coverage_error <-  function(df, n_samples, n_obs) {
+  #'
+  #'
+  #' @param df: assumed to be a single row dataframe
+  #' Assumed columns of df: "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", 
+  #' "sigma_d", "mu_vsigma_d","fract_neg_x_bar_a"
+  #' 
+  
+  # Control group (For use with two sample cases)
+  x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
+  # Difference group (for simplicity experiment sample not calculated)
+  x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
+  # Each row is a separate sample, columns are observations
+  
+  # Difference x_bar to mu: Success is x_bar > mu
+  abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d)
+  df$mean_abs_diff_xbar_mu  <- mean(abs_diff_xbar_mu)
+  n_errors                       <- sum(abs_diff_xbar_mu < 0)
+  df$mean_xbar_error_rate   <- n_errors / n_samples
+  df$pval_xbar_err_eq_zero  <- binom.test(
+    n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+  df$pval_xbar_err_eq_alpha <- binom.test(
+    n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  # Difference rx_bar to rmu
+  abs_diff_rxbar_mu               <- abs(rowMeans(x_d)/rowMeans(x_a)) -
+    abs(df$mu_d/df$mu_a)
+  df$mean_abs_diff_rxbar_mu  <- mean(abs_diff_rxbar_mu)
+  n_errors                        <- sum(abs_diff_rxbar_mu < 0)
+  df$mean_rxbar_error_rate   <- n_errors / n_samples
+  if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
+    df$pval_rxbar_err_eq_zero  <- binom.test(
+      n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+    df$pval_rxbar_err_eq_alpha <- binom.test(
+      n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  }
+  
+  # Calculate the mmd from samples from the difference distribution
+  mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
+  # Difference mmd to mu
+  #----------------------------------------------------------------------
+  abs_diff_mmd_mu <- mmd_d - abs(df$mu_d)
+  # Relative difference mmd to mu
+  df$mean_diff_mmd_mu        <- mean(abs_diff_mmd_mu)
+  df$mean_diff_mmd_mu_vmu    <- df$mean_diff_mmd_mu / abs(df$mu_d)
+  df$mean_diff_mmd_mu_vsigma <- df$mean_diff_mmd_mu / df$sigma_d
+  # Error rate mmd_d and mu
+  n_errors                        <- sum(abs_diff_mmd_mu < 0)
+  df$mean_mmd_error_rate     <- n_errors / n_samples
+  # Caluate p-values for test against error rate == 0
+  df$pval_mmd_err_eq_zero <- binom.test(
+    n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+  # Caluate p-values for test against error rate == alpha
+  df$pval_mmd_err_eq_alpha <- binom.test(
+    n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  
+  # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
+  #----------------------------------------------------------------------
+  rmmd                         <- mmd_d / abs(rowMeans(x_a))
+  df$mean_rmmd            <- mean(rmmd)
+  # Quality check: no means of group a should be below zero for relative change
+  df$fract_neg_x_bar_a    <- sum(rowMeans(x_a)<0) / n_samples
+  diff_rmmd_rmu                <- rmmd - abs(df$rmu)
+  df$mean_diff_rmmd_rmu   <- mean(diff_rmmd_rmu)
+  # Error rate rmmd > rmu
+  n_errors                     <- sum(diff_rmmd_rmu < 0)
+  df$mean_rmmd_error_rate <- n_errors / n_samples
+  # Calculate p-values for test rmmd error rate == 0
+  if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
+    df$pval_rmmd_err_eq_zero <- binom.test(
+      n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+    # Calculate p-values for test rmmd error rate == alpha
+    df$pval_rmmd_err_eq_alpha <- binom.test(
+      n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  }
+  
+  return(df)
+  
+}
+
+
+
+
+
 
 
 
@@ -215,11 +259,12 @@ row_locate_binary_bounds <- function (xb){
 }
 
 
-locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_ov_sigmas = NULL, rand.seed=0){
+locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_obs,
+                                       temp_name, mu_ov_sigmas = NULL, rand.seed=0,
+                                       overwrite = overwrite){
   #' Locate all 4 error transition boundaries
   #' Positive and negative direction, 0 and alpha error
   set.seed(rand.seed)
-  
   n_cols <- max(c(length(mus), length(mu_ov_sigmas)))
   if (!is.null(mus)) {
     col_values = mus; varname <- "critical_mu"; neg_mu_ov_sigmas = mu_ov_sigmas;
@@ -228,27 +273,30 @@ locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_o
   }
   
   # Run simulations calculating error of mmd with mu and sigma swept
-  df_right <- stats_param_sweep(mus_ao = mus, sigmas_ao = sigmas, 
+  df_right <- quantify_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
                                 n_samples, n_obs, paste("temp/right_", temp_name,".rds"),
-                                mu_vsigmas_ao = mu_ov_sigmas) 
+                                mu_vsigmas_ao = mu_ov_sigmas, overwrite = overwrite) 
   df_right$side <- as.factor("Right")
   
   # Run simulations calculating error of mmd with mu and sigma swept
-  df_left <- stats_param_sweep(mus_ao = mus, sigmas_ao = sigmas, n_samples, n_obs, 
+  df_left <- quantify_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples, n_obs, 
                                paste("temp/right_", temp_name,".rds"), 
-                               mu_vsigmas_ao= neg_mu_ov_sigmas) 
+                               mu_vsigmas_ao= neg_mu_ov_sigmas, overwrite = overwrite) 
   df_left$side <- as.factor("Left")
   
+  browser();
+  ind_var_zero <- paste("pval_",ind_var,"_err_eq_zero",sep="")
+  ind_var_alpha <- paste("pval_",ind_var,"_err_eq_alpha",sep="")
   
   # Equivalence test versus middle column of same row
   p_threshold = 0.05 /(n_cols*length(sigmas))
   df_zero <- rbind(
     tibble(er = "0", side = "right", sigma = sigmas, 
            critical_val_ind = row_locate_binary_bounds(
-             df_right$pval_mmd_err_eq_zero  < p_threshold)),
+             df_right[[ind_var_zero]]  < p_threshold)),
     tibble(er = "alpha", side = "right", sigma = sigmas, 
            critical_val_ind = row_locate_binary_bounds(
-             df_right$pval_mmd_err_eq_alpha < p_threshold)))
+             df_right[[ind_var_alpha]]   < p_threshold)))
   # Convert index of error rate transition to mu/sigma value
   df_zero[[varname]] <- 
     approx(x=1:n_cols,y = abs(col_values),
@@ -258,10 +306,10 @@ locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_o
   df_alpha <- rbind(
     tibble(er = "0", side = "left", sigma = sigmas, 
            critical_val_ind = row_locate_binary_bounds(
-             df_left$pval_mmd_err_eq_zero  < p_threshold)),
+             df_left[[ind_var_zero]]    < p_threshold)),
     tibble(er = "alpha", side = "left", sigma = sigmas, 
            critical_val_ind = row_locate_binary_bounds(
-             df_left$pval_mmd_err_eq_alpha  < p_threshold)))
+             df_left[[ind_var_alpha]]   < p_threshold)))
   # Convert index of error rate transition to mu/sigma value
   df_alpha[[varname]] <- 
     approx(x=1:n_cols,y = abs(col_values),
@@ -274,8 +322,7 @@ locate_bidir_binary_thresh <- function(mus = NULL, sigmas, n_obs,temp_name, mu_o
   df_crit[[varname]][df_crit$side=="left"] = -
     abs(df_crit[[varname]][df_crit$side=="left"])
   # * abs() added just in case we are running the code multiple times when debugging
-  
-  
+
   return(df_crit)
   
 }

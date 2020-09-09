@@ -205,21 +205,21 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu.t
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
-# Box and Whiskers of Coverage Error Transition Region
-p <- ggplot(df_crit_mu, aes(x=er, color = side,#group = interaction(er, side), 
-                            y = abs(critical_mu))) + 
-  #geom_violin( position = position_dodge( width = 0.9)) + 
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
-  theme_classic(base_size = 8) + theme(legend.position="none", 
-                                       axis.title.x = element_blank()) +
-  xlab("Error Rate Null Hypothesis") + 
-  ylab(expression(abs(~mu~phantom(.))))+
-  scale_color_manual(values = c("#66c2a5", "#fc8d62"))
-p
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu.tiff", 
-                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 2, dpi = 600)
-
+# # Box and Whiskers of Coverage Error Transition Region
+# p <- ggplot(df_crit_mu, aes(x=er, color = side,#group = interaction(er, side), 
+#                             y = abs(critical_mu))) + 
+#   #geom_violin( position = position_dodge( width = 0.9)) + 
+#   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
+#   theme_classic(base_size = 8) + theme(legend.position="none", 
+#                                        axis.title.x = element_blank()) +
+#   xlab("Error Rate Null Hypothesis") + 
+#   ylab(expression(abs(~mu~phantom(.))))+
+#   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
+# p
+# save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu.tiff", 
+#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+#           base_asp = 3, base_width = 2, dpi = 600)
+# 
 res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
 summary_mu <- summary(res.aov2)
 capture.output(summary_mu, file = paste("figure/F", fig_num, "/F", fig_num,
@@ -259,20 +259,20 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu_s
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
-# Box and Whiskers of Coverage Error Transition Region
-p <- ggplot(df_crit_mu_ov_sigma, aes(x=er, color = side,#group = interaction(er, side), 
-                         y = abs(critical_mu_over_sigma))) + 
-  #geom_violin( position = position_dodge( width = 0.9)) + 
-  geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
-  theme_classic(base_size = 8) + theme(legend.position="none", 
-                                       axis.title.x = element_blank()) +
-  xlab("Error Rate Null Hypothesis") +  
-  ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
-scale_color_manual(values = c("#66c2a5", "#fc8d62"))
-p
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu sigma.tiff", 
-                sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-          base_asp = 3, base_width = 2, dpi = 600)
+# # Box and Whiskers of Coverage Error Transition Region
+# p <- ggplot(df_crit_mu_ov_sigma, aes(x=er, color = side,#group = interaction(er, side),
+#                          y = abs(critical_mu_over_sigma))) +
+#   #geom_violin( position = position_dodge( width = 0.9)) +
+#   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
+#   theme_classic(base_size = 8) + theme(legend.position="none",
+#                                        axis.title.x = element_blank()) +
+#   xlab("Error Rate Null Hypothesis") +
+#   ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
+# scale_color_manual(values = c("#66c2a5", "#fc8d62"))
+# p
+# save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu sigma.tiff",
+#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
+#           base_asp = 3, base_width = 2, dpi = 600)
 
 res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
 summary_mu_ov_sigma <- summary(res.aov2)

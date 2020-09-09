@@ -572,12 +572,9 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
     
-    # browser();
-    if (parallel_sims) {
-      print("starting parallel processing")
-      #setup parallel back end to use many processors
-      cores = detectCores()
-      cl = makeCluster(cores[1]-1)
+    if (parallel_sims) { print("starting parallel processing")
+      # Setup parallel back end to use many processors
+      cl = makeCluster(detectCores()[1]-1)
       registerDoParallel(cl)
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
@@ -585,7 +582,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                 .export = c(row_effect_sizes_fun, mmd_functions,
                             "quantify_esize_simulation")) %dopar% {
         #calling a function
-        tempMatrix = quantify_esize_simulation(df[n,], include_bf, 
+        tempMatrix <- quantify_esize_simulation(df[n,], include_bf, 
                                                rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE) 
         tempMatrix

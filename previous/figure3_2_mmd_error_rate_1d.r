@@ -31,7 +31,7 @@ rand_seed <-0
 
 
 
-# Visualize T1E (mu > MHD) under the null and alt hypothesis, mu swept (sigma=1)
+# Visualize coverage error (mu > MHD) under the null and alt hypothesis, mu swept (sigma=1)
 #                                                                              #
 #______________________________________________________________________________#
 
@@ -235,7 +235,7 @@ for (n in seq(1, length(sigmas), by=1)) {
   # Get samples, where each row is a seperate sample, columns are observations
   x1 <- matrix( rnorm( n_samples*n_obs, mus[1], sigmas[n]), nrow=n_obs )
 
-  # Calculat ethe MHD
+  # Calculate the MHD
   mhd = apply(x1, 2, function (x) mhd_1sample_normal(x, alpha=0.05))
   
   # Calculate the quantile of the MHD for each sample compared to population
