@@ -32,6 +32,7 @@ dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = 
 n_samples <- 1e3
 rand.seed <- 0
 overwrite <- TRUE
+parallel_proc <- TRUE
 
 # Helper Functions
 source("R/mmd.R")
@@ -45,16 +46,79 @@ source("R/error_2d_utils.R")
 mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
+mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
-df_results <- stats_param_sweep(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
-                                overwrite = overwrite)
+df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples = n_samples, 
+                                    n_obs = n_obs, out_path = "temp/mmd_Error_2D_mu_vs_sigma.rds",
+                                overwrite = overwrite, parallel_proc = parallel_proc)
+
+
 # Assemble results into square matrix
 grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
 # # Difference MMD from Mu
 
 
-# Error rate of rMMD < rmu
+
+# Error rate of xbar < mu
+#------------------------------------------------------------------------------
+# Convert from matrix to dataframe
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_xbar_error_rate)) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
+# Plot heatmap
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size=8) +
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                         ticks.colour = "black",  direction = "horizontal")) +
+                       # limits=c(0,.1)) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+
+# 2D visualization of hypothesized coverage error of MMD in mu space
+#                                                                              #
+#______________________________________________________________________________#
+# COnvert from matrix to data frame
+df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
+  df_results$pval_xbar_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_xbar_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+df$z <- factor(df$z,levels = c("0","1","2","3"))
+# Plot heat map
+gg<- ggplot(df, aes(mu, sigma, fill= z)) +
+  geom_tile()+
+  scale_x_continuous(expand=c(0,0)) +
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu)) + ylab(expression(sigma)) +
+  theme_classic(base_size = 8) +
+  scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
+  geom_vline(xintercept=0, color="black", size=0.2) +
+  theme(legend.position="none")
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_2b xbar error test 2D.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2,
+          base_asp = 3, base_width = 2, dpi = 600)
+
+
+
+
+
+
+# Error rate of MMD < mu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
@@ -80,24 +144,6 @@ gg
 save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
-# Plot slope of heatmap by column
-gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
-  xlab(expression(mu)) + ylab(expression(paste("Slope By Row  (ER ~ ",sigma,")"))) + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_mus.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
-# Plot slope of heatmap by row
-gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
-  geom_line(size=0.5) + geom_point(size=0.4) + 
-  geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
-  xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (ER ~ ",abs(~mu*phantom(.))," )"))) + theme_classic(base_size=8)
-gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D_vs_sigmas.tiff",sep=""),
-          gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
-
-
 
 
 # 2D visualization of hypothesized coverage error of MMD in mu space
@@ -130,19 +176,48 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_b4 mmd error test.tiff",se
 
 
 
-# 2D visualization of hypothesized coverage error of MMD in mu/sigma space
+# Row 3: error rate of mmd in mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
 sigmas <- seq(.1, 5, by = .1)
 mu_ov_sigmas <- seq (-.5, .5, by=0.01)
+mus = NULL
 n_obs <- 50
 set.seed(rand.seed)
 # Run simulations calculating error of mmd with mu and sigma swept
-df_results <- stats_param_sweep(NULL, sigmas, n_samples, n_obs,
+df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
                            "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas,
                            overwrite = overwrite)
-# Difference MMD from Mu
-# COnvert from matrix to data frame
+
+# Error rate of MMD < mu in mu/sigma space
+#------------------------------------------------------------------------------
+# Convert from matrix to dataframe
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
+df$mu <- as.numeric(df$mu)
+df$sigma <- as.numeric(df$sigma)
+grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
+# Plot heatmap
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu/sigma)) + ylab(expression(sigma)) +
+  theme_classic(base_size=8) +
+  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                         ticks.colour = "black",  direction = "horizontal"),
+                       limits=c(0,.1)) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_3a mmd error rate 2D.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
+
+# Tested error rate MMD < mu in mu/sigma space
+#-------------------------------------------------------------------------------
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
   df_results$pval_mmd_err_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
   df_results$pval_mmd_err_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
@@ -161,7 +236,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_b5 mmd error test mu_over_sigma.tiff",sep=""),
+save_plot(paste("figure/F", fig_num, "/F", fig_num, "_3b mmd error test mu_over_sigma.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -178,7 +253,7 @@ sigmas <- seq(.1, 5, by = .1);
 mus <- seq (.1/5, 2, by=0.02)
 mu_ov_sigmas = NULL
 
-df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_obs = n_obs, 
+df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs, 
                                          temp_name = "mmd_Error_mu_vs_sigma.rds",
                                          mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
@@ -234,7 +309,7 @@ mus <- NULL
 sigmas <- seq(.1, 5, by = .1); 
 mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
-df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_obs = n_obs, 
+df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs,
                                       temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
                                       mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
