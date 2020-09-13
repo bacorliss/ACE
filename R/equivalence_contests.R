@@ -23,13 +23,9 @@ source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
 
-
-
 # Parse all functions in file for parallel processing using user functions
 row_effect_sizes_fun <- parse_functions_source("R/row_effect_sizes.R")
 mmd_functions <- parse_functions_source("R/mmd.R")
-
-
 
 # Dictionary to keep track of variables tracking effect size metrics
 effect_size_dict <- vector(mode="list", length=4)
@@ -60,7 +56,7 @@ pop_params_from_aoffset <- function( n_samples, n_obs, n_sims,
     mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,
     mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d, 
     sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
-    sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d,
+    sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
   )
   return(df)
 }
@@ -78,7 +74,7 @@ pop_params_from_ab <- function( n_samples, n_obs, n_sims,
   df = tibble( n_obs = n_obs, n_samples = n_samples,
                mu_1a = mus_1a, mu_2a = mus_2a, sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
                mu_1b = mus_1b, mu_2b = mus_2b, sigma_1b = sigmas_1b, sigma_2b = sigmas_2b,
-               mu_1d = mus_1d, mu_2d = mus_2d, sigma_1d = sigmas_1d, sigma_2d = sigmas_2d,
+               mu_1d = mus_1d, mu_2d = mus_2d, sigma_1d = sigmas_1d, sigma_2d = sigmas_2d
   )
   return(df)
 }
@@ -86,11 +82,8 @@ pop_params_from_ab <- function( n_samples, n_obs, n_sims,
 
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
                                 switch_group_ab, switch_exp_12) {
-  
-  
   df <- df_init
   # browser()
-  
   # Randomly switch sign of D for both experiments, recalculate B
   if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
   df$mu_1d =  mus_sign * df$mu_1d
@@ -100,7 +93,6 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
   df$mu_2b = df$mu_2a + df$mu_2d
   }
   
-
   # Randomly switch sign of both group a and b for exp 1 and 2 separately, recalculate d
   if (switch_sign_mean_ab) {
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
@@ -113,8 +105,6 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     df$mu_1d = df$mu_1b - df$mu_1a; 
     df$mu_2d = df$mu_2b - df$mu_2a;
   }
-  
-  
   # Randomly switch assignment for A and B for EACH experiment, recalculate D
   if (switch_group_ab) {
     # Random switch binary vector
@@ -137,10 +127,7 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     # Recalculate D
     df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
     df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
-    
   }
- 
-  
   if (switch_exp_12) {
     # Save temp variables for switch
     temp_mu_1a     <- df$mu_1a;    temp_sigma_1a  <- df$sigma_1a
@@ -163,9 +150,6 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
     df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
   }
-  
-  
-  
   return(df)
 }
 
@@ -236,8 +220,6 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                             switch_group_ab = switch_group_ab,
                             switch_exp_12 = switch_exp_12)
   
-  # browser()
-  
   # Define difference distribution    
   df$mu_1d <- df$mu_1b - df$mu_1a
   df$mu_2d <- df$mu_2b - df$mu_2a
@@ -293,8 +275,6 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
                          gt_colnames = gt_colnames)
   
-  
-  # browser()
   return(df)
 }
 
@@ -793,7 +773,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="temp/",
                                       fig_name,fig_path,var_suffix = "fract",include_bf = TRUE,
-                                      parallel_sims = TRUE) {
+                                      parallel_sims = TRUE, is_plotted = TRUE) {
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
@@ -814,13 +794,30 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path="t
                                          var_suffix = var_suffix)
 
   # Plot effect size results
+  if (!is_plotted) {
   df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, 
                                        fig_path = fig_path, y_ax_str = y_ax_str)
-  
+  }
   
   all_dfs <- vector(mode="list", length=4)
   names(all_dfs) <- c("df_es", "df_tidy", "df_pretty", "df_plotted")
   all_dfs[[1]] <- df_es; all_dfs[[2]] <- df_tidy; 
   all_dfs[[3]] <- df_pretty; all_dfs[[4]] <- df_plotted; 
   return(all_dfs)
+}
+
+
+
+lineplot_stats_indvar = function(df_es, indvar) {
+  
+  
+  # Filter for stats metrics
+  
+  
+  # COnvert
+  
+  
+  
+  
+  
 }
