@@ -39,50 +39,115 @@ include_bf = TRUE
 
 
 
-# Un-transformed Error
-# Contest 1-1) Quantify Error rate with each metric predicting experiment with
-# Lower mean difference in means
-# [Near from zero]
-#
+
+# Pearson Correlation between abs(mu_d1) versus mean value of stats
+# sigmad = 1
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
+mu_d_vect = seq(-10,10,0.5)
+indvar_vect = 1+mu_d_vect; n_sims = length(indvar_vect)
 gt_colnames = "is_mud_md2gtmd1"
-fig_name = paste("F", fig_num, "_1a_esize_contest_mu_sweep", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_obs, n_sims = 21, rand.seed, 
-                                   mus_1a  = rep(1,21), 
-                                   sigmas_1a = 0.71, 
-                                   mus_1b  = seq(-5,5,0.5), 
-                                   sigmas_1b = 0.71,
-                                   mus_2a  = rep(1,21), 
-                                   sigmas_2a = 0.71, 
-                                   mus_2b  = rep(1,21),  
-                                   sigmas_2b = 0.71, 
+fig_name = paste("F", fig_num, "_1a_stat_correlation_mud_sweep", sep = "")
+df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+                                   mus_1a  = rep(1,n_sims), 
+                                   sigmas_1a = sqrt((1^2)/2), 
+                                   mus_1b  = indvar_vect, 
+                                   sigmas_1b = sqrt((1^2)/2),
+                                   mus_2a  = rep(0,n_sims), 
+                                   sigmas_2a = 1, 
+                                   mus_2b  = rep(0,n_sims),  
+                                   sigmas_2b = 1, 
                                    switch_group_ab = FALSE,
                                    switch_sign_mean_d = FALSE,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-                                   gt_colnames = gt_colnames)
-dfs_1a <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                   gt_colnames = gt_colnames, is_plotted = FALSE)
+df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
-
 # Plot stat values over independent variable
-
-df_indvar_sum_1a <- plot_stats_over_var(dfs_1a$df_es, "mus_1b")
-
-df_es <- dfs_1a$df_es
-indvar <- "mus_1b"
-
-
-# var_b = var_b
+df_mud_pearson <- 
+  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "mu_1d", 
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path,
+                           stats_basenames = effect_size_dict[[2]],
+                           stats_labels = effect_size_dict[[4]])
 
 
 
-# Change mu w/ sigma=1, calculate pearson for each stat across mu
+
+# Pearson Correlation between abs(mu_d1) versus mean value of stats
+# sigmad = 1
+#------------------------------------------------------------------------------
+set.seed(rand.seed)
+sigma_d_vect = seq(.1,10,0.1); n_sims = length(sigma_d_vect)
+sigma_ab_vect = sqrt((sigma_d_vect^2)/2)
+gt_colnames = "is_mud_md2gtmd1"
+fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-0", sep = "")
+df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+                                      mus_1a  = rep(0,n_sims), 
+                                      sigmas_1a = sigma_ab_vect, 
+                                      mus_1b  = rep(0,n_sims), 
+                                      sigmas_1b = sigma_ab_vect,
+                                      mus_2a  = rep(0,n_sims), 
+                                      sigmas_2a = sqrt((1^2)/2), 
+                                      mus_2b  = rep(0,n_sims),  
+                                      sigmas_2b = sqrt((1^2)/2), 
+                                      switch_group_ab = FALSE,
+                                      switch_sign_mean_d = FALSE,
+                                      fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
+                                      gt_colnames = gt_colnames, is_plotted = FALSE)
+df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
+                                         y_ax_str = "abs(~mu[DM]*phantom(.))",
+                                         include_bf = include_bf, parallel_sims = parallel_sims,
+                                         fig_name = paste(fig_name, ".tiff",sep = ""),
+                                         fig_path = fig_path, is_plotted = FALSE)
+# Plot stat values over independent variable
+df_mud_pearson <- 
+  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path,
+                           stats_basenames = effect_size_dict[[2]],
+                           stats_labels = effect_size_dict[[4]])
 
 
-# Change sigma at mu=0, calculate pearson for each stat across sigma
+
+# Pearson Correlation between abs(mu_d1) versus mean value of stats
+# sigmad = 10
+#------------------------------------------------------------------------------
+set.seed(rand.seed)
+sigma_d_vect = seq(.1,10,0.1); n_sims = length(sigma_d_vect)
+sigma_ab_vect = sqrt((sigma_d_vect^2)/2)
+gt_colnames = "is_mud_md2gtmd1"
+fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
+df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+                                      mus_1a  = rep(0,n_sims), 
+                                      sigmas_1a = sigma_ab_vect, 
+                                      mus_1b  = rep(10,n_sims), 
+                                      sigmas_1b = sigma_ab_vect,
+                                      mus_2a  = rep(0,n_sims), 
+                                      sigmas_2a = sqrt((1^2)/2), 
+                                      mus_2b  = rep(0,n_sims),  
+                                      sigmas_2b = sqrt((1^2)/2), 
+                                      switch_group_ab = FALSE,
+                                      switch_sign_mean_d = FALSE,
+                                      fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
+                                      gt_colnames = gt_colnames, is_plotted = FALSE)
+df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
+                                         y_ax_str = "abs(~mu[DM]*phantom(.))",
+                                         include_bf = include_bf, parallel_sims = parallel_sims,
+                                         fig_name = paste(fig_name, ".tiff",sep = ""),
+                                         fig_path = fig_path, is_plotted = FALSE)
+# Plot stat values over independent variable
+df_mud_pearson <- 
+  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path,
+                           stats_basenames = effect_size_dict[[2]],
+                           stats_labels = effect_size_dict[[4]])
+
+
 
 
 # Change sigma at mu=10, calculate pearson for each stat across sigma

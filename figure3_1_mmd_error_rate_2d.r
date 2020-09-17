@@ -39,7 +39,6 @@ source("R/mmd.R")
 source("R/error_2d_utils.R")
 
 
-
 # 2D visualization of mmd difference and error rate over mu and sigma
 #                                                                              #
 #______________________________________________________________________________#
