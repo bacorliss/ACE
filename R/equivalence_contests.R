@@ -40,11 +40,12 @@ effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]*phant
                            "r*delta[M]","Rnd")
 
 
-pop_params_from_aoffset <- function( n_samples, n_obs, n_sims, 
+pop_params_from_aoffset <- function( n_samples, n_sims, 
                                     mus_1a, sigmas_1a, 
                                     mus_2a, sigmas_2a,
                                     mus_1ao, sigmas_1ao, 
-                                    mus_2ao, sigmas_2ao) {
+                                    mus_2ao, sigmas_2ao,
+                                    n_1a, n_1b, n_2a, n_2b) {
   # browser()
   # Calculate D based on A and offset from A parameters
   mus_1d = mus_1ao;  sigmas_1d = sigmas_1a + sigmas_1ao
@@ -54,8 +55,8 @@ pop_params_from_aoffset <- function( n_samples, n_obs, n_sims,
   mus_2b = mus_2a + mus_2d;  sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
   # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
   df = tibble( n_obs = n_obs, n_samples = n_samples,
-    mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,
-    mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d, 
+    mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
+    mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
     sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
     sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
   )
@@ -63,19 +64,21 @@ pop_params_from_aoffset <- function( n_samples, n_obs, n_sims,
 }
 
 
-pop_params_from_ab <- function( n_samples, n_obs, n_sims, 
+pop_params_from_ab <- function( n_samples, n_sims, 
                                 mus_1a, sigmas_1a, 
                                 mus_2a, sigmas_2a,
                                 mus_1b, sigmas_1b, 
-                                mus_2b, sigmas_2b) {
+                                mus_2b, sigmas_2b,
+                                n_1a, n_1b, n_2a, n_2b) {
   # Calculate D based on A and B parameters
   mus_1d = mus_1b - mus_1a;  sigmas_1d = sqrt(sigmas_1a^2 + sigmas_1b^2)
   mus_2d = mus_2b - mus_2a;  sigmas_2d = sqrt(sigmas_2a^2 + sigmas_2b^2)
   # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
   df = tibble( n_obs = n_obs, n_samples = n_samples,
-               mu_1a = mus_1a, mu_2a = mus_2a, sigma_1a = sigmas_1a, sigma_2a = sigmas_2a,
-               mu_1b = mus_1b, mu_2b = mus_2b, sigma_1b = sigmas_1b, sigma_2b = sigmas_2b,
-               mu_1d = mus_1d, mu_2d = mus_2d, sigma_1d = sigmas_1d, sigma_2d = sigmas_2d
+               mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
+               mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
+               sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
+               sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
   )
   return(df)
 }
@@ -84,7 +87,7 @@ pop_params_from_ab <- function( n_samples, n_obs, n_sims,
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
                                 switch_group_ab, switch_exp_12) {
   df <- df_init
-  # browser()
+
   # Randomly switch sign of D for both experiments, recalculate B
   if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
   df$mu_1d =  mus_sign * df$mu_1d
@@ -155,13 +158,14 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
 
 
 # default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
-generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
+generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
                                     mus_2a, sigmas_2a,
                                     # Experiment group pop. parameters
                                     mus_1b = NA, sigmas_1b = NA, 
                                     mus_2b = NA, sigmas_2b = NA,
+                                    n_1a, n_1b, n_2a, n_2b,
                                     # Difference distribution pop. parameters
                                     mus_1ao = NA, sigmas_1ao = NA, 
                                     mus_2ao = NA, sigmas_2ao = NA,
@@ -171,7 +175,7 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
                                     switch_exp_12 = FALSE,
                                     fig_name = "test.tiff",
                                     fig_path = "Figure/",
-                                    gt_colnames, is_plotted) {
+                                    gt_colnames, is_plotted = TRUE) {
   #' Generate simulated experiment data for two experiments 
   #' 
   #' @description Generate simulated experiment data for two experiments with 
@@ -205,14 +209,21 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   
   # Generate initial dataframe from params, no switching done yet  
   if (any(is.na(mus_1b))) {
-    df_init <- pop_params_from_aoffset( n_samples, n_obs, n_sims, 
-                                         mus_1a, sigmas_1a,  mus_2a, sigmas_2a,
-                                         mus_1ao, sigmas_1ao, mus_2ao, sigmas_2ao) 
+    df_init <- 
+      pop_params_from_aoffset( n_samples = n_samples, n_sims= n_sims,
+                               mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
+                               mus_2a = mus_2a, sigmas_2a = sigmas_2a,
+                               mus_1ao = mus_1ao, sigmas_1ao = sigmas_1ao, 
+                               mus_2ao = mus_2ao, sigmas_2ao = sigmas_2ao,
+                               n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b) 
   } else {
-    df_init   <- pop_params_from_ab( n_samples, n_obs, n_sims, 
-                                   mus_1a, sigmas_1a,  mus_2a, sigmas_2a,
-                                   mus_1b, sigmas_1b, mus_2b, sigmas_2b)
+    df_init   <- 
+      pop_params_from_ab( n_samples = n_samples, n_sims = n_sims, 
+                          mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
+                          mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
+                          n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b)
   }
+  # browser();
   # Switch params if needed
   df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
                             switch_sign_mean_ab = switch_sign_mean_ab, 
@@ -224,13 +235,15 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   df$mu_2d <- df$mu_2b - df$mu_2a
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+  df$df_1d <- n_1a + n_1b - 2
+  df$df_2d <- n_2a + n_2b - 2
   
   # Calculate parameter of difference in means distribution (taken from mean of 
   # D since we had the option to invert the sign for D)
   df$mu_1md <- df$mu_1d
   df$mu_2md <- df$mu_2d
-  df$sigma_1md <- df$sigma_1d /sqrt(n_obs)
-  df$sigma_2md <- df$sigma_2d /sqrt(n_obs)
+  df$sigma_1md <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
+  df$sigma_2md <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
   
   # Calculate ratio of sigma_md/mu_md to determine how close D is close to zero,
   # and how absolute value folding will effect distribution.
@@ -240,8 +253,8 @@ generateExperiment_Data <- function(n_samples, n_obs, n_sims, rand.seed,
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_md2gtmd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
   # Statistics of difference of means distribution 
-  df$rmu_1md <- df$mu_1md/df$mu_1a
-  df$rmu_2md <- df$mu_2md/df$mu_2a
+  df$rmu_1md <- df$mu_1md / df$mu_1a
+  df$rmu_2md <- df$mu_2md / df$mu_2a
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
   df$is_rmud_md2gtmd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
   
@@ -422,19 +435,19 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   set.seed(rand.seed)
 
   # Use Exp 1 and 2 coefficients to generate data from normalized base data
-  x_1a = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_1a, 
+  x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
                       sd = df$sigma_1a), nrow = df$n_samples, 
-                ncol = df$n_obs)
-  x_1b = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_1b, 
+                ncol = df$n_1a)
+  x_1b = matrix(rnorm(df$n_samples * df$n_1b, mean = df$mu_1b, 
                       sd = df$sigma_1b), nrow = df$n_samples, 
-                ncol = df$n_obs)
+                ncol = df$n_1b)
   
-  x_2a = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_2a, 
+  x_2a = matrix(rnorm(df$n_samples * df$n_2a, mean = df$mu_2a, 
                       sd = df$sigma_2a), nrow = df$n_samples, 
-                ncol = df$n_obs)
-  x_2b = matrix(rnorm(df$n_samples * df$n_obs, mean = df$mu_2b, 
+                ncol = df$n_2a)
+  x_2b = matrix(rnorm(df$n_samples * df$n_2b, mean = df$mu_2b, 
                       sd = df$sigma_2b), nrow = df$n_samples, 
-                ncol = df$n_obs)
+                ncol = df$n_2b)
   
   # Means
   xdbar_1d = rowMeans(x_1b) - rowMeans(x_1a)
@@ -448,8 +461,8 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$mean_diff_xdbar_2m1  = mean(diff_xdbar)
   
   # Stds
-  s_1md = sqrt(rowSds(x_1a)^2/df$n_obs + rowSds(x_1b)^2/df$n_obs)
-  s_2md = sqrt(rowSds(x_2a)^2/df$n_obs + rowSds(x_2b)^2/df$n_obs)
+  s_1md = sqrt(rowSds(x_1a)^2/df$n_1a + rowSds(x_1b)^2/df$n_1b)
+  s_2md = sqrt(rowSds(x_2a)^2/df$n_2a + rowSds(x_2b)^2/df$n_2b)
   df$exp1_mean_sdmd = mean(s_1md)
   df$exp2_mean_sdmd = mean(s_2md)
   df$exp1_sd_sdmd   = sd(s_1md)
@@ -547,7 +560,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   # Relative Most Mean Diff
   rmmd_1 = mmd_1 / rowMeans(x_1a)
-  rmmd_2 = mmd_1 / rowMeans(x_1a)
+  rmmd_2 = mmd_2 / rowMeans(x_2a)
   df$exp1_mean_rmmd = mean(rmmd_1)
   df$exp2_mean_rmmd = mean(rmmd_2)
   df$exp1_sd_rmmd = sd(rmmd_1)
@@ -558,10 +571,10 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   
   # Random group
-  nrand_1 = rowMeans(matrix(rnorm(df$n_samples * df$n_obs, mean = 0, sd = 1), 
-                            nrow = df$n_samples, ncol = df$n_obs))
-  nrand_2 = rowMeans(matrix(rnorm(df$n_samples * df$n_obs, mean = 0, sd = 1), 
-                            nrow = df$n_samples, ncol = df$n_obs))
+  nrand_1 = rowMeans(matrix(rnorm(df$n_samples * df$df_1d, mean = 0, sd = 1), 
+                            nrow = df$n_samples, ncol = df$df_1d))
+  nrand_2 = rowMeans(matrix(rnorm(df$n_samples * df$df_2d, mean = 0, sd = 1), 
+                            nrow = df$n_samples, ncol = df$df_1d))
   df$exp1_mean_nrand = mean(nrand_1)
   df$exp2_mean_nrand = mean(nrand_2)
   df$exp1_sd_nrand = sd(nrand_1)
