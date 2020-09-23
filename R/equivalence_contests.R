@@ -70,6 +70,7 @@ pop_params_from_ab <- function( n_samples, n_sims,
                                 mus_1b, sigmas_1b, 
                                 mus_2b, sigmas_2b,
                                 n_1a, n_1b, n_2a, n_2b) {
+  # browser();
   # Calculate D based on A and B parameters
   mus_1d = mus_1b - mus_1a;  sigmas_1d = sqrt(sigmas_1a^2 + sigmas_1b^2)
   mus_2d = mus_2b - mus_2a;  sigmas_2d = sqrt(sigmas_2a^2 + sigmas_2b^2)
@@ -87,7 +88,7 @@ pop_params_from_ab <- function( n_samples, n_sims,
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
                                 switch_group_ab, switch_exp_12) {
   df <- df_init
-
+  # browser();
   # Randomly switch sign of D for both experiments, recalculate B
   if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
   df$mu_1d =  mus_sign * df$mu_1d
@@ -196,9 +197,10 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   #' @param sigmas2 vector specifying distribution for population mean for
   #'  experiment 12
   
+  # browser();
   # Expand any singleton pop param arguments replicate to number of simulations
   input_args <- formalArgs(generateExperiment_Data)
-  pargs <-grep("^(mus)|(sigmas)", input_args, value=TRUE)
+  pargs <-grep("^(mus)|(sigmas)|(n_\\d)", input_args, value=TRUE)
   # For any pop param not equal in length to n_sims, expand
   for (n in seq_along(pargs)) {
     if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
@@ -287,6 +289,32 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   if (is_plotted){
     plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames)
+  } else {
+    # browser();
+    # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
+    df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
+                     param = c(rep("mu[md]",dim(df)[1]), rep("r*mu[md]",dim(df)[1]),
+                               rep("sigma[md]",dim(df)[1]), rep("r*sigma[md]",dim(df)[1]),
+                               rep("df[md]",dim(df)[1])), 
+                     Value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
+    )
+    df_runs$param <- factor(df_runs$param, levels = c("mu[md]", "r*mu[md]", "sigma[md]","r*sigma[md]","df[md]"))
+    
+    
+    gg <- ggplot(data = df_runs, aes(x = Run, y = Value)) +
+      geom_line() +
+      facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
+      theme_classic(base_size = 8) +
+      theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),
+            panel.spacing = unit(0, "lines"),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            strip.background = element_blank(),
+            panel.border = element_rect(fill = NA,colour = "black")) 
+      # scale_y_continuous(breaks= pretty_breaks())
+    print(gg)
+    save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+              base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
   }
   return(df)
 }
@@ -425,6 +453,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   save_plot(paste(fig_path, 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   # browser();
+  
 }
 
 
@@ -882,9 +911,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   #' 
   #' 
   #' 
-  
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+
   
   # Filter for stats metrics
   col_list <- colnames(df)
@@ -900,6 +927,10 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   # df_means[[indvar]] <- as.factor(df_means[[indvar]])
   df_means$variable <- as.factor(df_means$variable)
   
+  browser();
+  if (length(unique(df_means[[indvar]]))==1) {
+    simpleError("Indepedent variable does not change, so cannot perform pearson")
+  }
   # Pearson rho of versus independent variable
   df_means_pearson <- df_means %>% group_by(variable) %>% summarise(
     pearson_p = ci_cor(data.frame(y1 = abs(get(indvar)), y2 = abs(mean_value)), 
@@ -922,6 +953,34 @@ gg <- ggplot(data = df_means_pearson, aes(x = label, y = pearson_p)) +
 print(gg)  
 save_plot(paste(fig_path, fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
+
+
+# Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
+df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
+                 param = c(rep("mu[md]",dim(df)[1]), rep("r*mu[md]",dim(df)[1]),
+                 rep("sigma[md]",dim(df)[1]), rep("r*sigma[md]",dim(df)[1]),
+                 rep("df[md]",dim(df)[1])), 
+                 value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
+                 )
+df_runs$param <- factor(df_runs$param, levels = c("mu[md]", "r*mu[md]", "sigma[md]","r*sigma[md]","df[md]"))
+
+
+gg <- ggplot(data = df_runs, aes(x = Run, y = value)) +
+  geom_line() +
+  facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
+  theme_classic(base_size=8) +
+  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),)
+  #       axis.line = element_line(colour = 'black', size = .25),
+  #       panel.border = element_rect(colour = "black"),)
+        # panel.grid.major = element_blank(),
+        # panel.grid.minor = element_blank(),
+        # strip.background = element_blank())
+gg
+save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+          base_height = 2, base_asp = 4, base_width = 3, dpi = 600)
+
+# save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+# load(file = "temp/debug.RData")
 
 return(df_means_pearson)
 }

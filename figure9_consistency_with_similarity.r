@@ -37,23 +37,30 @@ include_bf = TRUE
 # Test how each metric responds to changing each characteristic of similarity
 
 
+
+
 ################################################################################
 
 # Unscaled Space________________________________________________________________
 
+
+
+
+# Mu
 # Pearson rho of abs(mu_d1) versus abs(mean of each stat)
 # Sweep mu_1d, sigma_d = 1
 #------------------------------------------------------------------------------
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
-mus_a_vect = rep(1,41)
-mus_d_vect = c(-seq(5,1,-0.5) , seq(1,5,0.5))
+mus_d_vect = seq(0.1,5,0.1)
+mus_a_vect = mus_d_vect*2
 mus_b_vect = mus_d_vect + mus_a_vect
-rmus_d_vect = mus_d_vect/mus_a_vect
+rmus_d_vect = mus_d_vect/mus_a_vectt
+
 n_sims = length(mus_b_vect)
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1a_stat_correlation_mud_sweep", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
                                    sigmas_1a = sqrt((1^2)/2), 
                                    mus_1b  = mus_b_vect, 
@@ -61,214 +68,29 @@ df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.se
                                    mus_2a  = rep(0,n_sims), 
                                    sigmas_2a = 1, 
                                    mus_2b  = rep(0,n_sims),  
-                                   sigmas_2b = 1, 
+                                   sigmas_2b = 1,
+                                   n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    switch_group_ab = FALSE,
                                    switch_sign_mean_d = FALSE,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
+
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mud_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "mu_1d", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1md", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,
                            stats_basenames = effect_size_dict[[2]],
                            stats_labels = effect_size_dict[[4]])
 
 
-
-
-
-# # Pearson rho of abs(mu_d1) versus abs(mean of each stat)
-# # Sweep sigma_1d, sigma_d = 1
-# # sweep sigma_d, mu_d=0
-# #------------------------------------------------------------------------------
-# set.seed(rand.seed)
-# sigma_d_vect = seq(.1,10,0.1); n_sims = length(sigma_d_vect)
-# sigma_ab_vect = sqrt((sigma_d_vect^2)/2)
-# gt_colnames = "is_mud_md2gtmd1"
-# fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-0", sep = "")
-# df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
-#                                       mus_1a  = rep(1,n_sims), 
-#                                       sigmas_1a = sigma_ab_vect, 
-#                                       mus_1b  = rep(0,n_sims), 
-#                                       sigmas_1b = sigma_ab_vect,
-#                                       mus_2a  = rep(1,n_sims), 
-#                                       sigmas_2a = sqrt((1^2)/2), 
-#                                       mus_2b  = rep(0,n_sims),  
-#                                       sigmas_2b = sqrt((1^2)/2), 
-#                                       switch_group_ab = FALSE,
-#                                       switch_sign_mean_d = FALSE,
-#                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-#                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-# df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
-#                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
-#                                          include_bf = include_bf, parallel_sims = parallel_sims,
-#                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-#                                          fig_path = fig_path, is_plotted = FALSE)
-# # Plot stat values over independent variable
-# df_mud_pearson <- 
-#   lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
-#                            fig_name = paste(fig_name, ".tiff",sep = ""),
-#                            fig_path = fig_path,
-#                            stats_basenames = effect_size_dict[[2]],
-#                            stats_labels = effect_size_dict[[4]])
-# 
-# 
-# 
-# # Pearson rho of abs(mu_d1) versus abs(mean of each stat)
-# # Sweep sigma_1d, mu_1d = 10
-# #------------------------------------------------------------------------------
-# set.seed(rand.seed)
-# sigma_d_vect = seq(.1,10,0.1); n_sims = length(sigma_d_vect)
-# sigma_ab_vect = sqrt((sigma_d_vect^2)/2)
-# gt_colnames = "is_mud_md2gtmd1"
-# fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
-# df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
-#                                       mus_1a  = rep(1,n_sims), 
-#                                       sigmas_1a = sigma_ab_vect, 
-#                                       mus_1b  = rep(11,n_sims), 
-#                                       sigmas_1b = sigma_ab_vect,
-#                                       mus_2a  = rep(0,n_sims), 
-#                                       sigmas_2a = sqrt((1^2)/2), 
-#                                       mus_2b  = rep(0,n_sims),  
-#                                       sigmas_2b = sqrt((1^2)/2), 
-#                                       switch_group_ab = FALSE,
-#                                       switch_sign_mean_d = FALSE,
-#                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-#                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-# df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
-#                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
-#                                          include_bf = include_bf, parallel_sims = parallel_sims,
-#                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-#                                          fig_path = fig_path, is_plotted = FALSE)
-# # Plot stat values over independent variable
-# df_mud_pearson <- 
-#   lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
-#                            fig_name = paste(fig_name, ".tiff",sep = ""),
-#                            fig_path = fig_path,
-#                            stats_basenames = effect_size_dict[[2]],
-#                            stats_labels = effect_size_dict[[4]])
-# 
-# 
-# 
-# 
-# ################################################################################
-# 
-# # Relative Space________________________________________________________________
-# 
-# # Pearson rho of abs(rmu_d1) versus abs(mean of each stat)
-# # Sweep rmu_1d, sigma_d = 1
-# #------------------------------------------------------------------------------
-# # Fixed mu_d, but as it increases, rmu_d decreases
-# set.seed(rand.seed)
-# rmus_d_vect = seq(0.25, 2, 0.05)
-# mus_a_vect = rep(1,length(rmus_d_vect))
-# mus_b_vect = mus_a_vect * rmus_d_vect
-# mus_d_vect = mus_b_vect - mus_a_vect
-# n_sims = length(mus_b_vect)
-# gt_colnames = "is_mud_md2gtmd1"
-# fig_name = paste("F", fig_num, "_1a_stat_correlation_mud_sweep", sep = "")
-# df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
-#                                       mus_1a  = mus_a_vect, 
-#                                       sigmas_1a = sqrt((1^2)/2), 
-#                                       mus_1b  = mus_b_vect, 
-#                                       sigmas_1b = sqrt((1^2)/2),
-#                                       mus_2a  = rep(0,n_sims), 
-#                                       sigmas_2a = 1, 
-#                                       mus_2b  = rep(0,n_sims),  
-#                                       sigmas_2b = 1, 
-#                                       switch_group_ab = FALSE,
-#                                       switch_sign_mean_d = FALSE,
-#                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-#                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-# df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
-#                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
-#                                          include_bf = include_bf, parallel_sims = parallel_sims,
-#                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-#                                          fig_path = fig_path, is_plotted = FALSE)
-# # Plot stat values over independent variable
-# df_mud_pearson <- 
-#   lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "mu_1d", 
-#                            fig_name = paste(fig_name, ".tiff",sep = ""),
-#                            fig_path = fig_path,
-#                            stats_basenames = effect_size_dict[[2]],
-#                            stats_labels = effect_size_dict[[4]])
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# # Change rmu w/ sigma=1, calculate pearson for each stat across rmu
-# 
-# 
-# # Change rsigma at mu=0, calculate pearson for each stat across rsigma
-# 
-# 
-# # Change rsigma at mu=10, calculate pearson for each stat across rsigma
-# 
-# 
-# # Summarizing table showing MMD is the only stat with a solid color that is statistically significant from
-# 
-# 
-# 
-# 
-# 
-# 
-
-
-
-# ____________________________Isolated Parameter________________________________
-
-
-# Unscaled Space----------------------------------------------------------------
-
-# Pearson Correlation between abs(mu_d1) versus mean value of stats
-# sigmad = 1
-#------------------------------------------------------------------------------
-# Fixed mu_d, but as it increases, rmu_d decreases
-set.seed(rand.seed)
-mus_a_vect = c(seq(25,5,-2.5), seq(5,25, 2.5))
-mus_d_vect = c(-seq(5,1,-0.5) , seq(1,5,0.5))
-mus_b_vect = mus_d_vect + mus_a_vect
-rmus_d_vect = mus_d_vect/mus_a_vect
-n_sims = length(mus_b_vect)
-gt_colnames = "is_mud_md2gtmd1"
-fig_name = paste("F", fig_num, "_1a_stat_correlation_mud_sweep", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed,
-                                      mus_1a  = mus_a_vect,
-                                      sigmas_1a = sqrt((1^2)/2),
-                                      mus_1b  = mus_b_vect,
-                                      sigmas_1b = sqrt((1^2)/2),
-                                      mus_2a  = rep(0,n_sims),
-                                      sigmas_2a = 1,
-                                      mus_2b  = rep(0,n_sims),
-                                      sigmas_2b = 1,
-                                      switch_group_ab = FALSE,
-                                      switch_sign_mean_d = FALSE,
-                                      fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-                                      gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames,
-                                         y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                         include_bf = include_bf, parallel_sims = parallel_sims,
-                                         fig_name = paste(fig_name, ".tiff",sep = ""),
-                                         fig_path = fig_path, is_plotted = FALSE)
-# Plot stat values over independent variable
-df_mud_pearson <-
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "mu_1d",
-                           fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
-
-# Pearson rho of abs(mu_d1) versus abs(mean of each stat)
+# Sigma
+# Pearson rho of sigma versus abs(mean of each stat)
 # Sweep sigma_1d, mu_1d = 10
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
@@ -278,7 +100,7 @@ rsigmas_d_vect = sigmas_d_vect/mus_ab_vect
 sigmas_ab_vect = sqrt((sigmas_d_vect^2)/2)
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_ab_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_ab_vect, 
@@ -286,56 +108,20 @@ df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.se
                                       mus_2a  = rep(0,n_sims), 
                                       sigmas_2a = 1, 
                                       mus_2b  = rep(0,n_sims),  
-                                      sigmas_2b = 1, 
+                                      sigmas_2b = 1,
+                                      n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       switch_group_ab = FALSE,
                                       switch_sign_mean_d = FALSE,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
-                                         y_ax_str = "abs(~mu[DM]*phantom(.))",
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                         y_ax_str = "sigma[DM]",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mud_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
-                           fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
-
-
-# Sigma_d versus abs(mean of each stat), Pearson Rho
-# Sweep sigma_1d, mu_1d = 10
-#------------------------------------------------------------------------------
-set.seed(rand.seed)
-sigmas_d_vect = seq(0.1,  10,  0.1); n_sims = length(sigmas_d_vect)
-mus_ab_vect =   seq(0.1,  10,  0.1)
-rsigmas_d_vect = sigmas_d_vect/mus_ab_vect
-sigmas_ab_vect = sqrt((sigmas_d_vect^2)/2)
-gt_colnames = "is_mud_md2gtmd1"
-fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
-                                      mus_1a  = mus_ab_vect, 
-                                      sigmas_1a = sigmas_ab_vect, 
-                                      mus_1b  = mus_ab_vect, 
-                                      sigmas_1b = sigmas_ab_vect+10,
-                                      mus_2a  = rep(0,n_sims), 
-                                      sigmas_2a = 1, 
-                                      mus_2b  = rep(0,n_sims),  
-                                      sigmas_2b = 1, 
-                                      switch_group_ab = FALSE,
-                                      switch_sign_mean_d = FALSE,
-                                      fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
-                                      gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
-                                         y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                         include_bf = include_bf, parallel_sims = parallel_sims,
-                                         fig_name = paste(fig_name, ".tiff",sep = ""),
-                                         fig_path = fig_path, is_plotted = FALSE)
-# Plot stat values over independent variable
-df_mud_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1md", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,
                            stats_basenames = effect_size_dict[[2]],
@@ -343,43 +129,53 @@ df_mud_pearson <-
 
 
 
-# Relative Space----------------------------------------------------------------
 
 
-# Unscaled Space----------------------------------------------------------------
 
+# Relative Mean
 # rmu_d1 vs. mean of stats, pearson rho
 # sigmad = 1
 #------------------------------------------------------------------------------
 # Fixed mu_d, but as it increases, rmu_d decreases
+source("R/equivalence_contests.R")
 set.seed(rand.seed)
-mus_a_vect = seq(5,25, 2.5); n_sims = length(mus_a_vect)
-mus_d_vect = rep(10, n_sims)
-mus_b_vect = mus_d_vect + mus_a_vect
-rmus_d_vect = mus_d_vect/mus_a_vect
+rmus_d_vect = seq(0.25, 4,0.1); n_sims = length(rmus_d_vect)
+mus_a_vect = 1; 
+mus_b_vect = rmus_d_vect*mus_a_vect
+mus_d_vect = mus_b_vect -mus_a_vect
+
+
+
+sigmas_d_vect = mus_b_vect
+rsigmas_d_vect = mus_b_vect/mus_a_vect
+  
+sigmas_ab_vect = sqrt(0.5 * sigmas_d_vect^2)
+
+
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1a_stat_correlation_mud_sweep", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed,
+df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
-                                      sigmas_1a = sqrt((1^2)/2),
+                                      sigmas_1a = sigmas_ab_vect,
                                       mus_1b  = mus_b_vect,
-                                      sigmas_1b = sqrt((1^2)/2),
+                                      sigmas_1b = sigmas_ab_vect,
                                       mus_2a  = rep(0,n_sims),
                                       sigmas_2a = 1,
                                       mus_2b  = rep(0,n_sims),
                                       sigmas_2b = 1,
+                                      n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       switch_group_ab = FALSE,
                                       switch_sign_mean_d = FALSE,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames,
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mud_pearson <-
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "mu_1d",
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1md",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,
                            stats_basenames = effect_size_dict[[2]],
@@ -395,7 +191,7 @@ rsigmas_d_vect = sigmas_d_vect/mus_ab_vect
 sigmas_ab_vect = sqrt((sigmas_d_vect^2)/2)
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_ab_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_ab_vect, 
@@ -403,19 +199,20 @@ df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.se
                                       mus_2a  = rep(0,n_sims), 
                                       sigmas_2a = 1, 
                                       mus_2b  = rep(0,n_sims),  
-                                      sigmas_2b = 1, 
+                                      sigmas_2b = 1,
+                                      n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       switch_group_ab = FALSE,
                                       switch_sign_mean_d = FALSE,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mud_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,
                            stats_basenames = effect_size_dict[[2]],
@@ -432,7 +229,7 @@ rsigmas_d_vect = sigmas_d_vect/mus_ab_vect
 sigmas_ab_vect = sqrt((sigmas_d_vect^2)/2)
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigmad_sweep_mu-10", sep = "")
-df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.seed, 
+df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_ab_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_ab_vect, 
@@ -440,19 +237,60 @@ df_init_1a <- generateExperiment_Data(n_samples, n_obs, n_sims = n_sims, rand.se
                                       mus_2a  = rep(0,n_sims), 
                                       sigmas_2a = 1, 
                                       mus_2b  = rep(0,n_sims),  
-                                      sigmas_2b = 1, 
+                                      sigmas_2b = 1,
+                                      n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       switch_group_ab = FALSE,
                                       switch_sign_mean_d = FALSE,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_1a <- process_esize_simulations(df_init_1a, gt_colname = gt_colnames, 
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mud_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize_1a$df_es, indvar = "sigma_1d", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", 
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path,
+                           stats_basenames = effect_size_dict[[2]],
+                           stats_labels = effect_size_dict[[4]])
+
+
+
+
+# Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
+# Sweep sigma_1d, mu_1d = 10
+#------------------------------------------------------------------------------
+set.seed(rand.seed)
+n_1ab_vect = seq(100, 16,  -2); n_sims = length(n_1ab_vect)
+mus_ab_vect = 1
+sigmas_ab_vect = 1
+
+fig_name = paste("F", fig_num, "_1b_stat_correlation_n_sweep_mu-1", sep = "")
+df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
+                                   mus_1a  = mus_ab_vect, 
+                                   sigmas_1a = sigmas_ab_vect, 
+                                   mus_1b  = mus_ab_vect, 
+                                   sigmas_1b = sigmas_ab_vect,
+                                   mus_2a  = rep(0,n_sims), 
+                                   sigmas_2a = 1, 
+                                   mus_2b  = rep(0,n_sims),  
+                                   sigmas_2b = 1,
+                                   n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
+                                   switch_group_ab = FALSE,
+                                   switch_sign_mean_d = FALSE,
+                                   fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
+                                   gt_colnames = gt_colnames, is_plotted = FALSE)
+df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                      y_ax_str = "sigma[DM]",
+                                      include_bf = include_bf, parallel_sims = parallel_sims,
+                                      fig_name = paste(fig_name, ".tiff",sep = ""),
+                                      fig_path = fig_path, is_plotted = FALSE)
+# Plot stat values over independent variable
+source("R/equivalence_contests.R")
+df_mud_pearson <- 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,
                            stats_basenames = effect_size_dict[[2]],
