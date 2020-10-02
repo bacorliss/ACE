@@ -85,8 +85,8 @@ row_ztest_2s <- function(m1, m2) {
 
 
 
-row_mmd_2s <- function(m1, m2, ...) {
-  mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal(m1[i,], m2[i,], ...))
+row_mmd_2s_zdist <- function(m1, m2, ...) {
+  mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal_zdist(m1[i,], m2[i,], ...))
 }
 
 

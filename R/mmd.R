@@ -210,8 +210,6 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   alpha = (1 - conf.level)
-  
-  
   if (method =="standard") {
     lower_bounds = max_abs_cl_mean_z_standard(d_bar, sem_d, 2*alpha)
     upper_bounds= max_abs_cl_mean_z_standard(d_bar, sem_d, alpha)

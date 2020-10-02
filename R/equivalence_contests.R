@@ -265,8 +265,8 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # Relative change variance of the mean compared to difference in means
   #   Realtive variance across scales
   # Is: rel_pop_std2 > rel_pop_std1, a/k/a CV1 > CV2
-  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a + df$mu_1d/2)
-  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a + df$mu_2d/2)
+  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a + df$mu_1md/2)
+  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a + df$mu_2md/2)
   df$is_rsigma_md2gtmd1 <-  df$rsigma_2md > df$rsigma_1md
   
   
@@ -478,6 +478,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
                       sd = df$sigma_2b), nrow = df$n_samples, 
                 ncol = df$n_2b)
   
+  
   # Means
   xdbar_1d = rowMeans(x_1b) - rowMeans(x_1a)
   xdbar_2d = rowMeans(x_2b) - rowMeans(x_2a)
@@ -577,8 +578,8 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$mean_diff_cohend_2m1 =  mean(diff_cohend)
   
   # Most Mean Diff
-  mmd_1 = row_mmd_2s(x_1a, x_1b, paired = FALSE)
-  mmd_2 = row_mmd_2s(x_2a, x_2b, paired = FALSE)
+  mmd_1 = row_mmd_2s_zdist(x_1a, x_1b)
+  mmd_2 = row_mmd_2s_zdist(x_2a, x_2b)
   df$exp1_mean_mmd = mean(mmd_1)
   df$exp2_mean_mmd = mean(mmd_2)
   df$exp1_sd_mmd = sd(mmd_1)
@@ -603,7 +604,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   nrand_1 = rowMeans(matrix(rnorm(df$n_samples * df$df_1d, mean = 0, sd = 1), 
                             nrow = df$n_samples, ncol = df$df_1d))
   nrand_2 = rowMeans(matrix(rnorm(df$n_samples * df$df_2d, mean = 0, sd = 1), 
-                            nrow = df$n_samples, ncol = df$df_1d))
+                            nrow = df$n_samples, ncol = df$df_2d))
   df$exp1_mean_nrand = mean(nrand_1)
   df$exp2_mean_nrand = mean(nrand_2)
   df$exp1_sd_nrand = sd(nrand_1)
@@ -612,6 +613,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$fract_nrand_d2gtd1 = sum(diff_nrand > 0 ) / df$n_samples
   df$mean_diff_nrand_2m1 = mean(diff_nrand)
     
+  # browser()
   return(df)
 }
 
@@ -637,10 +639,16 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   #' @param out_path file path to save results to disk
   #' @param overwrite if results file already exists in out_path, skip 
   #' calculation and load from disk
-  
-  n_sims = dim(df_in)[1]
+
   # Initialize output data frame
+  # parallel_sims = FALSE
+  n_sims = dim(df_in)[1]
   df <- df_in
+  
+  # browser();
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
+  
   
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
@@ -663,20 +671,22 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       #stop cluster
       stopCluster(cl)
     }else{
-      # Process effect sizes serially
+      df_list = list();
+      # Process effect sizes serially and bind rows into one dataframe
       for (n in seq(1,n_sims,1)) {
-        df[n,] <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n, 
+        df_list[[n]] <- quantify_esize_simulation(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE) 
       }
+      df <- bind_rows(df_list)
     }
     
-    # Save dataframed results to a file
-    saveRDS(df, file = paste(out_path,data_file_name,sep=""))
+    # Save dataframe results to a file
+    saveRDS(df, file = paste(out_path, data_file_name, sep=""))
   } else {
-    # Restore the data frame results from disk
-    df <- readRDS(file = paste(out_path,data_file_name,sep=""))
+    # Restore the dataframe results from disk
+    df <- readRDS(file = paste(out_path, data_file_name,sep=""))
   }
-  # browser()
+  
   return(df)
 }
 
@@ -927,7 +937,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   # df_means[[indvar]] <- as.factor(df_means[[indvar]])
   df_means$variable <- as.factor(df_means$variable)
   
-  browser();
+  # browser();
   if (length(unique(df_means[[indvar]]))==1) {
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
@@ -941,6 +951,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
                            method = "pearson", type = "bootstrap", R = 999)[[2]][2])
   df_means_pearson <- df_means_pearson[match(exp1_mean_vars, df_means_pearson$variable),]
   df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
+  df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_p_low & 0<df_means_pearson$pearson_p_high)
   
   
 gg <- ggplot(data = df_means_pearson, aes(x = label, y = pearson_p)) + 
@@ -957,12 +968,12 @@ save_plot(paste(fig_path, fig_name, sep = ""), gg, ncol = 1, nrow = 1,
 
 # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
 df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
-                 param = c(rep("mu[md]",dim(df)[1]), rep("r*mu[md]",dim(df)[1]),
-                 rep("sigma[md]",dim(df)[1]), rep("r*sigma[md]",dim(df)[1]),
-                 rep("df[md]",dim(df)[1])), 
+                 param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
+                 rep("sigma[DM]",dim(df)[1]), rep("r*sigma[DM]",dim(df)[1]),
+                 rep("df[DM]",dim(df)[1])), 
                  value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
                  )
-df_runs$param <- factor(df_runs$param, levels = c("mu[md]", "r*mu[md]", "sigma[md]","r*sigma[md]","df[md]"))
+df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[DM]","r*sigma[DM]","df[DM]"))
 
 
 gg <- ggplot(data = df_runs, aes(x = Run, y = value)) +
@@ -979,7 +990,7 @@ gg
 save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 2, base_asp = 4, base_width = 3, dpi = 600)
 
-# save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
 # load(file = "temp/debug.RData")
 
 return(df_means_pearson)

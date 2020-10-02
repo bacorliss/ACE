@@ -511,7 +511,7 @@ make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
 
 
 
-# Export summary stats for scale data
+# Export summary stats for un-scaled data
 #-------------------------------------------------------------------------------
 dfs_scale <- c(ls(pat="dfs_[1-3]a"),ls(pat="dfs_[1-3]b"))
 scale_norm_ind = rep(c(1,3,1,3),2)
