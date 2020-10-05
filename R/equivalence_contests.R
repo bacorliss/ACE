@@ -35,7 +35,7 @@ effect_size_dict[[1]] <- c("fract", "mean_diff")
 effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sdmd", "rsdmd", "bf", "pvalue",
                            "tostp", "cohend", "mmd",  "rmmd","nrand")
 effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)", "r*bar(x)", "s", "r*s","Bf", "p[NHST]*phantom(.)",
+effect_size_dict[[4]] <- c("bar(x)[DM]", "r*bar(x)[DM]", "s[DM]", "r*s[DM]","Bf", "p[NHST]*phantom(.)",
                            "~p[TOST]", "Cd" , "delta[M]",
                            "r*delta[M]","Rnd")
 
@@ -290,7 +290,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
     plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames)
   } else {
-    # browser();
+    
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
     df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
                      param = c(rep("mu[md]",dim(df)[1]), rep("r*mu[md]",dim(df)[1]),
@@ -299,8 +299,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                      Value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
     )
     df_runs$param <- factor(df_runs$param, levels = c("mu[md]", "r*mu[md]", "sigma[md]","r*sigma[md]","df[md]"))
-    
-    
+
     gg <- ggplot(data = df_runs, aes(x = Run, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
@@ -311,7 +310,6 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
             panel.grid.minor = element_blank(),
             strip.background = element_blank(),
             panel.border = element_rect(fill = NA,colour = "black")) 
-      # scale_y_continuous(breaks= pretty_breaks())
     print(gg)
     save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
               base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
@@ -513,8 +511,9 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   df$mean_diff_rxdbar_2m1  =  mean(diff_rxdbar)
   
   # Rel STDs: sd divided by control mean
-  exp1_rsd_md = s_1md / (rowMeans(x_1a))
-  exp2_rsd_md = s_2md / (rowMeans(x_2a))
+  # Relaltive STD is halfway between xbar_A and xbar_B
+  exp1_rsd_md = s_1md / (rowMeans(x_1a) + 0.5 * xdbar_1d)
+  exp2_rsd_md = s_2md / (rowMeans(x_2a) + 0.5 * xdbar_2d)
   df$exp1_mean_rsdmd = mean(exp1_rsd_md)
   df$exp2_mean_rsdmd = mean(exp2_rsd_md)
   df$exp1_sd_rsdmd   = sd(exp1_rsd_md)
@@ -915,7 +914,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
 
 
 lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basenames = effect_size_dict[[2]], 
-                                     stats_labels = effect_size_dict[[4]] ) {
+                                     stats_labels = effect_size_dict[[4]], dir_to_agreement=1) {
   #' Plot correlation of independent variable versus mean values of all statistics
   #' 
   #' 
@@ -926,7 +925,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   # Filter for stats metrics
   col_list <- colnames(df)
   exp1_mean_vars = paste("exp1_mean_", stats_basenames,sep="")
-  exp1_sd_vars =   paste("exp1_sd_", stats_basenames,sep="")
+  exp1_sd_vars   = paste("exp1_sd_", stats_basenames,sep="")
   
   # Calculate mean value of statistics for each value of indvar
   df_means <- df %>% gather("variable", "value", exp1_mean_vars)
@@ -934,7 +933,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   df_means <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "mean_value") %>%
     select(c(all_of(indvar),"variable", "mean_value"))
   df_sd <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "sd_value")
-  # df_means[[indvar]] <- as.factor(df_means[[indvar]])
+  # subset(df_means, variable = "exp1_mean_xdbar")
   df_means$variable <- as.factor(df_means$variable)
   
   # browser();
@@ -943,15 +942,17 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   }
   # Pearson rho of versus independent variable
   df_means_pearson <- df_means %>% group_by(variable) %>% summarise(
-    pearson_p = ci_cor(data.frame(y1 = abs(get(indvar)), y2 = abs(mean_value)), 
+    pearson_p = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
                        method = "pearson", type = "bootstrap", R = 999)[[3]],
-    pearson_p_low = ci_cor(data.frame(y1 = abs(get(indvar)), y2 = abs(mean_value)), 
+    pearson_p_low = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
                            method = "pearson", type = "bootstrap", R = 999)[[2]][1],
-    pearson_p_high = ci_cor(data.frame(y1 = abs(get(indvar)), y2 = abs(mean_value)), 
+    pearson_p_high = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
                            method = "pearson", type = "bootstrap", R = 999)[[2]][2])
   df_means_pearson <- df_means_pearson[match(exp1_mean_vars, df_means_pearson$variable),]
   df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
   df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_p_low & 0<df_means_pearson$pearson_p_high)
+  
+  
   
   
 gg <- ggplot(data = df_means_pearson, aes(x = label, y = pearson_p)) + 
@@ -992,6 +993,7 @@ save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep
 
 save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
 # load(file = "temp/debug.RData")
+
 
 return(df_means_pearson)
 }
