@@ -194,7 +194,7 @@ set.seed(rand.seed)
 mus_a_vect = seq(10,20,0.25); n_sims = length(mus_a_vect) 
 mus_b_vect = mus_a_vect + 5
 
-sigmas_ab_vect = (mus_a_vect + 0.5*(mus_b_vect-mus_a_vect))/10
+sigmas_ab_vect = (mus_a_vect + 0.5*(mus_b_vect-mus_a_vect))/2
 
 
 
@@ -333,15 +333,15 @@ make2RectGroups <- function(cells1,lwd1){
 
 # Unscaled Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_mu_pearson$pearson_p, df_sigma_pearson$pearson_p,
-               df_df_pearson$pearson_p)
-scores_sig = cbind(df_mu_pearson$is_significant, df_sigma_pearson$is_significant,
-                   df_df_pearson$is_significant)
+scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
+               df_df_pearson$pearson_rho)
+scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
+                   df_df_pearson$is_pearson_rho_sig)
 png(paste("figure/F", fig_num, "/F", fig_num, "pearson_unscaled_units.png",sep=""),    
     width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,1)},
-          col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
+          col = my_palette,  Rowv=F, Colv=F, sepwidth=c(1,1),
           labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scores)[1]),
@@ -355,10 +355,10 @@ dev.off()
 
 # Relative Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_rmu_pearson$pearson_p, df_rsigma_pearson$pearson_p,
-               df_rdf_pearson$pearson_p)
-scores_sig = cbind(df_rmu_pearson$is_significant, df_rsigma_pearson$is_significant,
-                   df_rdf_pearson$is_significant)
+scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
+               df_rdf_pearson$pearson_rho)
+scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
+                   df_rdf_pearson$is_pearson_rho_sig)
 png(paste("figure/F", fig_num, "/F", fig_num, "pearson_relative_scale_units.png",sep=""),    
     width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,

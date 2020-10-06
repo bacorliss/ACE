@@ -914,7 +914,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
 
 
 lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basenames = effect_size_dict[[2]], 
-                                     stats_labels = effect_size_dict[[4]], dir_to_agreement=1) {
+                                     stats_labels = effect_size_dict[[4]], dir_to_agreement=1, alpha = 0.05) {
   #' Plot correlation of independent variable versus mean values of all statistics
   #' 
   #' 
@@ -936,31 +936,62 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   # subset(df_means, variable = "exp1_mean_xdbar")
   df_means$variable <- as.factor(df_means$variable)
   
-  # browser();
+  
   if (length(unique(df_means[[indvar]]))==1) {
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
-  # Pearson rho of versus independent variable
-  df_means_pearson <- df_means %>% group_by(variable) %>% summarise(
-    pearson_p = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-                       method = "pearson", type = "bootstrap", R = 999)[[3]],
-    pearson_p_low = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-                           method = "pearson", type = "bootstrap", R = 999)[[2]][1],
-    pearson_p_high = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-                           method = "pearson", type = "bootstrap", R = 999)[[2]][2])
-  df_means_pearson <- df_means_pearson[match(exp1_mean_vars, df_means_pearson$variable),]
-  df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
-  df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_p_low & 0<df_means_pearson$pearson_p_high)
+  # # Pearson rho of versus independent variable
+  # df_means_pearson <- df_means %>% group_by(variable) %>% summarise(
+  #   pearson_rho = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
+  #                      method = "pearson", type = "bootstrap", R = 1e3)[[3]],
+  #   pearson_rho_low = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
+  #                          method = "pearson", type = "bootstrap", R = 1e3)[[2]][1],
+  #   pearson_rho_high = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
+  #                          method = "pearson", type = "bootstrap", R = 1e3)[[2]][2])
+  # df_means_pearson <- df_means_pearson[match(exp1_mean_vars, df_means_pearson$variable),]
+  # df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
+  # df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_rho_low & 0<df_means_pearson$pearson_rho_high)
   
   
+
+  df_mean_stat = tibble(variable = exp1_mean_vars, pearson_rho=rep(NA,length(exp1_mean_vars)),
+                        pearson_rho_low=rep(NA,length(exp1_mean_vars)), pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
+                        slope=rep(NA,length(exp1_mean_vars)), 
+                        slope_low=rep(NA,length(exp1_mean_vars)), slope_high=rep(NA,length(exp1_mean_vars)))
+  for (n in seq(1,length(exp1_mean_vars),1))  {
+    
+    df_sub = subset(df_means, df_means$variable == exp1_mean_vars[n])
+    
+    # Pearson correlation
+    ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*dir_to_agreement, 
+                                   y2 = abs(df_sub$mean_value)), 
+          method = "pearson", type = "bootstrap", R = 1e3, probs = c(alpha/length(exp1_mean_vars), 1-alpha/length(exp1_mean_vars)))
+    df_mean_stat$pearson_rho[n] = ci_pearson[[3]]
+    df_mean_stat$pearson_rho_low[n] = ci_pearson[[2]][1]
+    df_mean_stat$pearson_rho_high[n] = ci_pearson[[2]][2]
+    
+    # LInear regression
+    stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*dir_to_agreement,
+                                         y2 = abs(df_sub$mean_value)))
+    sd_slope <- summary(stat.lm)[[4]][2]
+    df_mean_stat$slope[n] = stat.lm$coefficients[2]
+    df_mean_stat$slope_low[n] = df_mean_stat$slope[n] - 1.96*sd_slope
+    df_mean_stat$slope_high[n] = df_mean_stat$slope[n] + 1.96*sd_slope
+
+  }
+  df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
+  df_mean_stat$label <- factor(stats_labels, levels = stats_labels)
+  df_mean_stat$is_pearson_rho_sig <-  !(0>df_mean_stat$pearson_rho_low & 0<df_mean_stat$pearson_rho_high)
+  df_mean_stat$is_slope_sig <-  !(0>df_mean_stat$slope_low & 0<df_mean_stat$slope_high)
   
+  # browser();
   
-gg <- ggplot(data = df_means_pearson, aes(x = label, y = pearson_p)) + 
+gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
   geom_point(shape=1, size=1) + ylim(-1,1) +
   geom_hline(yintercept=0,linetype="dashed") +
-  geom_linerange(aes(ymin = pearson_p_low, ymax = pearson_p_high)) +
+  geom_linerange(aes(ymin = pearson_rho_low, ymax = pearson_rho_high)) +
   ylab("Pearson's r") + xlab("Statistic") +
-  scale_x_discrete(labels= parse(text = as.character(df_means_pearson$label))) +
+  scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
   theme_classic(base_size=8) + theme(legend.position="none") 
 print(gg)  
 save_plot(paste(fig_path, fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
@@ -995,5 +1026,5 @@ save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment(
 # load(file = "temp/debug.RData")
 
 
-return(df_means_pearson)
+return(df_mean_stat)
 }
