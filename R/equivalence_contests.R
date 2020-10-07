@@ -952,24 +952,35 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   # df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
   # df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_rho_low & 0<df_means_pearson$pearson_rho_high)
   
-  
+  # browser();
 
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
+  
+  
   df_mean_stat = tibble(variable = exp1_mean_vars, pearson_rho=rep(NA,length(exp1_mean_vars)),
                         pearson_rho_low=rep(NA,length(exp1_mean_vars)), pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
                         slope=rep(NA,length(exp1_mean_vars)), 
                         slope_low=rep(NA,length(exp1_mean_vars)), slope_high=rep(NA,length(exp1_mean_vars)))
   for (n in seq(1,length(exp1_mean_vars),1))  {
-    
+    # print(n)
     df_sub = subset(df_means, df_means$variable == exp1_mean_vars[n])
     
-    # Pearson correlation
-    ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*dir_to_agreement, 
-                                   y2 = abs(df_sub$mean_value)), 
-          method = "pearson", type = "bootstrap", R = 1e3, probs = c(alpha/length(exp1_mean_vars), 1-alpha/length(exp1_mean_vars)))
-    df_mean_stat$pearson_rho[n] = ci_pearson[[3]]
-    df_mean_stat$pearson_rho_low[n] = ci_pearson[[2]][1]
-    df_mean_stat$pearson_rho_high[n] = ci_pearson[[2]][2]
     
+    if (length(unique((abs(df_sub$mean_value)))) > 1) {
+      # Pearson correlation
+      ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*dir_to_agreement, 
+                                     y2 = abs(df_sub$mean_value) ), 
+                          method = "pearson", type = "normal", 
+                          probs = c(alpha/length(exp1_mean_vars), 1-alpha/length(exp1_mean_vars)))
+      df_mean_stat$pearson_rho[n] = ci_pearson[[3]]
+      df_mean_stat$pearson_rho_low[n] = ci_pearson[[2]][1]
+      df_mean_stat$pearson_rho_high[n] = ci_pearson[[2]][2]
+    } else { 
+    df_mean_stat$pearson_rho[n]    <- 0
+    df_mean_stat$pearson_rho_low[n]  <- 0
+    df_mean_stat$pearson_rho_high[n] <- 0
+    }
     # LInear regression
     stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*dir_to_agreement,
                                          y2 = abs(df_sub$mean_value)))
@@ -977,14 +988,12 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     df_mean_stat$slope[n] = stat.lm$coefficients[2]
     df_mean_stat$slope_low[n] = df_mean_stat$slope[n] - 1.96*sd_slope
     df_mean_stat$slope_high[n] = df_mean_stat$slope[n] + 1.96*sd_slope
-
   }
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
   df_mean_stat$label <- factor(stats_labels, levels = stats_labels)
   df_mean_stat$is_pearson_rho_sig <-  !(0>df_mean_stat$pearson_rho_low & 0<df_mean_stat$pearson_rho_high)
   df_mean_stat$is_slope_sig <-  !(0>df_mean_stat$slope_low & 0<df_mean_stat$slope_high)
   
-  # browser();
   
 gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
   geom_point(shape=1, size=1) + ylim(-1,1) +

@@ -52,17 +52,17 @@ include_bf = TRUE
 set.seed(rand.seed)
 mus_d_vect = seq(4.9,0.1,-0.2)
 mus_a_vect = mus_d_vect*2
-mus_b_vect = mus_d_vect + mus_a_vect
-rmus_d_vect = mus_d_vect/mus_a_vect
+mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
+sigmas_ab_vect=1e-2
 
-n_sims = length(mus_b_vect)
+
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1a_stat_correlation_mu_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
-                                   sigmas_1a = sqrt((1^2)/2), 
+                                   sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
-                                   sigmas_1b = sqrt((1^2)/2),
+                                   sigmas_1b = sigmas_ab_vect,
                                    mus_2a  = rep(0,n_sims), 
                                    sigmas_2a = 1, 
                                    mus_2b  = rep(0,n_sims),  
@@ -96,16 +96,17 @@ df_mu_pearson <-
 # Sweep sigma_1d, mu_1d = 10
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-sigmas_d_vect = seq(0.1,  10,  0.1); n_sims = length(sigmas_d_vect)
-mus_ab_vect =   seq(0.1,  10,  0.1)
-rsigmas_d_vect = sigmas_d_vect/mus_ab_vect
-sigmas_ab_vect = sqrt((sigmas_d_vect^2)/2)
+sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
+mus_a_vect = sigmas_ab_vect
+mus_b_vect = mus_a_vect;
+  
+
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
-                                      mus_1a  = mus_ab_vect, 
+                                      mus_1a  = mus_a_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
-                                      mus_1b  = mus_ab_vect, 
+                                      mus_1b  = mus_b_vect, 
                                       sigmas_1b = sigmas_ab_vect,
                                       mus_2a  = rep(0,n_sims), 
                                       sigmas_2a = 1, 
@@ -136,15 +137,14 @@ df_sigma_pearson <-
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
-mus_d_vect = 1
-mus_a_vect = 1 #/(n_1ab_vect - 0.5*mus_d_vect)^2
-sigmas_ab_vect = 1
+mus_ab_vect = 1/sqrt(n_1ab_vect)
+sigmas_ab_vect = 1e-3
 
 fig_name = paste("F", fig_num, "_1c_stat_correlation_df_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
-                                   mus_1a  = mus_a_vect, 
+                                   mus_1a  = mus_ab_vect, 
                                    sigmas_1a = sigmas_ab_vect, 
-                                   mus_1b  = mus_a_vect+mus_d_vect, 
+                                   mus_1b  = mus_ab_vect, 
                                    sigmas_1b = sigmas_ab_vect,
                                    mus_2a  = rep(0,n_sims), 
                                    sigmas_2a = 1, 
@@ -187,16 +187,11 @@ df_df_pearson <-
 # Increase mu a
 # Same d
 # Increase std for a and b to match mu a
-
-source("R/equivalence_contests.R")
 set.seed(rand.seed)
+mus_a_vect =  seq(20,10,-0.5); n_sims = length(mus_a_vect) 
+mus_b_vect =  mus_a_vect+1
 
-mus_a_vect = seq(10,20,0.25); n_sims = length(mus_a_vect) 
-mus_b_vect = mus_a_vect + 5
-
-sigmas_ab_vect = (mus_a_vect + 0.5*(mus_b_vect-mus_a_vect))/2
-
-
+sigmas_ab_vect = mus_a_vect + 0.5 * (mus_b_vect - mus_a_vect)
 
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1d_stat_correlation_rmu_sweep", sep = "")
@@ -229,19 +224,20 @@ df_rmu_pearson <-
                            stats_labels = effect_size_dict[[4]])
 
 
+
 # Relative sigma
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-mus_ab_vect =   seq(5,  10,  0.1); n_sims = length(mus_ab_vect)
+mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect) 
+mus_a_vect = mus_b_vect
 sigmas_ab_vect = 1
-
 
 gt_colnames = "is_mud_md2gtmd1"
 fig_name = paste("F", fig_num, "_1e_stat_correlation_rsigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
-                                      mus_1a  = mus_ab_vect, 
+                                      mus_1a  = mus_a_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
-                                      mus_1b  = mus_ab_vect, 
+                                      mus_1b  = mus_b_vect, 
                                       sigmas_1b = sigmas_ab_vect,
                                       mus_2a  = rep(0,n_sims), 
                                       sigmas_2a = 1, 
@@ -270,15 +266,16 @@ df_rsigma_pearson <-
 # Sweep sigma_1d, mu_1d = 10
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-n_1ab_vect = seq(100, 16,  -2); n_sims = length(n_1ab_vect)
-mus_ab_vect = 1
-sigmas_ab_vect = 1
+n_1ab_vect = seq(16, 100, 2); n_sims = length(n_1ab_vect)
+mus_a_vect = n_1ab_vect
+mus_b_vect = n_1ab_vect
+sigmas_ab_vect = sqrt(n_1ab_vect)
 
 fig_name = paste("F", fig_num, "_1f_stat_correlation_rdf_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
-                                   mus_1a  = mus_ab_vect, 
+                                   mus_1a  = mus_a_vect, 
                                    sigmas_1a = sigmas_ab_vect, 
-                                   mus_1b  = mus_ab_vect, 
+                                   mus_1b  = mus_b_vect, 
                                    sigmas_1b = sigmas_ab_vect,
                                    mus_2a  = rep(0,n_sims), 
                                    sigmas_2a = 1, 
@@ -337,11 +334,11 @@ scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
                df_df_pearson$pearson_rho)
 scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
                    df_df_pearson$is_pearson_rho_sig)
-png(paste("figure/F", fig_num, "/F", fig_num, "pearson_unscaled_units.png",sep=""),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
     width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,1)},
-          col = my_palette,  Rowv=F, Colv=F, sepwidth=c(1,1),
+          col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
           labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scores)[1]),
@@ -359,7 +356,7 @@ scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
                df_rdf_pearson$pearson_rho)
 scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
                    df_rdf_pearson$is_pearson_rho_sig)
-png(paste("figure/F", fig_num, "/F", fig_num, "pearson_relative_scale_units.png",sep=""),    
+png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.png",sep=""),    
     width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},
