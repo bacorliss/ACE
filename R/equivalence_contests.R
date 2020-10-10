@@ -1017,16 +1017,20 @@ df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
 df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[DM]","r*sigma[DM]","df[DM]"))
 
 
+df_means <- df_runs %>% group_by(param) %>% summarize(Run=1,
+  mean_value=mean(value),  is_constant = all(mean(value) == value),
+  ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
+  ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
+
+# df_means$ymin <-min(c(df_means$mean_value - 0.2 * df_means$mean_value, -.2))
+# df_means$ymax <-max(c(df_means$mean_value + 0.2 * df_means$mean_value, +.2))
+
 gg <- ggplot(data = df_runs, aes(x = Run, y = value)) +
   geom_line() +
   facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
   theme_classic(base_size=8) +
-  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),)
-  #       axis.line = element_line(colour = 'black', size = .25),
-  #       panel.border = element_rect(colour = "black"),)
-        # panel.grid.major = element_blank(),
-        # panel.grid.minor = element_blank(),
-        # strip.background = element_blank())
+  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) +
+  geom_blank(data=df_means, aes(x = Run, y=mean_value, ymin = ymin, ymax = ymax))
 gg
 save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 2, base_asp = 4, base_width = 3, dpi = 600)
