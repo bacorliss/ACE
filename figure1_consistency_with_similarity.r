@@ -13,11 +13,11 @@ p_load(readr)
 p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
-source("R/equivalence_contests.R")
+source("R/agreement_contests.R")
 
 
 # Figure parameters
-fig_num = "9" 
+fig_num = "1" 
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
 fig_path = paste("figure/F",fig_num, "/",sep="")
 # Simulation parameters
@@ -29,7 +29,7 @@ fig_path = paste("figure/F",fig_num, "/",sep="")
 n_samples = 1e3
 n_obs = 50
 rand.seed = 1
-gt_colnames = "is_mud_md2gtmd1"
+gt_colnames = "is_mudm_2gt1"
 parallel_sims = TRUE
 include_bf = TRUE
 # scale_contest_path = paste("figure/F", fig_num, "/F", fig_num,"_scale_contest_results.csv",sep="")
@@ -55,8 +55,7 @@ mus_a_vect = mus_d_vect*2
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect=1e-2
 
-
-gt_colnames = "is_mud_md2gtmd1"
+gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1a_stat_correlation_mu_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -80,7 +79,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mu_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1md", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
                            stats_basenames = effect_size_dict[[2]],
@@ -101,7 +100,7 @@ mus_a_vect = sigmas_ab_vect
 mus_b_vect = mus_a_vect;
   
 
-gt_colnames = "is_mud_md2gtmd1"
+gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -118,13 +117,13 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                         y_ax_str = "sigma[DM]",
+                                         y_ax_str = "sigma[pool]",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_sigma_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1md", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
                            stats_basenames = effect_size_dict[[2]],
@@ -137,9 +136,10 @@ df_sigma_pearson <-
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
-mus_ab_vect = 1/sqrt(n_1ab_vect)
-sigmas_ab_vect = 1e-3
+mus_ab_vect = 1
+sigmas_ab_vect = 1
 
+gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1c_stat_correlation_df_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_ab_vect, 
@@ -156,7 +156,7 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                      y_ax_str = "sigma[DM]",
+                                      y_ax_str = "df[pool]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
@@ -178,8 +178,6 @@ df_df_pearson <-
 
 #------------------------------------------------------------------------------
 
-
-
 # Relative Mean
 #------------------------------------------------------------------------------
 # Decreasing Rmu is more similar
@@ -188,12 +186,13 @@ df_df_pearson <-
 # Same d
 # Increase std for a and b to match mu a
 set.seed(rand.seed)
-mus_a_vect =  seq(20,10,-0.5); n_sims = length(mus_a_vect) 
+mus_a_vect =  seq(10,20,0.5); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+1
-
 sigmas_ab_vect = mus_a_vect + 0.5 * (mus_b_vect - mus_a_vect)
 
-gt_colnames = "is_mud_md2gtmd1"
+
+
+gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1d_stat_correlation_rmu_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
@@ -217,7 +216,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rmu_pearson <-
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1md",
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1dm",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
                            stats_basenames = effect_size_dict[[2]],
@@ -232,7 +231,7 @@ mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect)
 mus_a_vect = mus_b_vect
 sigmas_ab_vect = 1
 
-gt_colnames = "is_mud_md2gtmd1"
+gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1e_stat_correlation_rsigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -255,7 +254,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rsigma_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1md", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = 1,
                            stats_basenames = effect_size_dict[[2]],
@@ -267,9 +266,9 @@ df_rsigma_pearson <-
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(16, 100, 2); n_sims = length(n_1ab_vect)
-mus_a_vect = n_1ab_vect
-mus_b_vect = n_1ab_vect
-sigmas_ab_vect = sqrt(n_1ab_vect)
+mus_a_vect = 1
+mus_b_vect = 1
+sigmas_ab_vect = 1
 
 fig_name = paste("F", fig_num, "_1f_stat_correlation_rdf_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
@@ -287,7 +286,7 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                      y_ax_str = "sigma[DM]",
+                                      y_ax_str = "sigma[pool]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
@@ -335,7 +334,7 @@ scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
 scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
                    df_df_pearson$is_pearson_rho_sig)
 png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
-    width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
+    width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,1)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
@@ -356,8 +355,8 @@ scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
                df_rdf_pearson$pearson_rho)
 scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
                    df_rdf_pearson$is_pearson_rho_sig)
-png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.png",sep=""),    
-    width = 1.5*300, height = 2.55*300, res = 300, pointsize = 8)  
+png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
+    width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),

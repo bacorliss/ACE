@@ -2,6 +2,11 @@
 
 
 
+fig_num = "2" 
+dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
+fig_path = paste("figure/F",fig_num,sep="")
+
+
 # OVerall contest heatmaps
 #------------------------------------------------------------------------
 
@@ -26,22 +31,34 @@ make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
 
 # Export summary stats for un-scaled data
 #-------------------------------------------------------------------------------
-dfs_scale <- c(ls(pat="dfs_[1-3]a"),ls(pat="dfs_[1-3]b"))
-scale_norm_ind = rep(c(1,3,1,3),2)
+
+
+
+
+
+if (!file.exists("temp/df_unscaled_null.RDS")) {source("sfigure8_unscaled_agreement_contest_null.R")
+  } else {load(file = "temp/df_unscaled_null.RDS")}
+
+if (!file.exists("temp/df_unscaled_crit.RDS")) {source("sfigure9_unscaled_agreement_contest_critical.R")
+  } else {load(file = "temp/df_unscaled_crit.RDS")}
+
+
+dfs_unscaled <- c(df_unscaled_null,df_unscaled_crit)
+scale_norm_ind = rep(c(1,3,3,1,3,3),2)
 
 # Extract means for each group and subtract from 0.5 (random)
-scale_means_from_0.5 <- 0.5 - sapply(dfs_scale, function(x) get(x)$df_plotted$mean)
+scale_means_from_0.5 <- 0.5 - sapply(dfs_unscaled, function(x) x$df_plotted$mean)
 scale_scores <- t(t(scale_means_from_0.5)/
                     scale_means_from_0.5[cbind(scale_norm_ind,seq_along(scale_norm_ind))])
 # Export csv
 rownames(scale_scores) <- effect_size_dict[[4]]
 # Get statistical significance
-scale_scores_sig <- !sapply(dfs_scale, function(x) get(x)$df_plotted$is_mean_0.5) 
+scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5) 
 scale_score_norm <- sapply(scale_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(effect_size_dict[[4]]))
 
-png(paste("figure/F", fig_num, "/F", fig_num, "es_contest scale.png",sep=""),    
-    width = 5*300, height = 2.55*300, res = 300, pointsize = 8)  
+png(paste(fig_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
+    width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
 heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scale_scores_sig,1,scale_score_norm,3)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
@@ -51,24 +68,40 @@ heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))
 dev.off()
 
+
+
+
+
 # Export summary stats for relative scale data
 #-------------------------------------------------------------------------------
+
+if (!file.exists("temp/df_relative_null.RDS")) {source("sfigure10_relative_agreement_contest_null.R")
+  } else {load(file = "temp/df_relative_null.RDS")}
+
+if (!file.exists("temp/df_relative_crit.RDS")) {source("sfigure11_relative_agreement_contest_crit.R")
+  } else {load(file="temp/df_relative_crit.RDS")}
+
+fig_num = "2" 
+
 # Export summary stats for relative scale data
-dfs_rscale <- c(ls(pat="dfs_[4-6]a"),ls(pat="dfs_[4-6]b"))
-rscale_norm_ind = rep(c(2,4,2,4),2)
+dfs_relative <- c(df_relative_null,df_relative_crit)
+relative_norm_ind = rep(c(2,4,4,2,4,4),2)
+
 # Extract means for each group and subtract from 0.5 (random)
-rscale_means_from_0.5 <- 0.5 - sapply(dfs_rscale, function(x) get(x)$df_plotted$mean)
-rscale_scores <- t(t(rscale_means_from_0.5)/
-                     rscale_means_from_0.5[cbind(rscale_norm_ind,seq_along(rscale_norm_ind))])
+relative_means_from_0.5 <- 0.5 - sapply(dfs_relative, function(x) x$df_plotted$mean)
+
+# rscale_means_from_0.5 <- 0.5 - sapply(dfs_rscale, function(x) get(x)$df_plotted$mean)
+rscale_scores <- t(t(relative_means_from_0.5)/
+                     relative_means_from_0.5[cbind(relative_norm_ind,seq_along(relative_norm_ind))])
 # Export csv
 rownames(rscale_scores) <- effect_size_dict[[2]]
 # Get statistical significance
-rscale_scores_sig <- !sapply(dfs_rscale, function(x) get(x)$df_plotted$is_mean_0.5) 
-rscale_score_norm <- sapply(rscale_norm_ind, function(ind,len) 
+rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5) 
+rscale_score_norm <- sapply(relative_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(effect_size_dict[[4]]))
 
 png(paste("figure/F", fig_num, "/F", fig_num, "es_contest relative scale.png",sep=""),    
-    width = 5*300, height = 2.55*300, res = 300, pointsize = 8)  
+    width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
 heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),

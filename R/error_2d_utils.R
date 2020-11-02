@@ -3,6 +3,7 @@
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(foreach)
 p_load(doParallel)
+p_load(tidyr)
 
 source("R/parallel_utils.R")
 source("R/mmd.R")
@@ -129,7 +130,10 @@ quant_coverage_errors <-
     #'  
     #'  @return df dataframe that stores population parameters and statistics
     
-   
+    # browser();
+    # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+    # load(file = "temp/debug.RData")
+    
     # Calculate number of simulations, which is either length of mus_ao or mu_vsigmas_ao
     n_mus_ao = max(c(length(mus_ao), length(mu_vsigmas_ao)))
     # Fill out vectors if single number specified
@@ -137,9 +141,6 @@ quant_coverage_errors <-
     if (length(sigmas_a)==1) {sigmas_a = rep(sigmas_a,length(sigmas_ao))}
     
     
-    # browser();
-    save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-    # load(file = "temp/debug.RData")
     
     # Store results to disk since calculations are significant
     set.seed(rand.seed)
@@ -149,13 +150,14 @@ quant_coverage_errors <-
       # Matrix diff and error of mmd
       if (!is.null(mus_ao)) {dimnames = list(sigmas_ao,mus_ao)
       } else {dimnames = list(sigmas_ao,mu_vsigmas_ao)}
-  
+      
       # Initialize matrix in data form
       param_col_list <- c("mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", "sigma_d", 
-                    "mu_vsigma_d","rmu","fract_neg_x_bar_a")
+                          "mu_vsigma_d","rmu","fract_neg_x_bar_a")
       init_mat <- matrix(NA, nrow = length(sigmas_ao), ncol = n_mus_ao, dimnames = dimnames)
       df_mat <- tibble(mu_a = init_mat);
       for (n in seq_along(param_col_list)) { df_mat[[param_col_list[n]]] <- init_mat }
+      
       for (r in seq(1, length(sigmas_ao), by = 1)) {
         # Calculate mu if only mu/sigma and sigma are known
         if (!is.null(mu_vsigmas_ao)) { mus_ao = mu_vsigmas_ao * sigmas_ao[r]}
@@ -171,8 +173,8 @@ quant_coverage_errors <-
                                                                   df_mat$sigma_ao[r,c])^2 )
           df_mat$mu_vsigma_d[r,c] <- df_mat$mu_d[r,c]/df_mat$sigma_d[r,c]
           df_mat$rmu[r,c] <- df_mat$mu_d[r,c] / df_mat$mu_a[r,c]
-          }
-        } 
+        }
+      } 
       
       # Linearize matrix dataframe
       df_lin <- tibble(mu_a = as.vector(init_mat));
@@ -203,7 +205,7 @@ quant_coverage_errors <-
       df_mat2 <- df_mat; col_list <- colnames(df_lin2)
       for (n in seq_along(col_list)) { 
         df_mat2[[col_list[n]]] <- matrix(df_lin2[[col_list[n]]], nrow = length(sigmas_ao), 
-                                            ncol = n_mus_ao, dimnames = dimnames)
+                                         ncol = n_mus_ao, dimnames = dimnames)
       }
       
       # Binomial test returns FALSE if below min p-value, set to min p-value instead
@@ -217,7 +219,7 @@ quant_coverage_errors <-
       df_mat2 <- readRDS(file = out_path)
     }
     # browser();
-    save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+    # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
     return(df_mat2)
   }
 
@@ -229,6 +231,9 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
   #' Assumed columns of df: "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", 
   #' "sigma_d", "mu_vsigma_d","fract_neg_x_bar_a"
   #' 
+
+  
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   
   # Control group (For use with two sample cases)
   x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
@@ -336,20 +341,32 @@ row_locate_binary_bounds <- function (xb){
 
 locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_samples, n_obs,
                                        temp_name, mu_ov_sigmas = NULL, rand.seed=0,
-                                       overwrite = overwrite,  mus_a = NULL, sigmas_a = NULL,
+                                       overwrite = TRUE,  mus_a = 0, sigmas_a = 0,
                                        parallel_proc = TRUE, negative_mu=TRUE){
+  
+  # browser();
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
+  
+  
+  
   #' Locate all 4 error transition boundaries
   #' Positive and negative direction, 0 and alpha error
   set.seed(rand.seed)
   n_cols <- max(c(length(mus), length(mu_ov_sigmas)))
   if (!is.null(mus)) {
-    col_values = mus; varname <- "critical_mu"; neg_mu_ov_sigmas = mu_ov_sigmas;
+    col_values = mus; 
+    varname <- "critical_mu"; 
+    neg_mu_ov_sigmas = mu_ov_sigmas;
   } else {
-    col_values = mu_ov_sigmas; varname <- "critical_mu_over_sigma"; neg_mu_ov_sigmas = -mu_ov_sigmas;
+    col_values = mu_ov_sigmas; 
+    varname <- "critical_mu_over_sigma"; 
+    neg_mu_ov_sigmas=-mu_ov_sigmas
+
   }
   
-  error_cnd(all(unique(sign(mus))>=0), "mus must be positive or zero, it gets 
-            flipped with sign automatically")
+  
+  # error_cnd(all(unique(sign(mus))>=0), "mus must be positive or zero, sign gets flipped automatically")
   
   # Run simulations calculating error of mmd with mu and sigma swept
   df_right <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 

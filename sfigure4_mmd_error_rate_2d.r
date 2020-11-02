@@ -27,8 +27,9 @@ p_load(tidyr)
 p_load(docstring)
 
 # Script Parameters
-fig_num = "3"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
+fig_num = "4"
+fig_path = file.path(getwd(), paste("figure/SF",fig_num,sep=""))
+dir.create(fig_path, "\\", fig_num, showWarnings = FALSE)
 n_samples <- 1e3
 rand.seed <- 0
 overwrite <- TRUE
@@ -54,7 +55,7 @@ df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples 
 
 
 # Assemble results into square matrix
-grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
 # # Difference MMD from Mu
 
 
@@ -65,13 +66,13 @@ grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_xbar_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
   scale_x_continuous(expand=c(0,0)) + 
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size=8) +
   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
@@ -82,7 +83,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -102,13 +103,13 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_tile()+
   scale_x_continuous(expand=c(0,0)) +
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size = 8) +
   scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_2b xbar error test 2D.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_2b xbar error test 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -123,13 +124,13 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_2b xbar error test 2D.tiff
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
   scale_x_continuous(expand=c(0,0)) + 
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size=8) +
   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
@@ -140,7 +141,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -160,13 +161,13 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_tile()+
   scale_x_continuous(expand=c(0,0)) +
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size = 8) +
   scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_b4 mmd error test.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_b4 mmd error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -194,13 +195,13 @@ df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
 df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
   scale_x_continuous(expand=c(0,0)) + 
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu/sigma)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size=8) +
   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
@@ -211,7 +212,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_3a mmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_3a mmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -229,15 +230,23 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_tile()+
   scale_x_continuous(expand=c(0,0)) +
   scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu/sigma)) + ylab(expression(sigma)) +
+  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
   theme_classic(base_size = 8) +
   scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_3b mmd error test mu_over_sigma.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_3b mmd error test mu_over_sigma.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
+
+
+
+
+
+
+
+
 
 
 
@@ -247,6 +256,7 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_3b mmd error test mu_over_
 # Identify location of coverage error boundaries with mu space
 #                                                                              #
 #______________________________________________________________________________#
+source("R/error_2d_utils.R")
 n_obs <- 50
 sigmas <- seq(.1, 5, by = .1); 
 mus <- seq (.1/5, 2, by=0.02)
@@ -268,16 +278,31 @@ gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
   geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  xlab(expression(sigma)) + 
-  ylab(expression(mu)) + 
+  xlab(expression(sigma[DM])) + 
+  ylab(expression(mu[DM])) + 
   theme(legend.position="none") +
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))+
   # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  ")) +
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu.tiff", 
+save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # # Box and Whiskers of Coverage Error Transition Region
 # p <- ggplot(df_crit_mu, aes(x=er, color = side,#group = interaction(er, side), 
@@ -290,13 +315,13 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu.t
 #   ylab(expression(abs(~mu~phantom(.))))+
 #   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # p
-# save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu.tiff", 
+# save_plot(paste(fig_path, "\\", fig_num, "_c mmd transition over mu.tiff", 
 #                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
 #           base_asp = 3, base_width = 2, dpi = 600)
 # 
 res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
 summary_mu <- summary(res.aov2)
-capture.output(summary_mu, file = paste("figure/F", fig_num, "/F", fig_num,
+capture.output(summary_mu, file = paste(fig_path, "\\", fig_num,
                                         "_c mmd transition over mu.txt", sep=""))
 
 
@@ -323,13 +348,13 @@ gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma,
   geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  xlab(expression(sigma)) + 
-  ylab(expression(mu*phantom(.)*phantom(.)/sigma)) + 
+  xlab(expression(sigma[DM])) + 
+  ylab(expression(mu[DM]/sigma[DM])) + 
   theme(legend.position="none") +
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
   # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu_sigma.tiff", 
+save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu_sigma.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
@@ -344,13 +369,13 @@ save_plot(paste("figure/F", fig_num, "/F", fig_num, "_d mmd boundaries over mu_s
 #   ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
 # scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # p
-# save_plot(paste("figure/F", fig_num, "/F", fig_num, "_c mmd transition over mu sigma.tiff",
+# save_plot(paste(fig_path, "\\", fig_num, "_c mmd transition over mu sigma.tiff",
 #                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
 #           base_asp = 3, base_width = 2, dpi = 600)
 
 res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
 summary_mu_ov_sigma <- summary(res.aov2)
-capture.output(summary_mu_ov_sigma, file = paste("figure/F", fig_num, "/F", fig_num,
+capture.output(summary_mu_ov_sigma, file = paste(fig_path, "\\", fig_num,
                                         "_c mmd transition over mu sigma.txt", sep=""))
 
 

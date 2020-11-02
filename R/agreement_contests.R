@@ -70,7 +70,6 @@ pop_params_from_ab <- function( n_samples, n_sims,
                                 mus_1b, sigmas_1b, 
                                 mus_2b, sigmas_2b,
                                 n_1a, n_1b, n_2a, n_2b) {
-  # browser();
   # Calculate D based on A and B parameters
   mus_1d = mus_1b - mus_1a;  sigmas_1d = sqrt(sigmas_1a^2 + sigmas_1b^2)
   mus_2d = mus_2b - mus_2a;  sigmas_2d = sqrt(sigmas_2a^2 + sigmas_2b^2)
@@ -242,40 +241,53 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   
   # Calculate parameter of difference in means distribution (taken from mean of 
   # D since we had the option to invert the sign for D)
-  df$mu_1md <- df$mu_1d
-  df$mu_2md <- df$mu_2d
-  df$sigma_1md <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
-  df$sigma_2md <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
+  df$mu_1dm <- df$mu_1d
+  df$mu_2dm <- df$mu_2d
+  df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
+  df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
   
   # Calculate ratio of sigma_md/mu_md to determine how close D is close to zero,
   # and how absolute value folding will effect distribution.
-  df$mu_ov_sigma_1md <- df$mu_1md / df$sigma_1md
-  df$mu_ov_sigma_2md <- df$mu_2md / df$sigma_2md
+  df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm
+  df$mu_ov_sigma_2dm <- df$mu_2dm / df$sigma_2dm
   
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_md2gtmd1 <-  abs(df$mu_2md) > abs(df$mu_1md)
+  df$is_mud_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
+  df$is_mudm_2gt1 <-  df$is_mud_2gt1
   # Statistics of difference of means distribution 
-  df$rmu_1md <- df$mu_1md / df$mu_1a
-  df$rmu_2md <- df$mu_2md / df$mu_2a
+  df$rmu_1dm <- df$mu_1dm / df$mu_1a
+  df$rmu_2dm <- df$mu_2dm / df$mu_2a
   # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
-  df$is_rmud_md2gtmd1 <-  abs(df$rmu_2md) > abs(df$rmu_1md)
+  df$is_rmudm_2gt1 <-  abs(df$rmu_2dm) > abs(df$rmu_1dm)
+  
   
   # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigma_md2gtmd1 <-  df$sigma_2md > df$sigma_1md
+  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
+  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
   # Relative change variance of the mean compared to difference in means
   #   Realtive variance across scales
-  # Is: rel_pop_std2 > rel_pop_std1, a/k/a CV1 > CV2
-  df$rsigma_1md <- df$sigma_1md / abs(df$mu_1a + df$mu_1md/2)
-  df$rsigma_2md <- df$sigma_2md / abs(df$mu_2a + df$mu_2md/2)
-  df$is_rsigma_md2gtmd1 <-  df$rsigma_2md > df$rsigma_1md
+
   
+  # Sigma of difference distribution
+  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1dm/2)
+  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2dm/2)
+  df$is_rsigmad_2gt1 <-  df$rsigma_2d > df$rsigma_1d
+  
+  # sigma of the difference of means distirbution
+  df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
+  df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
+  df$is_rsigmadm_2gt1 <-  df$rsigma_2dm > df$rsigma_1dm
+  
+  # Degrees of freedom
+  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
+  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
   
   # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 <- df$mu_2md - df$mu_1md
-  df$mean_rmud_d2md1 <- (df$mu_2md/df$mu_2a) - (df$mu_1md/df$mu_1a)
+  df$mean_mud_d2md1 <- df$mu_2dm - df$mu_1dm
+  df$mean_rmud_d2md1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
   # Diff:  pop_std2 - pop_std1
-  df$mean_sigma_d2md1 <- df$sigma_2md - df$sigma_1md
-  df$mean_rsigma_d2md1 <- df$sigma_2md/df$mu_2a - df$sigma_1md/df$mu_1a
+  df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
+  df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
   
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
@@ -290,17 +302,16 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
     plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames)
   } else {
-    
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-    df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
-                     param = c(rep("mu[md]",dim(df)[1]), rep("r*mu[md]",dim(df)[1]),
-                               rep("sigma[md]",dim(df)[1]), rep("r*sigma[md]",dim(df)[1]),
-                               rep("df[md]",dim(df)[1])), 
-                     Value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
+    df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
+                     param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
+                               rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
+                               rep("df[pool]",dim(df)[1])), 
+                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
     )
-    df_runs$param <- factor(df_runs$param, levels = c("mu[md]", "r*mu[md]", "sigma[md]","r*sigma[md]","df[md]"))
+    df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
 
-    gg <- ggplot(data = df_runs, aes(x = Run, y = Value)) +
+    gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
       theme_classic(base_size = 8) +
@@ -327,104 +338,99 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #'
   #'
   #'
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mud_md2gtmd1","is_rmud_md2gtmd1","is_sigma_md2gtmd1",
-                   "is_rsigma_md2gtmd1")
+  param_fields = c("is_mudm_2gt1","is_rmudm_2gt1","is_sigmad_2gt1",
+                   "is_rsigmad_2gt1", "is_dfdm_2lt1")
+  
+  bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
+  if (!all(sapply(gt_colnames, function(x) any(x==param_fields)))) {stop("gt_colnames is not correctly worded")}
+  
   
   # Calculate indices of colname
   gt_param_inds <- unname(sapply(gt_colnames,function(x){pmatch(x,param_fields)}))
-  gt_param_labels <- c("abs(~mu[DM]*phantom(.))", 
-                       "abs(~r*mu[DM]*phantom(.))",
-                       "~sigma[DM]*phantom(.)", "r*sigma[DM]")
-  
-  
+  gt_param_labels <- c("abs(~mu[DM]*phantom(.))",  "abs(~r*mu[DM]*phantom(.))",
+                       "~sigma[pool]*phantom(.)", "r*sigma[pool]", "df[pool]")
+
+  # Calculate agreement matrix: test if nonrandom agreement between each parameter
+  # versus every other.
   n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
   pwise_binom_p <- n_agreement
-  params <- str_match(param_fields, "is_(.*)_md2gtmd1")[,2]
   
   for (r in seq(1,length(param_fields),1)) {
     for (c in seq(1,length(param_fields),1)) {
       n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
       pwise_binom_p[r,c] <-
         prop.test(n_agreement[r,c], dim(df_init)[1], alternative = "two.sided",
-                  conf.level = 1-0.05/(4*length(gt_colnames)), correct = TRUE)$p.value
+                  conf.level = 1-0.05/(5*length(gt_colnames)), correct = TRUE)$p.value
     }
   }
   # Corrected p values based on number of independent variables selected * 4
   pwise_binom_p_corr <- pmin(4*length(gt_colnames) * pwise_binom_p,rep(1,prod(dim(pwise_binom_p))))
+  pwise_binom_p_sig <- ifelse(pwise_binom_p_corr<0.05, "#","")
+  
   str_binom_p <- matrix(sapply(pwise_binom_p_corr, function(x) if(x> 0.05) 
   {sprintf("%0.2f",x)} else {sprintf("%0.2e",x)}),nrow = dim(pwise_binom_p)[1])
-  colnames(str_binom_p) <- params
-  rownames(str_binom_p) <- params
+  colnames(str_binom_p) <- str_replace(str_replace(param_fields, "is_", ""), "_2[a-z][a-z]1","")
+  rownames(str_binom_p) <- str_replace(str_replace(param_fields, "is_", ""), "_2[a-z][a-z]1","")
   # Write to csv
   csv_path <- paste(fig_path, "params_",str_replace(fig_name, ".tiff$", ".csv"), sep="")
   cat("Table 1: Binomial test of agreement by group\n", file = csv_path)
   suppressWarnings(write.table(str_binom_p, csv_path, append = FALSE, 
                                col.names = TRUE, sep=","))
   
-  # Calculate binomial confidence intervals for each sucess rate for each parameter
-  binom_mu <- prop.test(sum(df_init$is_mud_md2gtmd1), dim(df_init)[1], 
-                        conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
-  binom_rmu <- prop.test(sum(df_init$is_rmud_md2gtmd1), dim(df_init)[1], 
-                         conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
-  binom_sigma <- prop.test(sum(df_init$is_sigma_md2gtmd1), dim(df_init)[1], 
-                           conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
-  binom_rsigma <- prop.test(sum(df_init$is_rsigma_md2gtmd1), dim(df_init)[1], 
-                            conf.level=1-0.05/(4*length(gt_colnames)), correct = FALSE)
-  df_params <- rbind(
-    tibble(group="mu", estimate = binom_mu$estimate, 
-           lci = binom_mu$conf.int[1], uci = binom_mu$conf.int[2]),
-    tibble(group="rmu", estimate = binom_rmu$estimate, 
-           lci = binom_rmu$conf.int[1], uci = binom_rmu$conf.int[2]),
-    tibble(group="sigma", estimate = binom_sigma$estimate, 
-           lci = binom_sigma$conf.int[1], uci = binom_sigma$conf.int[2]),
-    tibble(group="rsigma", estimate = binom_rsigma$estimate, 
-           lci = binom_rsigma$conf.int[1], uci = binom_rsigma$conf.int[2]))
-  df_params$group <- factor(df_params$group, levels = df_params$group)
+  # Calculate binomial confidence intervals for each success rate for each parameter
+  df_params <- tibble(group = c("mu", "rmu", "sigma", "rsigma", "df"), 
+                      estimate = rep(0,length(param_fields)), lci = rep(0,length(param_fields)),
+                      uci = rep(0,length(param_fields)))
+  for (n in seq_along(param_fields)) {
+    binom <- prop.test(sum(df_init[[param_fields[n]]]), dim(df_init)[1], 
+                                  conf.level=1-0.05/(5*length(gt_colnames)), correct = FALSE)
+    df_params$estimate[n]  <-binom$estimate
+    df_params$lci[n]       <-binom$conf.int[1]
+    df_params$uci[n]       <-binom$conf.int[2]
+  }
+  df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df"))
+  
   
   # Plot confidence interval of success rate for each parameter and their agreement
-  p <- ggplot(df_params, aes(x = group,  y = estimate)) +
+  gg <- ggplot(df_params, aes(x = group,  y = estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
-    ylab("Fract Exp 1 < Exp 2    ") +
+    ylab(expression(Frac.~Exp[1]~hat.~Exp[2]~~~~~~~~~~~~~phantom("."))) +
     xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
     coord_cartesian(y=c(0,1), clip = "off") +
-    scale_x_discrete(expand=c(0.1, 0), labels =
-       c('mu' = parse(text=paste(gt_param_labels[1],"*phantom(.)")),
-       'rmu'   = parse(text=paste("phantom(.)*",gt_param_labels[2])),
-       'sigma' = parse(text=gt_param_labels[3]),
-       'rsigma'   = parse(text=gt_param_labels[4])))
-  # Add statistical annotation above plot, one for each ground truth variable 
-  # specified (up to 2)
-  p <- p +  theme(plot.margin = unit(c(13,3,3,3), "pt")) +
-    annotate("text",label = paste(gt_param_labels[gt_param_inds[1]],"~phantom(.)",
-                                  sep = ""), x = 0.8, size=2.5,
-             y = 1.13,vjust = 0, hjust=1,parse=TRUE) +
-    geom_text(y = 1.13, aes(label = ifelse(pwise_binom_p_corr[gt_param_inds[1],]<0.05, "#","")),
-              size = 2.5, vjust=0, hjust=0.5) +
-    annotate("segment", x = 0.8, xend = 4, y = 1.09, yend = 1.09, colour = "black", size=.2) 
-  if (length(gt_colnames)==2){
-    p <- p +  theme(plot.margin = unit(c(22,0,0,0), "pt")) +
-      annotate("text",label = paste(gt_param_labels[gt_param_inds[2]],"~phantom(.)",sep=""),
-               x = 0.8, size=2.5, y = 1.3,vjust = 0, hjust=1,parse=TRUE) +
-      geom_text(y = 1.3,aes(label = ifelse(pwise_binom_p_corr[gt_param_inds[2],]<0.05, "#","")),
-                size = 2.5, vjust=0, hjust=0.5) +
-      annotate("segment", x = 0.8, xend = 4, y = 1.27, yend = 1.27, colour = "black", size=.2) 
-  }    
-  print(p)
-  save_plot(paste(fig_path, 'gt_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
-            base_height = 1.5, base_asp = 3, base_width = 1.35, dpi = 600)
+    scale_x_discrete( labels= parse(text = gt_param_labels)) +
+    theme(plot.margin = unit(c(13+6.5*(length(gt_colnames)-1),6,3,3), "pt"))
+
+  for (n in seq_along(gt_colnames)) {
+    gg <- gg +
+      annotate("text",label = paste(gt_param_labels[gt_param_inds[n]],"~phantom(.)",
+                                    sep = ""), x = 0.1, size=2.5,
+               y = 1+.15*n, vjust = 0.5, hjust = 1, parse = TRUE) +
+      geom_text(y = 1+0.15*n, aes(group = n),label = ifelse(pwise_binom_p_corr[gt_param_inds[n],]<0.05, "#",""),
+                size = 2.5, vjust=0.5, hjust=0.5) +
+      annotate("segment", x = 0.1, xend = length(param_fields)+0.5, y = 1+0.15*n-.08, 
+               yend = 1+0.15*n-.08, colour = "black", size=.2) 
+    save_plot(paste(fig_path, 'gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
+              base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
+    
+  }
+  print(gg)
+  save_plot(paste(fig_path, 'gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
   
 
   # Export csv file for agreement between each variable to others
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
-              mu_ov_sigma = c(df_init$mu_1md/df_init$sigma_1md,
-                              df_init$mu_2md/df_init$sigma_2md))
+              mu_ov_sigma = c(df_init$mu_1dm/df_init$sigma_1dm,
+                              df_init$mu_2dm/df_init$sigma_2dm))
   p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
     geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
                    alpha=0.25, bins = 30) +
@@ -450,7 +456,6 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # print(p)
   save_plot(paste(fig_path, 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
-  # browser();
   
 }
 
@@ -645,8 +650,8 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   df <- df_in
   
   # browser();
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # # load(file = "temp/debug.RData")
   
   
   # Only perform simulations if results not saved to disk
@@ -784,7 +789,7 @@ pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
 }
 
 
-plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
+plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp_dir = "Lower") {
   
   # Calculate group means and corrected confidence intervals
   df_result <- df_pretty %>%   
@@ -851,13 +856,14 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
   sig_labels[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  "+"
   sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  rgb(255, 0, 0,maxColorValue = 255)
 
+  # browser()
   # Basic violin plot
   p <- ggplot(df_result, aes(x=name,  y=mean, group=name)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Statistic") +
-    ylab(parse(text=paste("Error~Rate~Lower~phantom(.)*", y_ax_str,"~phantom(.)"))) +
+    ylab(parse(text=paste("Error~Rate~(~",comp_dir,"~phantom(.)*", y_ax_str,"*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
@@ -875,7 +881,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str) {
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = "temp/",
                                       fig_name, fig_path, var_suffix = "fract",include_bf = TRUE,
-                                      parallel_sims = TRUE, is_plotted = TRUE) {
+                                      parallel_sims = TRUE, is_plotted = TRUE, comp_dir = "Lower") {
   # browser();
   
   # Display ground truth fraction of E2>E1
@@ -898,7 +904,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   # Plot effect size results
   if (is_plotted) {
     df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, 
-                                         fig_path = fig_path, y_ax_str = y_ax_str)
+                                         fig_path = fig_path, y_ax_str = y_ax_str, comp_dir = comp_dir)
   }
   
   # Package dataframes throughout processing into single list for return
@@ -920,7 +926,8 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   #' 
   #' 
   #' 
-
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
   
   # Filter for stats metrics
   col_list <- colnames(df)
@@ -940,19 +947,6 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
   if (length(unique(df_means[[indvar]]))==1) {
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
-  # # Pearson rho of versus independent variable
-  # df_means_pearson <- df_means %>% group_by(variable) %>% summarise(
-  #   pearson_rho = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-  #                      method = "pearson", type = "bootstrap", R = 1e3)[[3]],
-  #   pearson_rho_low = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-  #                          method = "pearson", type = "bootstrap", R = 1e3)[[2]][1],
-  #   pearson_rho_high = ci_cor(data.frame(y1 = abs(get(indvar))*dir_to_agreement, y2 = abs(mean_value)), 
-  #                          method = "pearson", type = "bootstrap", R = 1e3)[[2]][2])
-  # df_means_pearson <- df_means_pearson[match(exp1_mean_vars, df_means_pearson$variable),]
-  # df_means_pearson$label <- factor(stats_labels, levels = stats_labels)
-  # df_means_pearson$is_significant <-  !(0>df_means_pearson$pearson_rho_low & 0<df_means_pearson$pearson_rho_high)
-  
-  # browser();
 
   save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
@@ -969,7 +963,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     
     if (length(unique((abs(df_sub$mean_value)))) > 1) {
       # Pearson correlation
-      ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*dir_to_agreement, 
+      ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*-dir_to_agreement, 
                                      y2 = abs(df_sub$mean_value) ), 
                           method = "pearson", type = "normal", 
                           probs = c(alpha/length(exp1_mean_vars), 1-alpha/length(exp1_mean_vars)))
@@ -982,7 +976,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     df_mean_stat$pearson_rho_high[n] <- 0
     }
     # LInear regression
-    stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*dir_to_agreement,
+    stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_agreement,
                                          y2 = abs(df_sub$mean_value)))
     sd_slope <- summary(stat.lm)[[4]][2]
     df_mean_stat$slope[n] = stat.lm$coefficients[2]
@@ -1004,36 +998,39 @@ gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) +
   theme_classic(base_size=8) + theme(legend.position="none") 
 print(gg)  
 save_plot(paste(fig_path, fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
-          base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
+          base_height = 1.75, base_asp = 3, base_width = 3, dpi = 600)
 
 
 # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-df_runs = tibble(Run = rep(seq(1,dim(df)[1],1),5),
+df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
                  param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
-                 rep("sigma[DM]",dim(df)[1]), rep("r*sigma[DM]",dim(df)[1]),
-                 rep("df[DM]",dim(df)[1])), 
-                 value = c(df$mu_1md, df$rmu_1md, df$sigma_1md, df$rsigma_1md, df$df_1d)
+                 rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
+                 rep("df[pool]",dim(df)[1])), 
+                 value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
                  )
-df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[DM]","r*sigma[DM]","df[DM]"))
+df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
 
 
-df_means <- df_runs %>% group_by(param) %>% summarize(Run=1,
+df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
   mean_value=mean(value),  is_constant = all(mean(value) == value),
   ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
 
+# browser();
+
+
 # df_means$ymin <-min(c(df_means$mean_value - 0.2 * df_means$mean_value, -.2))
 # df_means$ymax <-max(c(df_means$mean_value + 0.2 * df_means$mean_value, +.2))
 
-gg <- ggplot(data = df_runs, aes(x = Run, y = value)) +
+gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
   geom_line() +
   facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
   theme_classic(base_size=8) +
-  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) +
-  geom_blank(data=df_means, aes(x = Run, y=mean_value, ymin = ymin, ymax = ymax))
+  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) 
+  # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
 gg
 save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
-          base_height = 2, base_asp = 4, base_width = 3, dpi = 600)
+          base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
 
 save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
 # load(file = "temp/debug.RData")
