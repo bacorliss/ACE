@@ -314,6 +314,7 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
 
 
 row_locate_binary_bounds <- function (xb){
+  #' Given a logical matrix, locates the border between true and false
   
   # Helper function to flip matrix left to right
   fliplr <- function(x) x[,ncol(x):1]
@@ -334,6 +335,7 @@ row_locate_binary_bounds <- function (xb){
   
   
   row_max_inds <- apply(c,1, function(x) mean(which(x == max(x))))
+  browser()
   return(row_max_inds)
   
 }

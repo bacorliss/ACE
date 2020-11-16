@@ -336,7 +336,7 @@ scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson
 png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {make2RectGroups(scores_sig,1)},
+          add.expr = {make2RectGroups(scores_sig,2)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
           labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
