@@ -224,63 +224,74 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                           mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
                           n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b)
   }
-  # browser();
-  # Switch params if needed
+  # Switch params if needed flag is specified
   df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
                             switch_sign_mean_ab = switch_sign_mean_ab, 
                             switch_group_ab = switch_group_ab,
                             switch_exp_12 = switch_exp_12)
   
-  # Define difference distribution    
+  # Pop
+  # Mean of difference and DM
   df$mu_1d <- df$mu_1b - df$mu_1a
   df$mu_2d <- df$mu_2b - df$mu_2a
+  # Is: Exp2 mu[d] > Exp1 mu[d]
+  df$is_mud_2gt1 <-  abs(df$mu_2d) > abs(df$mu_1d)
+  
+  # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-  df$df_1d <- n_1a + n_1b - 2
-  df$df_2d <- n_2a + n_2b - 2
+  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
   
-  # Calculate parameter of difference in means distribution (taken from mean of 
-  # D since we had the option to invert the sign for D)
+  # Degrees of freedom of the difference and DM
+  df$df_1d <- df$n_1a + df$n_1b - 2
+  df$df_2d <- df$n_2a + df$n_2b - 2
+  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
+  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
+  
+  # Pooled standard deviation
+  df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
+                            (df$n_1a-1 + df$n_1b -1 )  )
+  df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
+                            (df$n_2a-1 + df$n_2b-1 ))
+  df$is_sigmapool_2gt1 <- df$sigma_2pool > df$sigma_1pool
+  
+  # Mean and std of difference in means (taken from mean of D since we had the option
+  # to invert the sign for D earlier in code)
   df$mu_1dm <- df$mu_1d
   df$mu_2dm <- df$mu_2d
+  df$is_mudm_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
+  
+  # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
   df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
+  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
   
-  # Calculate ratio of sigma_md/mu_md to determine how close D is close to zero,
-  # and how absolute value folding will effect distribution.
+  # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
+  # determines whether results are in null region of critical region of t-test
   df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm
   df$mu_ov_sigma_2dm <- df$mu_2dm / df$sigma_2dm
-  
-  # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
-  df$is_mudm_2gt1 <-  df$is_mud_2gt1
+
   # Statistics of difference of means distribution 
   df$rmu_1dm <- df$mu_1dm / df$mu_1a
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  # Is: Exp2 relative_mu[d] > Exp1 relative_mu[d]
   df$is_rmudm_2gt1 <-  abs(df$rmu_2dm) > abs(df$rmu_1dm)
-  
-  
-  # Is: pop_std2 > pop_std1 (TRUE)
-  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
-  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
-  # Relative change variance of the mean compared to difference in means
-  #   Realtive variance across scales
 
-  
-  # Sigma of difference distribution
-  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1dm/2)
-  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2dm/2)
+  # Relative sigma of difference
+  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
+  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
   df$is_rsigmad_2gt1 <-  df$rsigma_2d > df$rsigma_1d
+  
+  # Relative Pooled Sigma
+  df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
+  df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
+  df$is_rsigmapool_2gt1 <-  df$rsigma_2pool > df$rsigma_1pool
   
   # sigma of the difference of means distirbution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
   df$is_rsigmadm_2gt1 <-  df$rsigma_2dm > df$rsigma_1dm
   
-  # Degrees of freedom
-  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
-  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
+  
   
   # Diff:  pop_mean2 - pop_mean1
   df$mean_mud_d2md1 <- df$mu_2dm - df$mu_1dm
