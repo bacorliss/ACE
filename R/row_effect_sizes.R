@@ -181,6 +181,20 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 quantify_row_effect_sizes <- function(x_a, x_b, rand.seed = 0, 
                                   parallelize_bf = FALSE) {
+  #' @description Given two matrices of measurements, with rows being separate 
+  #' samples and columns separate observations, calculates a series of effect size
+  #' statistics and reports the mean and standard deviation across samples (only 
+  #' supports same sample size within x_a and x_b)
+  #' 
+  #' @param x_a matrix of observations from control group where rows are separate
+  #'  samples
+  #' @param x_b matrix of observations from experiment group where rows are 
+  #' separate samples 
+  #' @param rand.seed seed for repeatable random number generation
+  #' @param parallelize_bf flag for parallel processing of Bayes Factor 
+  #' (since current implementation in R is ridiculously slow)
+  #' 
+  #' @return dataframe of mean and standard deviation for each effect size statistic
   set.seed(rand.seed)
   
   # Use Exp 1 and 2 coefficients to generate data from normalized base data
@@ -191,64 +205,62 @@ quantify_row_effect_sizes <- function(x_a, x_b, rand.seed = 0,
                      sd = df$sigma_1b), nrow = df$n_samples, 
                ncol = df$n_1b)
   
-  # Means
+  # Mean of the difference of means
   xdbar_d = rowMeans(x_b) - rowMeans(x_a)
-  df$mean_xdbar_d = mean(xdbar_d)
-  df$sd_xdbar = sd(xdbar_d)
+  df$mean_xbar_d = mean(xdbar_d)
+  df$sd_xbar_d = sd(xdbar_d)
   
-  # Stds
+  # Std of the difference in means
   s_md = sqrt(rowSds(x_a)^2/df$n_a + rowSds(x_b)^2/df$n_b)
   df$mean_sdmd = mean(s_md)
   df$sd_sdmd   = sd(s_md)
   
-  # Rel Means: mean divided by control mean
-  rxdbar = xdbar_d/rowMeans(x_a)
-  df$mean_rxdbar = mean(rxdbar)
-  df$sd_rxdbar   = sd(rxdbar)
+  # Rel Means: mean of the difference in means divided by control group mean
+  rxbar_d = xdbar_d/rowMeans(x_a)
+  df$mean_rxbar_d = mean(rxbar_d)
+  df$sd_rxbar_d   = sd(rxbar_d)
   
-  # Rel STDs: sd divided by control mean
-  # Relaltive STD is halfway between xbar_A and xbar_B
-  exp1_rsd_md = s_1md / (rowMeans(x_a) + 0.5 * xdbar_1d)
-  df$exp1_mean_rsdmd = mean(exp1_rsd_md)
-  df$exp1_sd_rsdmd   = sd(exp1_rsd_md)
+  # Relative STD: std of difference in meands divided by midpoint between group means
+  rsd_md = s_1md / (rowMeans(x_a) + 0.5 * xdbar_1d)
+  df$mean_rsdmd = mean(rsd_md)
+  df$sd_rsdmd   = sd(rsd_md)
   
   # Bayes Factor
   diff_bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
-  df$exp_mean_bf = mean(diff_bf)
+  df$mean_bf = mean(diff_bf)
+  df$sd_bf = sd(diff_bf)
   
-  # NHST P-value 
-  # The more equal experiment will have a larger p-value
+  # NHST P-value : The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
   diff_pvalue = 2*pnorm(-abs(diff_z_score))
-  df$exp_mean_pvalue = mean(diff_pvalue)
-  df$exp_sd_pvalue = sd(diff_pvalue)
+  df$mean_pvalue = mean(diff_pvalue)
+  df$sd_pvalue = sd(diff_pvalue)
   
   # TOST p value (Two tailed equivalence test)
   diff_tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1)
-  df$exp_mean_tostp = mean(diff_tostp)
-  df$exp_sd_tostp = sd(diff_tostp)
-  
+  df$mean_tostp = mean(diff_tostp)
+  df$sd_tostp = sd(diff_tostp)
   
   # Cohens D
   diff_cohend = row_cohend(x_a, x_b)
-  df$exp1_mean_cohend = mean(diff_cohend)
-  df$exp1_sd_cohend = sd(diff_cohend)
+  df$mean_cohend = mean(diff_cohend)
+  df$sd_cohend = sd(diff_cohend)
   
   # Most Mean Diff
   diff_mmd = row_mmd_2s_zdist(x_a, x_b)
-  df$exp_mean_mmd = mean(diff_mmd)
-  df$exp_sd_mmd = sd(diff_mmd)
+  df$mean_mmd = mean(diff_mmd)
+  df$sd_mmd = sd(diff_mmd)
   
   # Relative Most Mean Diff
   diff_rmmd = diff_mmd / rowMeans(x_a)
-  df$exp_mean_rmmd = mean(diff_rmmd)
-  df$exp_sd_rmmd = sd(diff_rmmd)
+  df$mean_rmmd = mean(diff_rmmd)
+  df$sd_rmmd = sd(diff_rmmd)
   
   # Random group
   x_rand = rowMeans(matrix(rnorm(df$n_samples * df$df_1d, mean = 0, sd = 1), 
                            nrow = df$n_samples, ncol = df$df_1d))
-  df$exp_mean_x_rand = mean(x_rand)
-  df$exp_sd_x_rand = sd(x_rand)
+  df$mean_x_rand = mean(x_rand)
+  df$sd_x_rand = sd(x_rand)
   
   
   return(df)

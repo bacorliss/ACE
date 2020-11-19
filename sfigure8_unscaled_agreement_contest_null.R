@@ -79,7 +79,7 @@ df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #------------------------------------------------------------------------------
 
 set.seed(rand.seed)
-gt_colnames = "is_sigmad_2gt1" #"is_sigmad_2gt1"
+gt_colnames = "is_sigmad_2gt1" 
 fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 5, 

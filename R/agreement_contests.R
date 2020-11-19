@@ -349,12 +349,13 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #'
   #'
   #'
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mudm_2gt1","is_rmudm_2gt1","is_sigmad_2gt1",
+  param_fields = c("is_mudm_2gt1","is_rmudm_2gt1","is_sigmad_2gt1", #"is_sigmad_2gt1",
                    "is_rsigmad_2gt1", "is_dfdm_2lt1")
+  # Alt sigmas: is_sigmapool_2gt1,is_rsigmapool_2gt1; is_sigmad_2gt1, is_rsigmad_2gt1
   
   bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
   if (!all(sapply(gt_colnames, function(x) any(x==param_fields)))) {stop("gt_colnames is not correctly worded")}
@@ -363,7 +364,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # Calculate indices of colname
   gt_param_inds <- unname(sapply(gt_colnames,function(x){pmatch(x,param_fields)}))
   gt_param_labels <- c("abs(~mu[DM]*phantom(.))",  "abs(~r*mu[DM]*phantom(.))",
-                       "~sigma[pool]*phantom(.)", "r*sigma[pool]", "df[pool]")
+                       "~sigma[D]*phantom(.)", "r*sigma[D]", "df[D]")
 
   # Calculate agreement matrix: test if nonrandom agreement between each parameter
   # versus every other.
