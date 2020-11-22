@@ -259,7 +259,7 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   
   # 11) Random group
   df$rand = rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
-                           nrow = n_samples, ncol = df_d))
+                           nrow = n_samples, ncol = 50))
   df_hat$rand <- "<"
   df_pretty$rand <- "Rnd"
   
