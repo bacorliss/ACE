@@ -303,10 +303,10 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # Append columns for effect sizes, since multiple columns are used to analyze
   # each effect size, a dictionary of prefix, base, and suffix variable names 
   # are used.
-  df[ paste(effect_size_dict$prefix[1], effect_size_dict$base,
-            effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
-  df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
-            effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
+  # df[ paste(effect_size_dict$prefix[1], effect_size_dict$base,
+  #           effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
+  # df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
+  #           effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
   
   # Plot generated population parameters
   if (is_plotted){
@@ -472,169 +472,6 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
 }
 
 
-
-quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE) {
-  if (dim(df)[1] != 1) stop("Need to input a single row of df")
-  set.seed(rand.seed)
-
-  # Use Exp 1 and 2 coefficients to generate data from normalized base data
-  x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
-                      sd = df$sigma_1a), nrow = df$n_samples, 
-                ncol = df$n_1a)
-  x_1b = matrix(rnorm(df$n_samples * df$n_1b, mean = df$mu_1b, 
-                      sd = df$sigma_1b), nrow = df$n_samples, 
-                ncol = df$n_1b)
-  
-  x_2a = matrix(rnorm(df$n_samples * df$n_2a, mean = df$mu_2a, 
-                      sd = df$sigma_2a), nrow = df$n_samples, 
-                ncol = df$n_2a)
-  x_2b = matrix(rnorm(df$n_samples * df$n_2b, mean = df$mu_2b, 
-                      sd = df$sigma_2b), nrow = df$n_samples, 
-                ncol = df$n_2b)
-  
-  
-  # Means
-  xdbar_1d = rowMeans(x_1b) - rowMeans(x_1a)
-  xdbar_2d = rowMeans(x_2b) - rowMeans(x_2a)
-  df$exp1_mean_xdbar = mean(xdbar_1d)
-  df$exp2_mean_xdbar =  mean(xdbar_2d)
-  df$exp1_sd_xdbar = sd(xdbar_1d)
-  df$exp2_sd_xdbar =  sd(xdbar_2d)
-  diff_xdbar = abs(xdbar_2d) - abs(xdbar_1d)
-  df$fract_xdbar_d2gtd1 = sum(diff_xdbar > 0) / df$n_samples
-  df$mean_diff_xdbar_2m1  = mean(diff_xdbar)
-  
-  # Stds
-  s_1md = sqrt(rowSds(x_1a)^2/df$n_1a + rowSds(x_1b)^2/df$n_1b)
-  s_2md = sqrt(rowSds(x_2a)^2/df$n_2a + rowSds(x_2b)^2/df$n_2b)
-  df$exp1_mean_sdmd = mean(s_1md)
-  df$exp2_mean_sdmd = mean(s_2md)
-  df$exp1_sd_sdmd   = sd(s_1md)
-  df$exp2_sd_sdmd   = sd(s_2md)
-  diff_sd = s_2md - s_1md
-  df$fract_sdmd_d2gtd1  = sum(diff_sd > 0) / df$n_samples
-  df$mean_diff_sdmd_2m1 = mean(diff_sd)
-  
-  # Rel Means: mean divided by control mean
-  exp1_rxdbar = xdbar_1d/rowMeans(x_1a)
-  exp2_rxdbar = xdbar_2d/rowMeans(x_2a)
-  df$exp1_mean_rxdbar = mean(exp1_rxdbar)
-  df$exp2_mean_rxdbar = mean(exp2_rxdbar)
-  df$exp1_sd_rxdbar   = sd(exp1_rxdbar)
-  df$exp2_sd_rxdbar   = sd(exp2_rxdbar)
-  diff_rxdbar = abs(exp2_rxdbar) - abs(exp1_rxdbar)
-  df$fract_rxdbar_d2gtd1 = sum( diff_rxdbar > 0) / df$n_samples
-  df$mean_diff_rxdbar_2m1  =  mean(diff_rxdbar)
-  
-  # Rel STDs: sd divided by control mean
-  # Relaltive STD is halfway between xbar_A and xbar_B
-  exp1_rsd_md = s_1md / (rowMeans(x_1a) + 0.5 * xdbar_1d)
-  exp2_rsd_md = s_2md / (rowMeans(x_2a) + 0.5 * xdbar_2d)
-  df$exp1_mean_rsdmd = mean(exp1_rsd_md)
-  df$exp2_mean_rsdmd = mean(exp2_rsd_md)
-  df$exp1_sd_rsdmd   = sd(exp1_rsd_md)
-  df$exp2_sd_rsdmd    = sd(exp2_rsd_md)
-  diff_rsd = exp2_rsd_md - exp1_rsd_md
-  df$fract_rsdmd_d2gtd1 = sum( diff_rsd > 0) / df$n_samples
-  df$mean_diff_rsdmd_2m1  = mean(diff_rsd)
-  
-  # Bayes factor
-  if (include_bf) {
-    bf_1 = row_bayesf_2s(x_1a, x_1b, parallelize = parallelize_bf, paired = FALSE)
-    bf_2 = row_bayesf_2s(x_2a, x_2b, parallelize = parallelize_bf, paired = FALSE)
-    df$exp1_mean_bf = mean(bf_1)
-    df$exp2_mean_bf = mean(bf_2)
-    df$exp1_sd_bf   = sd(bf_1)
-    df$exp2_sd_bf   = sd(bf_2)
-    diff_abs_bf <- abs(bf_2) - abs(bf_1)
-    df$fract_bf_d2gtd1 = sum(diff_abs_bf > 0) /
-      df$n_samples
-    df$mean_diff_bf_2m1 = mean(diff_abs_bf)
-  } else {
-    df$fract_bf_d2gtd1 = 0
-    df$mean_diff_bf_2m1 = 0
-  }
-  
-  # NHST P-value 
-  # The more equal experiment will have a larger p-value
-  z_score_1 <- row_zscore_2s(x_1b, x_1a)
-  z_score_2 <- row_zscore_2s(x_2b, x_2a)
-  pvalue_1 = 2*pnorm(-abs(z_score_1))
-  pvalue_2 = 2*pnorm(-abs(z_score_2))
-  df$exp1_mean_pvalue = mean(pvalue_1)
-  df$exp2_mean_pvalue = mean(pvalue_2)
-  df$exp1_sd_pvalue = sd(pvalue_1)
-  df$exp2_sd_pvalue = sd(pvalue_2)
-  diff_pvalue <-  pvalue_2 - pvalue_1
-  # Must switch signs since larger is more similiar
-  df$fract_pvalue_d2gtd1 = sum(-diff_pvalue > 0) / df$n_samples
-  df$mean_diff_pvalue_2m1 = mean(diff_pvalue)
-  
-  # TOST p value (Two tailed equivalence test)
-  tostp_1 <- row_tost_2s(x_1b, x_1a,low_eqbound = -.1,high_eqbound = .1)
-  tostp_2 <- row_tost_2s(x_2b, x_2a,low_eqbound = -.1,high_eqbound = .1)
-  df$exp1_mean_tostp = mean(tostp_1)
-  df$exp2_mean_tostp = mean(tostp_2)
-  df$exp1_sd_tostp = sd(tostp_1)
-  df$exp2_sd_tostp = sd(tostp_2)
-  diff_tostp <- tostp_2 - tostp_1
-  df$fract_tostp_d2gtd1 <- sum(diff_tostp > 0) / df$n_samples
-  df$mean_diff_tostp_2m1 <- mean(diff_tostp) 
-  
-  # Cohens D
-  cohend_1 = row_cohend(x_1a, x_1b)
-  cohend_2 = row_cohend(x_2a, x_2b) 
-  df$exp1_mean_cohend = mean(cohend_1)
-  df$exp2_mean_cohend = mean(cohend_2)
-  df$exp1_sd_cohend = sd(cohend_1)
-  df$exp2_sd_cohend = sd(cohend_2)
-  diff_cohend = abs(cohend_2) - abs(cohend_1)
-  df$fract_cohend_d2gtd1 = sum(diff_cohend > 0) / df$n_samples
-  df$mean_diff_cohend_2m1 =  mean(diff_cohend)
-  
-  # Most Mean Diff
-  mmd_1 = row_mmd_2s_zdist(x_1a, x_1b)
-  mmd_2 = row_mmd_2s_zdist(x_2a, x_2b)
-  df$exp1_mean_mmd = mean(mmd_1)
-  df$exp2_mean_mmd = mean(mmd_2)
-  df$exp1_sd_mmd = sd(mmd_1)
-  df$exp2_sd_mmd = sd(mmd_2)
-  diff_most_mean_diff = mmd_2 - mmd_1
-  df$fract_mmd_d2gtd1 = sum(diff_most_mean_diff > 0) / df$n_samples
-  df$mean_diff_mmd_2m1 = mean(diff_most_mean_diff)
-  
-  # Relative Most Mean Diff
-  rmmd_1 = mmd_1 / rowMeans(x_1a)
-  rmmd_2 = mmd_2 / rowMeans(x_2a)
-  df$exp1_mean_rmmd = mean(rmmd_1)
-  df$exp2_mean_rmmd = mean(rmmd_2)
-  df$exp1_sd_rmmd = sd(rmmd_1)
-  df$exp2_sd_rmmd = sd(rmmd_2)
-  diff_rmmd =  rmmd_2 - rmmd_1
-  df$fract_rmmd_d2gtd1 = sum(diff_rmmd > 0) / df$n_samples
-  df$mean_diff_rmmd_2m1 = mean(diff_rmmd)
-  
-  
-  # Random group
-  nrand_1 = rowMeans(matrix(rnorm(df$n_samples * df$df_1d, mean = 0, sd = 1), 
-                            nrow = df$n_samples, ncol = df$df_1d))
-  nrand_2 = rowMeans(matrix(rnorm(df$n_samples * df$df_2d, mean = 0, sd = 1), 
-                            nrow = df$n_samples, ncol = df$df_2d))
-  df$exp1_mean_nrand = mean(nrand_1)
-  df$exp2_mean_nrand = mean(nrand_2)
-  df$exp1_sd_nrand = sd(nrand_1)
-  df$exp2_sd_nrand = sd(nrand_2)
-  diff_nrand = nrand_2 - nrand_1
-  df$fract_nrand_d2gtd1 = sum(diff_nrand > 0 ) / df$n_samples
-  df$mean_diff_nrand_2m1 = mean(diff_nrand)
-    
-  # browser()
-  return(df)
-}
-
-  
-  
 quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
@@ -689,7 +526,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
     }else{
       df_list = list();
       # Process effect sizes serially and bind rows into one dataframe
-      for (n in seq(1,n_sims,1)) {
+      for (n in seq(1,n_sims)) {
         df_list[[n]] <- quantify_esize_simulation(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE) 
       }
@@ -706,6 +543,68 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   return(df)
 }
 
+
+quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
+                                      parallelize_bf = FALSE) {
+  if (dim(df)[1] != 1) stop("Need to input a single row of df")
+  set.seed(rand.seed)
+  
+  # Use Exp 1 and 2 coefficients to generate data from normalized base data
+  x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
+                      sd = df$sigma_1a), nrow = df$n_samples, 
+                ncol = df$n_1a)
+  x_1b = matrix(rnorm(df$n_samples * df$n_1b, mean = df$mu_1b, 
+                      sd = df$sigma_1b), nrow = df$n_samples, 
+                ncol = df$n_1b)
+  
+  x_2a = matrix(rnorm(df$n_samples * df$n_2a, mean = df$mu_2a, 
+                      sd = df$sigma_2a), nrow = df$n_samples, 
+                ncol = df$n_2a)
+  x_2b = matrix(rnorm(df$n_samples * df$n_2b, mean = df$mu_2b, 
+                      sd = df$sigma_2b), nrow = df$n_samples, 
+                ncol = df$n_2b)
+  #save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # # load(file = "temp/debug.RData")
+  
+  # Calculate effect sizes for both experiments
+  dfs_1 <- quantify_row_effect_sizes(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE)
+  dfs_2 <- quantify_row_effect_sizes(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE)
+  stat_list <- colnames(dfs_1)
+  
+  
+  dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
+  # Means and std of each statistic
+  for (i in seq_along(stat_list)) {
+    
+    dfc[[paste("exp1_mean_", stat_list[i],sep='')]] <- mean(dfs_1[[stat_list[i]]])
+    dfc[[paste("exp1_sd_", stat_list[i],sep='')]]   <- sd(dfs_1[[stat_list[i]]])
+    
+    dfc[[paste("exp2_mean_", stat_list[i],sep='')]] <- mean(dfs_2[[stat_list[i]]])
+    dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]])
+  }
+
+  # browser();
+  
+  for (i in seq_along(stat_list)) {
+    # Determine if exp 1 has higher agreement than (hat) than exp 2
+    dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
+      sum(match.fun(attr(dfs_1,"hat")
+                    [[stat_list[i]]])(dfs_1[[stat_list[i]]], 
+                                      dfs_2[[stat_list[i]]])/df$n_samples)
+    # Calcualte different of effect size between experiments
+    dfc[[paste("mean_diff_", stat_list[i], "_1hat2", sep='')]] <-
+      dfc[[paste("exp2_mean_", stat_list[i],sep='')]] -
+      dfc[[paste("exp1_mean_", stat_list[i],sep='')]]
+  }
+
+  
+  df_out <- cbind(df, dfc)
+  # Carry over data frame metadata
+  user_attr <- attr(dfs_1,"user_attributes")
+  for (i in seq_along(user_attr)) {attr(df_out,user_attr[i])<-attr(dfs_1,user_attr[i])}
+  
+  return(df_out)
+}
 
 
 tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TRUE,
@@ -766,38 +665,40 @@ tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TR
     names(df_tidy)[names(df_tidy) == "matched_vars"] <- "name"
   } else df_tidy <- df_ref_sub
   
-  # browser()
+  # Carry forward any user defined attributes
+  user_attr <- attr(df,"user_attributes")
+  for (i in seq_along(user_attr)) {attr(df_tidy,user_attr[i])<-attr(df,user_attr[i])}
+  
   return(df_tidy)
 }
 
-pretty_esize_levels<- function(df,base_names, pretty_names, var_suffix) {
+pretty_esize_levels<- function(df, var_suffix) {
   #' Convert long levels names to shorter ones for pretty print in plots
   #' 
   #' @description 
-  #' @param 
-  #' @param 
-  #' @param 
+  #' @param df
+  #' @param var_suffix
   #' 
-  
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
+
   # Get current names for levels and the basenames for them to be matched against
   orig_levels <- levels(df$name)
-  # base_names <- paste(var_suffix,"_", base_names, "_", sep="") 
+  
+  base_names <- paste(var_suffix,"_",attr(df,'varnames'),sep='')
   
   # Find index for each basename
   ind <- rep(0, length(base_names))
   for (n in seq(1,length(base_names))) {
-    new_levels_ind =1
+    # new_levels_ind =1
     ind[n] <- which(regexpr(base_names[n],orig_levels)>0)
   }
   # Return new level names
-  new_levels <- effect_size_dict$label[ind]
-  
-  # df_new_levels <- df
-  # levels(df_new_levels$name) <- new_levels
-  levels(df$name) <- new_levels
-  
-  return(df)
-  
+  new_levels <- attr(df,"varnames_pretty")[ind]
+  df_new_levels <- df
+  levels(df_new_levels$name) <- unlist(unname(new_levels))
+
+  return(df_new_levels)
 }
 
 
@@ -825,7 +726,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp
     0.5 <= df_result$bs_ci_mean_upper
   ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
   
-  
+
   # Export CSV table of means and relative means for results write-up
   mean_by_group <- df_result$mean
   mean_row <- matrix(rep(df_result$mean,length(levels(df_pretty$name))), 
@@ -903,15 +804,13 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
                                       include_bf = include_bf,parallel_sims = parallel_sims)
+  
+  
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
                                     var_suffix = var_suffix,long_format = TRUE,
                                     ref_colname = NULL)
-  df_pretty <- 
-    pretty_esize_levels(df = df_tidy, base_names = paste(var_suffix,"_",
-                                                         effect_size_dict$base, "_", sep=""),
-                        pretty_names = effect_size_dict$label, 
-                        var_suffix = var_suffix)
+  df_pretty <- pretty_esize_levels(df = df_tidy, var_suffix = var_suffix)
   
   # Plot effect size results
   if (is_plotted) {

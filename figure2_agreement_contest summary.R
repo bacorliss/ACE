@@ -94,18 +94,19 @@ relative_means_from_0.5 <- 0.5 - sapply(dfs_relative, function(x) x$df_plotted$m
 rscale_scores <- t(t(relative_means_from_0.5)/
                      relative_means_from_0.5[cbind(relative_norm_ind,seq_along(relative_norm_ind))])
 # Export csv
-rownames(rscale_scores) <- effect_size_dict[[2]]
+rownames(rscale_scores) <- attr(df_relative_null[[1]]$df_es,"varnames")
 # Get statistical significance
 rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5) 
 rscale_score_norm <- sapply(relative_norm_ind, function(ind,len) 
-  ifelse(1:len == ind, TRUE,FALSE), length(effect_size_dict[[4]]))
+  ifelse(1:len == ind, TRUE,FALSE), length(attr(df_relative_null[[1]]$df_es,"varnames_pretty")))
 
 png(paste("figure/F", fig_num, "/F", fig_num, "es_contest relative scale.png",sep=""),    
     width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
 heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
-          labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
+          labRow =  sapply(attr(df_relative_null[[1]]$df_es,"varnames_pretty"),
+                           function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(rscale_scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(rscale_scores)[1]),
           notecol="black",notecex=1, lwid=c(0.01,5),lhei=c(0.01,5),margins =c(0,0))

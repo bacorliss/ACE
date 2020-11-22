@@ -45,6 +45,7 @@ df_unscaled_null = list();
 #
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
+source("R/row_effect_sizes.R")
 set.seed(rand.seed)
 gt_colnames = "is_mudm_2gt1"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_near_zero", sep = "")
@@ -67,7 +68,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    gt_colnames=gt_colnames)
 df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = parallel_sims,
+                                    include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
 

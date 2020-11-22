@@ -133,12 +133,12 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
   n2 <- dim(m2)[2] 
   s1 <- rowSds(m1)
   s2 <- rowSds(m2)
-  s_md <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
+  s_dm <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
 
   
-  t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_md 
+  t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_dm 
   p_low <- 1 - pt(t_lower, df = n1+n2-1)
-  t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_md 
+  t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_dm 
   p_high <- pt(t_upper, df = n1+n2-1)
   # Quick max value of two vectors
   p_tost_fast <- fast_2max(p_low,p_high)
@@ -179,10 +179,9 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 
 
-quantify_row_effect_sizes <- function(x_a, x_b, rand.seed = 0, 
-                                  parallelize_bf = FALSE) {
-  #' @description Given two matrices of measurements, with rows being separate 
-  #' samples and columns separate observations, calculates a series of effect size
+quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
+  #' @description Given two matrices of measurements, with rows representing 
+  #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 
   #' supports same sample size within x_a and x_b)
   #' 
@@ -190,79 +189,89 @@ quantify_row_effect_sizes <- function(x_a, x_b, rand.seed = 0,
   #'  samples
   #' @param x_b matrix of observations from experiment group where rows are 
   #' separate samples 
-  #' @param rand.seed seed for repeatable random number generation
   #' @param parallelize_bf flag for parallel processing of Bayes Factor 
   #' (since current implementation in R is ridiculously slow)
   #' 
   #' @return dataframe of mean and standard deviation for each effect size statistic
-  set.seed(rand.seed)
   
-  # Use Exp 1 and 2 coefficients to generate data from normalized base data
-  x_a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
-                     sd = df$sigma_1a), nrow = df$n_samples, 
-               ncol = df$n_1a)
-  x_b = matrix(rnorm(df$n_samples * df$n_1b, mean = df$mu_1b, 
-                     sd = df$sigma_1b), nrow = df$n_samples, 
-               ncol = df$n_1b)
+  n_a = dim(x_a)[2]
+  n_b = dim(x_b)[2]
+  n_samples = dim(x_a)[1]
+  df_d = n_a + n_b - 2
   
+  # Initialize data frames
+  df = data.frame(xbar_dm=rep(0, n_samples))
+  df_hat = data.frame(xbar_dm=0)
+  df_name = data.frame(xbar_dm=0)
+  df_pretty = data.frame(xbar_dm=0)
+    
   # Mean of the difference of means
-  xdbar_d = rowMeans(x_b) - rowMeans(x_a)
-  df$mean_xbar_d = mean(xdbar_d)
-  df$sd_xbar_d = sd(xdbar_d)
+  df$xbar_dm = abs(rowMeans(x_b)) - abs(rowMeans(x_a))
+  df_hat$xbar_dm <- "<"
+  df_pretty$xbar_dm <- "bar(x)[DM]"
+
+  # Rel Means: mean of the difference in means divided by control group mean
+  df$rxbar_dm = df$xbar_dm/abs(rowMeans(x_a))
+  df_hat$rxbar_dm <- "<"
+  df_pretty$rxbar_dm <- "r*bar(x)[DM]"
   
   # Std of the difference in means
-  s_md = sqrt(rowSds(x_a)^2/df$n_a + rowSds(x_b)^2/df$n_b)
-  df$mean_sdmd = mean(s_md)
-  df$sd_sdmd   = sd(s_md)
+  df$sd_dm = sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
+  df_hat$sd_dm <- "<"
+  df_pretty$sd_dm <- "s[DM]"
   
-  # Rel Means: mean of the difference in means divided by control group mean
-  rxbar_d = xdbar_d/rowMeans(x_a)
-  df$mean_rxbar_d = mean(rxbar_d)
-  df$sd_rxbar_d   = sd(rxbar_d)
-  
-  # Relative STD: std of difference in meands divided by midpoint between group means
-  rsd_md = s_1md / (rowMeans(x_a) + 0.5 * xdbar_1d)
-  df$mean_rsdmd = mean(rsd_md)
-  df$sd_rsdmd   = sd(rsd_md)
+  # Relative STD: std of difference in means divided by midpoint between group means
+  df$rsd_dm = df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
+  df_hat$rsd_dm <- "<"
+  df_pretty$rsd_dm <- "r*s[DM]"
   
   # Bayes Factor
-  diff_bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
-  df$mean_bf = mean(diff_bf)
-  df$sd_bf = sd(diff_bf)
+  df$bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
+  df_hat$bf <- "<"
+  df_pretty$bf <- "Bf"
   
-  # NHST P-value : The more equal experiment will have a larger p-value
+  # NHST P-value: The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
-  diff_pvalue = 2*pnorm(-abs(diff_z_score))
-  df$mean_pvalue = mean(diff_pvalue)
-  df$sd_pvalue = sd(diff_pvalue)
+  df$pvalue = 2*pnorm(-abs(diff_z_score))
+  df_hat$pvalue <- ">"
+  df_pretty$pvalue <- "p[NHST]"
   
   # TOST p value (Two tailed equivalence test)
-  diff_tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1)
-  df$mean_tostp = mean(diff_tostp)
-  df$sd_tostp = sd(diff_tostp)
+  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1)
+  df_hat$tostp <- "<"
+  df_pretty$tostp <- "p[TOST]"
+  
   
   # Cohens D
-  diff_cohend = row_cohend(x_a, x_b)
-  df$mean_cohend = mean(diff_cohend)
-  df$sd_cohend = sd(diff_cohend)
+  df$cohend = abs(row_cohend(x_a, x_b))
+  df_hat$cohend <- "<"
+  df_pretty$cohend <- "Cd"
   
   # Most Mean Diff
-  diff_mmd = row_mmd_2s_zdist(x_a, x_b)
-  df$mean_mmd = mean(diff_mmd)
-  df$sd_mmd = sd(diff_mmd)
+  df$mmd = row_mmd_2s_zdist(x_a, x_b)
+  df_hat$mmd <- "<"
+  df_pretty$mmd <- "delta[M]"
   
   # Relative Most Mean Diff
-  diff_rmmd = diff_mmd / rowMeans(x_a)
-  df$mean_rmmd = mean(diff_rmmd)
-  df$sd_rmmd = sd(diff_rmmd)
+  df$rmmd = df$mmd / rowMeans(x_a)
+  df_hat$rmmd <- "<"
+  df_pretty$rmmd <- "r*delta[M]"
   
   # Random group
-  x_rand = rowMeans(matrix(rnorm(df$n_samples * df$df_1d, mean = 0, sd = 1), 
-                           nrow = df$n_samples, ncol = df$df_1d))
-  df$mean_x_rand = mean(x_rand)
-  df$sd_x_rand = sd(x_rand)
+  df$rand = abs(rowMeans(matrix(rnorm(n_samples * df_d, mean = 0, sd = 1), 
+                           nrow = n_samples, ncol = df_d)))
+  df_hat$rand <- "<"
+  df_pretty$rand <- "Rnd"
+  
+  # Store attributes within df
+  attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
+  attr(df,"hat") <- df_hat
+  attr(df,"varnames") <- colnames(df)
+  attr(df,"varnames_pretty") <- df_pretty
   
   
+  # browser();
+  # dfs = list("df" = df, "df_hat" = df_hat)
   return(df)
 }
 
