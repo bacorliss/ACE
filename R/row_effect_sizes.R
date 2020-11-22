@@ -201,65 +201,65 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   
   # Initialize data frames
   df = data.frame(xbar_dm=rep(0, n_samples))
-  df_hat = data.frame(xbar_dm=0)
-  df_name = data.frame(xbar_dm=0)
-  df_pretty = data.frame(xbar_dm=0)
+  df_hat = data.frame(xbar_dm=11)
+  df_name = data.frame(xbar_dm=11)
+  df_pretty = data.frame(xbar_dm=11)
     
-  # Mean of the difference of means
-  df$xbar_dm = abs(rowMeans(x_b)) - abs(rowMeans(x_a))
+  # 1) Mean of the difference of means
+  df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
   df_hat$xbar_dm <- "<"
   df_pretty$xbar_dm <- "bar(x)[DM]"
 
-  # Rel Means: mean of the difference in means divided by control group mean
-  df$rxbar_dm = df$xbar_dm/abs(rowMeans(x_a))
+  # 2) Rel Means: mean of the difference in means divided by control group mean
+  df$rxbar_dm = df$xbar_dm/rowMeans(x_a)
   df_hat$rxbar_dm <- "<"
   df_pretty$rxbar_dm <- "r*bar(x)[DM]"
   
-  # Std of the difference in means
+  # 3) Std of the difference in means
   df$sd_dm = sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
   df_hat$sd_dm <- "<"
   df_pretty$sd_dm <- "s[DM]"
   
-  # Relative STD: std of difference in means divided by midpoint between group means
+  # 4) Relative STD: std of difference in means divided by midpoint between group means
   df$rsd_dm = df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
   df_hat$rsd_dm <- "<"
   df_pretty$rsd_dm <- "r*s[DM]"
   
-  # Bayes Factor
+  # 5) Bayes Factor
   df$bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
   df_hat$bf <- "<"
   df_pretty$bf <- "Bf"
   
-  # NHST P-value: The more equal experiment will have a larger p-value
+  # 6) NHST P-value: The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
   df$pvalue = 2*pnorm(-abs(diff_z_score))
   df_hat$pvalue <- ">"
   df_pretty$pvalue <- "p[NHST]"
   
-  # TOST p value (Two tailed equivalence test)
+  # 7) TOST p value (Two tailed equivalence test)
   df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1)
   df_hat$tostp <- "<"
   df_pretty$tostp <- "p[TOST]"
   
   
-  # Cohens D
-  df$cohend = abs(row_cohend(x_a, x_b))
+  # 8) Cohens D
+  df$cohend = row_cohend(x_a, x_b)
   df_hat$cohend <- "<"
   df_pretty$cohend <- "Cd"
   
-  # Most Mean Diff
+  # 9) Most Mean Diff
   df$mmd = row_mmd_2s_zdist(x_a, x_b)
   df_hat$mmd <- "<"
   df_pretty$mmd <- "delta[M]"
   
-  # Relative Most Mean Diff
+  # 10) Relative Most Mean Diff
   df$rmmd = df$mmd / rowMeans(x_a)
   df_hat$rmmd <- "<"
   df_pretty$rmmd <- "r*delta[M]"
   
-  # Random group
-  df$rand = abs(rowMeans(matrix(rnorm(n_samples * df_d, mean = 0, sd = 1), 
-                           nrow = n_samples, ncol = df_d)))
+  # 11) Random group
+  df$rand = rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
+                           nrow = n_samples, ncol = df_d))
   df_hat$rand <- "<"
   df_pretty$rand <- "Rnd"
   

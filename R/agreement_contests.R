@@ -583,18 +583,18 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
     dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]])
   }
 
-  # browser();
+  browser();
   
   for (i in seq_along(stat_list)) {
     # Determine if exp 1 has higher agreement than (hat) than exp 2
     dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
-      sum(match.fun(attr(dfs_1,"hat")
-                    [[stat_list[i]]])(dfs_1[[stat_list[i]]], 
-                                      dfs_2[[stat_list[i]]])/df$n_samples)
+      sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
+          (abs(dfs_1[[stat_list[i]]]), 
+            abs(dfs_2[[stat_list[i]]]))) / df$n_samples
     # Calcualte different of effect size between experiments
     dfc[[paste("mean_diff_", stat_list[i], "_1hat2", sep='')]] <-
-      dfc[[paste("exp2_mean_", stat_list[i],sep='')]] -
-      dfc[[paste("exp1_mean_", stat_list[i],sep='')]]
+      abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
+      abs(dfc[[paste("exp1_mean_", stat_list[i],sep='')]])
   }
 
   
