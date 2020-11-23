@@ -16,6 +16,7 @@ p_load(VGAM)
 p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
+base_dir = "mmd_z"
 
 
 # dnorm: density function: proability for a specific value of x/zscore of PDF

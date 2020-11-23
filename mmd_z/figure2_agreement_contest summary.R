@@ -2,9 +2,13 @@
 
 
 
-fig_num = "2" 
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/F",fig_num,sep="")
+fig_num = "2"
+base_dir = "mmd_z"
+
+
+dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
+summary_path = paste(base_dir,"/figure/F",fig_num, sep="")
+dir.create(file.path(getwd(), summary_path), showWarnings = FALSE)
 
 
 # OVerall contest heatmaps
@@ -32,15 +36,17 @@ make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
 # Export summary stats for un-scaled data
 #-------------------------------------------------------------------------------
 
+file.path
 
 
 
+if (!file.exists(file.path(summary_path, "temp/df_unscaled_null.RDS"))) {
+  source("sfigure8_unscaled_agreement_contest_null.R")
+  } else {load(file = file.path(summary_path, "temp/df_unscaled_null.RDS"))}
 
-if (!file.exists("temp/df_unscaled_null.RDS")) {source("sfigure8_unscaled_agreement_contest_null.R")
-  } else {load(file = "temp/df_unscaled_null.RDS")}
-
-if (!file.exists("temp/df_unscaled_crit.RDS")) {source("sfigure9_unscaled_agreement_contest_critical.R")
-  } else {load(file = "temp/df_unscaled_crit.RDS")}
+if (!file.exists(file.path(summary_path, "temp/df_unscaled_crit.RDS"))) {
+  source("sfigure9_unscaled_agreement_contest_critical.R")
+  } else {load(file = file.path(summary_path, "temp/df_unscaled_crit.RDS"))}
 
 
 dfs_unscaled <- c(df_unscaled_null,df_unscaled_crit)
@@ -57,7 +63,7 @@ scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5)
 scale_score_norm <- sapply(scale_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(effect_size_dict[[4]]))
 
-png(paste(fig_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
+png(paste(summary_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
     width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
 heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scale_scores_sig,1,scale_score_norm,3)}, 
@@ -75,11 +81,13 @@ dev.off()
 # Export summary stats for relative scale data
 #-------------------------------------------------------------------------------
 
-if (!file.exists("temp/df_relative_null.RDS")) {source("sfigure10_relative_agreement_contest_null.R")
-  } else {load(file = "temp/df_relative_null.RDS")}
+if (!file.exists(file.path(summary_path, "temp/df_relative_null.RDS"))) {
+  source("sfigure10_relative_agreement_contest_null.R")
+  } else {load(file = file.path(summary_path, "temp/df_relative_null.RDS"))}
 
-if (!file.exists("temp/df_relative_crit.RDS")) {source("sfigure11_relative_agreement_contest_crit.R")
-  } else {load(file="temp/df_relative_crit.RDS")}
+if (!file.exists(file.path(summary_path, "temp/df_relative_crit.RDS"))) {
+  source("sfigure11_relative_agreement_contest_crit.R")
+  } else {load(file = file.path(summary_path, "temp/df_relative_crit.RDS"))}
 
 fig_num = "2" 
 

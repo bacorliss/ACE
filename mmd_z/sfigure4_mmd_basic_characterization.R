@@ -18,6 +18,7 @@ p_load(rbenchmark)
 source("R/mmd.R")
 source("R/row_effect_sizes.R")
 source("R/norm_versus_fnorm.R")
+base_dir = "mmd_z"
 
 fig_num = "4"
 dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)

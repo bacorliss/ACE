@@ -14,12 +14,14 @@ p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
 source("R/agreement_contests.R")
-
+base_dir = "mmd_z"
 
 # Figure parameters
 fig_num = "1" 
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/F",fig_num, "/",sep="")
+dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
+fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
+
+
 # Simulation parameters
 # 
 #-------------------------------------------------------------------------------
@@ -82,8 +84,8 @@ df_mu_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 
@@ -126,8 +128,8 @@ df_sigma_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 # Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
@@ -165,8 +167,8 @@ df_df_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = -1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 
@@ -219,8 +221,8 @@ df_rmu_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1dm",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 
@@ -257,8 +259,8 @@ df_rsigma_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = 1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 # Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
@@ -295,8 +297,8 @@ df_rdf_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = -1,
-                           stats_basenames = effect_size_dict[[2]],
-                           stats_labels = effect_size_dict[[4]])
+                           stats_basenames = attr(df_esize$df_es,"varnames"),
+                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
 
@@ -333,7 +335,7 @@ scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
                df_df_pearson$pearson_rho)
 scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
                    df_df_pearson$is_pearson_rho_sig)
-png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},
@@ -355,7 +357,7 @@ scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
                df_rdf_pearson$pearson_rho)
 scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
                    df_rdf_pearson$is_pearson_rho_sig)
-png(paste("figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},

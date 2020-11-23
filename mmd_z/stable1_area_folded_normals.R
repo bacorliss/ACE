@@ -13,7 +13,7 @@ p_load("RColorBrewer")
 p_load(cowplot)
 source("R/mmd.R")
 source("R/row_effect_sizes.R")
-
+base_dir = "mmd_z"
 
 
 dir.create(file.path(getwd(), paste("figure/T1",sep="")), showWarnings = FALSE)

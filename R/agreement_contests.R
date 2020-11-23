@@ -333,7 +333,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
             strip.background = element_blank(),
             panel.border = element_rect(fill = NA,colour = "black")) 
     print(gg)
-    save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+    save_plot(paste(fig_path,  '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
               base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
   }
   return(df)
@@ -429,12 +429,12 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
                 size = 2.5, vjust=0.5, hjust=0.5) +
       annotate("segment", x = 0.1, xend = length(param_fields)+0.5, y = 1+0.15*n-.08, 
                yend = 1+0.15*n-.08, colour = "black", size=.2) 
-    save_plot(paste(fig_path, 'gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
+    save_plot(paste(fig_path, '/gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
               base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
     
   }
   print(gg)
-  save_plot(paste(fig_path, 'gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, '/gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
   
 
@@ -466,7 +466,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
                , x=0, y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
-  save_plot(paste(fig_path, 'mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, '/mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   
 }
@@ -501,10 +501,10 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   # browser();
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # # load(file = "temp/debug.RData")
-  
+
   
   # Only perform simulations if results not saved to disk
-  if (!file.exists(paste(out_path,data_file_name,sep="")) | overwrite) {
+  if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
     
     if (parallel_sims) { print("starting parallel processing")
       # Setup parallel back end to use many processors
@@ -534,10 +534,10 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
     }
     
     # Save dataframe results to a file
-    saveRDS(df, file = paste(out_path, data_file_name, sep=""))
+    saveRDS(df, file = paste(out_path,'/', data_file_name, sep=""))
   } else {
     # Restore the dataframe results from disk
-    df <- readRDS(file = paste(out_path, data_file_name,sep=""))
+    df <- readRDS(file = paste(out_path,'/', data_file_name,sep=""))
   }
   
   return(df)
@@ -784,7 +784,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp
     theme_classic() +  theme(text = element_text(size = 8))+
   scale_y_continuous(expand = c(0, 0))
   print(p)
-  save_plot(paste(fig_path, fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path,  '/', fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
    #browser()
 
@@ -792,10 +792,14 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp
   
 }
 
-process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = "temp/",
+process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_suffix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, comp_dir = "Lower") {
   # browser();
+  
+  dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
+  dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
+  
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
@@ -908,7 +912,7 @@ gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) +
   scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
   theme_classic(base_size=8) + theme(legend.position="none") 
 print(gg)  
-save_plot(paste(fig_path, fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
+save_plot(paste(fig_path, '/', fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 1.75, base_asp = 3, base_width = 3, dpi = 600)
 
 
@@ -940,7 +944,7 @@ gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
   theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) 
   # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
 gg
-save_plot(paste(fig_path, str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
 
 save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())

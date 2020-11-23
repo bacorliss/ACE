@@ -20,6 +20,7 @@ p_load(dplyr)
 p_load(cowplot)
 p_load(VGAM)
 source("R/stat_helper.r")
+base_dir = "mmd_z"
 
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")

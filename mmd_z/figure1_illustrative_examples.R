@@ -6,7 +6,13 @@ library(dplyr)
 library(cowplot)
 library(RColorBrewer)
 library(stringr)
+base_dir = "mmd_z"
 
+
+fig_num = "1" 
+dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
+fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
+dir.create(file.path(getwd(), fig_path), showWarnings = FALSE)
 
 grp_color = brewer.pal(3, "Set1")
 
@@ -42,7 +48,7 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
           axis.title.x = element_text(color = grp_color[1]))
   gg1
   # if (max(df$y)<0.02) {gg1 <- gg1 + scale_y_continuous(labels = scales::scientific)}
-  save_plot(paste(fig_path, "F",fig_num, "_", base_name,"_E1", ".tiff", sep = ""),
+  save_plot(paste(fig_path, "/F",fig_num, "_", base_name,"_E1", ".tiff", sep = ""),
             gg1, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
   # Experiment 2
   df <- tibble(group = as.factor(c(rep("A",length(xa2)),rep("B",length(xb2)))),y = c(xa2,xb2))
@@ -64,7 +70,7 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
   # }
   gg2
   if (max(df$y)<0.02) {gg2 <- gg2 + scale_y_continuous(labels = scales::scientific)}
-  save_plot(paste(fig_path, "F", fig_num, "_", base_name,"_E2", ".tiff", sep = ""),
+  save_plot(paste(fig_path, "/F", fig_num, "_", base_name,"_E2", ".tiff", sep = ""),
             gg2, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
   
   # Difference in Means
@@ -114,7 +120,7 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
   gg3
   }
   
-  save_plot(paste(fig_path, "F", fig_num, "_", base_name,"_D", ".tiff", sep = ""),
+  save_plot(paste(fig_path, "/F", fig_num, "_", base_name,"_D", ".tiff", sep = ""),
             gg3, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
   print(t(dfo))
   
@@ -132,9 +138,6 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
 
 #-------------------------------------------------------------------------------
 
-fig_num = "1" 
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/F",fig_num, "/",sep="")
 
 # Decreased mean offset for experiment 2
 rand_seed <- 0
@@ -185,11 +188,6 @@ plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name=
 # Relative Scale
 
 #-------------------------------------------------------------------------------
-
-fig_num = "1" 
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/F",fig_num, "/",sep="")
-
 
 dm_ylims = c(-0.4,0.4)
 dm_ybreaks = seq(-0.4, 0.4, 0.2)

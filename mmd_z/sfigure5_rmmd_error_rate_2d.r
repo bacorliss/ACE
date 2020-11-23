@@ -22,6 +22,9 @@ p_load(RColorBrewer)
 p_load(tidyr)
 p_load(docstring)
 
+base_dir = "mmd_z"
+
+
 # Script Parameters
 fig_num = "5"
 fig_path = file.path(getwd(), paste("figure/SF",fig_num,sep=""))

@@ -18,8 +18,8 @@ p_load(VGAM)
 p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
-
 source("R/norm_versus_fnorm.R")
+base_dir = "mmd_z"
 
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
