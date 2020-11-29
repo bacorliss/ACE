@@ -21,7 +21,7 @@ source("R/norm_versus_fnorm.R")
 base_dir = "mmd_z"
 
 fig_num = "4"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), showWarnings = FALSE)
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), showWarnings = FALSE,recursive = TRUE)
 
 # Colors for figure
 # Orange: MMD, [255, 127, 0], #FF7F00
@@ -183,7 +183,7 @@ g1B
 # Use cowplot to align subplots
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
 cg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep=""),
           cg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
 graphics.off()
@@ -258,7 +258,7 @@ gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
   theme_classic(base_size = 8) + theme(legend.position = "none")
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "F3a_RTOST_vs_MMD.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F3a_RTOST_vs_MMD.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.25, base_width = 3.5, dpi = 600) 
 
 
@@ -300,7 +300,7 @@ gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
   # geom_blank(aes(y = 1.1E-15)) +
   # geom_blank(aes(y = -1.1E-15))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -367,13 +367,13 @@ gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mmd_95)) +
   ylab(expression(Coeff.~MMD[95])) +
   theme_classic(base_size=8)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "2C_Coeff_mmd_CLa_CL2a.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2C_Coeff_mmd_CLa_CL2a.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) # paper="letter"
 graphics.off()
 
 # Export LU table to disk
-df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
+df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$mean_coeff_mmd_95)
 write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
 
 
@@ -422,7 +422,7 @@ gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   ylab("Diff.") +
   theme_classic(base_size=8)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -457,7 +457,7 @@ gg <- ggplot(data = df_speed,  aes(x=x, y=mmd_root)) +
                    labels = c('MMD[root]' = expression(MMD[root]),
                               'MMD[lut]'   = expression(MMD[lut])))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -531,7 +531,7 @@ gg <- ggplot(df, aes(x = mu, y=coeff_mmd95)) +
   theme_classic(base_size=8)
 gg
 # Export figure to disk
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "5a_coeff_MMD_from_pop.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "5a_coeff_MMD_from_pop.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
 graphics.off()

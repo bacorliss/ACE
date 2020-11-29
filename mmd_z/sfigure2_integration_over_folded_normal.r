@@ -18,6 +18,10 @@ p_load(dplyr)
 p_load(cowplot)
 base_dir = "mmd_z"
 
+fig_num = "2"
+dir.create(file.path(getwd(), paste(base_dir,"/figure/F",fig_num,sep="")), 
+           showWarnings = FALSE, recursive = TRUE)
+
 
 # dnorm: density function: proability for a specific value of x/zscore of PDF
 # pnorm: cum. probability/quantile for a given zscore
@@ -41,9 +45,6 @@ fun_pstandnorm <- function (x, mu, sigma) {pnorm((x-mu)/sigma, mean = 0, sd = 1)
 
 
 # Script parameters
-fig_num = "2"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
-           showWarnings = FALSE)
 tri_color <- brewer.pal(n = 3, name = "Set1")
 distrs=c("FN", "NN","SN")
 rand.seed <- 0
@@ -79,7 +80,7 @@ p_2d <- ggplot(data=df, aes(x=x,y=y)) +
   scale_color_manual(values = rep(tri_color,length(mus)))
 p_2d
 
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "a integration_cdf_central.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "a integration_cdf_central.tiff", 
                 sep = ""), p_2d, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -112,7 +113,7 @@ p_2e <- ggplot(data=df, aes(x=x,y=y)) +
   scale_linetype_manual(values = c("solid", "dashed", "dotted")) +
   scale_color_manual(values = rep(tri_color,length(mus)))
 p_2e
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "b integration_cdf_central.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "b integration_cdf_central.tiff", 
                 sep = ""), p_2e, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -161,7 +162,7 @@ gg <- ggplot(data = tibble(x = F_FN, y = F_NN), aes(x=x, y = y)) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept = 0, show.legend = NA)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "c Q-Q FN_vs_NN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "c Q-Q FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 1.3, dpi = 600)  
 
@@ -177,7 +178,7 @@ gg <- ggplot(data = tibble(y = mean(df$r_FN_vs_NN), sd_y = sd(df$r_FN_vs_NN)),
   theme_classic(base_size=8) + theme(legend.position="none",
                                      axis.text.x=element_blank())
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FN_vs_NN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "d correlation Q-Q FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 0.75, dpi = 600)  
 
@@ -191,7 +192,7 @@ gg <- ggplot(data = tibble(x = F_FN, y = F_SN), aes(x=x, y = y)) +
   theme_classic(base_size=8) + theme(legend.position="none") +
   geom_abline(slope = 1, intercept =0, show.legend = NA)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "e Q-Q FN_vs_SN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "e Q-Q FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 1.3, dpi = 600)  
 
@@ -209,7 +210,7 @@ gg <- ggplot(data = tibble(y = mean(df$a_FN_vs_SN), sd_y = sd(df$a_FN_vs_SN)),
   # geom_blank(aes(y = 1+1e-17)) +
   # geom_blank(aes(y = 1-1e-17))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FN_vs_SN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "f correlation Q-Q FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = .75, dpi = 600)  
 
@@ -259,7 +260,7 @@ gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_blank(aes(y = -0.6E-15)) +
   geom_blank(aes(y = .6E-15))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_NN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600)  
 # Compare FN vs SN
@@ -276,7 +277,7 @@ gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_blank(aes(y = -0.6E-15)) +
   geom_blank(aes(y = 0.6E-15))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_SN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600) 
 

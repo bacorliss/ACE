@@ -27,8 +27,8 @@ base_dir = "mmd_z"
 
 # Script Parameters
 fig_num = "5"
-fig_path = file.path(getwd(), paste("figure/SF",fig_num,sep=""))
-dir.create(fig_path, "\\", fig_num, showWarnings = FALSE)
+fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
+dir.create(fig_path, showWarnings = FALSE, recursive=TRUE)
 rand.seed <- 0
 overwrite <- TRUE
 
@@ -49,12 +49,9 @@ n_samples <- 1e3
 mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
-df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
+df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
+                                    paste(fig_path, "/temp/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
                                 overwrite=overwrite, mus_a=100, sigmas_a=1)
-# Assemble results into square matrix
-# grid_slopes <- slopes_by_rowcol(df_results$mean_diff_rmmd_rmu, sigmas, mus)
-# load(file = "temp/debug.RData")param_col_list
-
 
 
 # Plot 1: 2D error rate of rxbar < rmu in mu space
@@ -75,7 +72,7 @@ gg <- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 
 # Plot 2: 2D tested coverage error of rxbar < rmu in mu space
@@ -99,7 +96,7 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_1b rxbar error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_1b rxbar error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -122,7 +119,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2a rmmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_2a rmmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 
 
@@ -147,7 +144,7 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2b mmd error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_2b mmd error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -166,7 +163,7 @@ mu_ov_sigmas = NULL
 df_crit_mu <- 
   locate_bidir_binary_thresh(ind_var = "mmd", mus=mus, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary
@@ -187,11 +184,9 @@ gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu.tiff", 
+save_plot(paste(fig_path, "/", fig_num, "_d mmd boundaries over mu.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
-
-
 
 
 
@@ -209,7 +204,8 @@ mus <- seq(-2.5, 2.5, by = .05)
 mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
-df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, "temp/mmd_Error_2D_mu_vs_sigma.rds",
+df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
+                                    paste(fig_path, "/temp/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
                                        overwrite=overwrite, mus_a=100, sigmas_a=1)
 
 # Plot 6: Heatmap error rate of rMMD < rmu in mu space
@@ -231,7 +227,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2a rmmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_2a rmmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 
 
@@ -256,7 +252,7 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2b mmd error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_2b mmd error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -273,7 +269,7 @@ mu_ov_sigmas = NULL
 df_crit_mu <- 
   locate_bidir_binary_thresh(ind_var = "mmd", mus = mus, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary
@@ -294,7 +290,7 @@ gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2c mmd boundaries over mu.tiff", 
+save_plot(paste(fig_path, "/", fig_num, "_2c mmd boundaries over mu.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
@@ -321,8 +317,8 @@ set.seed(rand.seed)
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
-                                "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas,
-                                overwrite = overwrite,mus_a=100, sigmas_a=1)
+                                paste(fig_path, "/temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", sep=""),
+                                mu_ov_sigmas, overwrite = overwrite,mus_a=100, sigmas_a=1)
 
 # Plot 9: Heatmap error rate of rmmd < rmu in mu/sigma space
 #_______________________________________________________________________________
@@ -342,7 +338,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_3a rmmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_3a rmmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 
 # Plot 10: Heatmap tested coverage error of rmmd < rmu in mu/sigma space
@@ -365,7 +361,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_3b rmmd error test mu_over_sigma.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_3b rmmd error test mu_over_sigma.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -382,7 +378,7 @@ mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 df_crit_mu_ov_sigma <- 
   locate_bidir_binary_thresh(ind_var = "rmmd", mus=NULL, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary
@@ -403,7 +399,7 @@ gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma,
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_3c rmmd error boundaries over mu_sigma.tiff", 
+save_plot(paste(fig_path, "/", fig_num, "_3c rmmd error boundaries over mu_sigma.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 

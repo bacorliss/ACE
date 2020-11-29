@@ -19,13 +19,13 @@ p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
 p_load(VGAM)
-source("R/stat_helper.r")
+# source("R/stat_helper.r")
 base_dir = "mmd_z"
 
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
 fig_num="1"
-dir.create(file.path(getwd(), paste("figure/F",fig_num,sep="")), 
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), recursive = TRUE,
            showWarnings = FALSE)
 
 
@@ -80,7 +80,7 @@ p_1a <- ggplot(df_1a, aes(x = x)) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1a
 # Export to TIF 
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "a example_folded_dists.tiff", sep = ""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "a example_folded_dists.tiff", sep = ""),
           p_1a, ncol = 1, nrow = 1, base_height = 1.2,
           base_asp = 3, base_width = 6.5, dpi = 600) 
 
@@ -146,7 +146,7 @@ p_1b <- ggplot(df_1b, aes(x=d, y=x)) +
   theme_classic(base_size = 8) + theme(legend.position="none", axis.title.x = element_blank())
 p_1b
 # Export to TIF
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "b dist_comparison_violin.tiff", sep = ""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "b dist_comparison_violin.tiff", sep = ""),
           p_1b, ncol = 1, nrow = 1, base_height = .8,
           base_asp = 2, base_width = 3, dpi = 600)
 
@@ -182,7 +182,7 @@ p_1c <- ggplot(df_1c, aes(x=d, y=estimate)) +
   geom_blank(aes(y = y_max)) +
 scale_y_continuous(labels = scales::number_format(accuracy = 0.001))
 p_1c  
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "c dist_comparison_facet.tiff",sep = ""), 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "c dist_comparison_facet.tiff",sep = ""), 
           p_1c, ncol = 1, nrow = 1, base_height = .9,
           base_asp = 3, base_width = 2.6, dpi = 600)
 
@@ -221,7 +221,7 @@ p_1e <- ggplot(tibble(x = q_sort_x_fnorm, y = q_sort_x_absnorm), aes(x=x, y=y)) 
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "e dist_comp_qq_plot.tiff",sep = ""), 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "e dist_comp_qq_plot.tiff",sep = ""), 
           p_1e, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
@@ -244,7 +244,7 @@ p_1f <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y
   # geom_blank(aes(y = 0.999)) +
   # geom_blank(aes(y = 1.001))
 p_1f
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "f dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1f, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 1, dpi = 600)
 
@@ -309,7 +309,7 @@ p_1g <- ggplot(df_1g, aes(x=d, y=x)) +
                                      axis.title.x=element_blank())
 p_1g
 # Export to TIF
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g dist_comparison_violin.tiff", sep = ""), 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g dist_comparison_violin.tiff", sep = ""), 
           p_1g, ncol = 1, nrow = 1, base_height = .75,
           base_asp = 3, base_width = 3, dpi = 600)
 
@@ -344,7 +344,7 @@ p_1h <- ggplot(df_1h, aes(x=d, y=estimate)) +
   geom_blank(aes(y = y_max)) +
   scale_y_continuous(labels = scales::number_format(accuracy = 0.001))
 p_1h  
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "h dist_comparison_facet.tiff",sep = ""), 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "h dist_comparison_facet.tiff",sep = ""), 
           p_1h, ncol = 1, nrow = 1, base_height = 1,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
@@ -371,7 +371,7 @@ p_1j <- ggplot(df_1j, aes(x=x, y=y)) +
   geom_abline(intercept = 0, slope = 1, size=0.25) +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1j
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "j dist_comp_qq_plot.tiff",sep = ""), 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "j dist_comp_qq_plot.tiff",sep = ""), 
           p_1j, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1.5, dpi = 600)
 
@@ -393,7 +393,7 @@ p_1k <- ggplot(data=tibble(x=as.factor("|N| : FN"),y = mean(fits)), aes(x=x, y=y
   # geom_blank(aes(y = 0.999)) +
   # geom_blank(aes(y = 1.001)) 
 p_1k
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "k dist_comparison_qq_slope.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "k dist_comparison_qq_slope.tiff", 
                 sep = ""), p_1k, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 1, dpi = 600)
 

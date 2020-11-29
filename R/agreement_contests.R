@@ -705,6 +705,8 @@ pretty_esize_levels<- function(df, var_suffix) {
 plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp_dir = "Lower") {
   
   # Calculate group means and corrected confidence intervals
+  # Note: if it errors here with df_result having one group then plyr package 
+  # was loaded before dplyr
   df_result <- df_pretty %>%   
     group_by(name) %>% 
     summarize(mean = mean(value), bs_ci_mean_str = toString(

@@ -15,7 +15,11 @@ source("R/row_effect_sizes.R")
 source("R/mmd.R")
 
 
-fig_num="4";
+base_dir = "mmd_z"
+
+fig_num = "4"
+dir.create(file.path(getwd(), paste(base_dir,"/figure/SF",fig_num,sep="")), 
+           showWarnings = FALSE, recursive = TRUE)
 rand.seed = 0;
 
 ztest <- function(x, y = NULL, mu = 0, conf.level= 0.95, alternative = "two.sided") {
@@ -147,7 +151,7 @@ gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
   theme_classic(base_size = 8)
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "F4_RTOST_vs_MMD.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F4_RTOST_vs_MMD.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.75, base_width = 4, dpi = 600) 
 
 
@@ -188,7 +192,7 @@ gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
   geom_blank(aes(y = 1.1E-15))+
   geom_blank(aes(y = -1.1E-15))
 gg
-save_plot(paste("figure/F", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600) 
 

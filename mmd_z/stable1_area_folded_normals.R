@@ -15,8 +15,8 @@ source("R/mmd.R")
 source("R/row_effect_sizes.R")
 base_dir = "mmd_z"
 
-
-dir.create(file.path(getwd(), paste("figure/T1",sep="")), showWarnings = FALSE)
+out_path = file.path(getwd(), paste(base_dir, "/figure/T1",sep=""))
+dir.create(out_path, showWarnings = FALSE)
 
 mu_ov_sigma = c(seq(0, 0.5, 0.1), 0.75, 1, 2,3)
 n_samples = 35
@@ -34,7 +34,7 @@ for (r in seq_along(zf)) {
     fn[r,c] <- pnorm(zf[r], mu_ov_sigma[c], 1) - pnorm(-zf[r], mu_ov_sigma[c], 1)
   }
 }
-write.table(fn, file = "figure/T1/zf_area_folded_normal.csv", append = FALSE, quote = TRUE, sep = ",",
+write.table(fn, file = file.path(out_path, "zf_area_folded_normal.csv"), append = FALSE, quote = TRUE, sep = ",",
             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
             col.names = TRUE, fileEncoding = "")
 
@@ -54,13 +54,10 @@ for (r in seq_along(dzf)) {
       pnorm(-dzf[r]-mu_ov_sigma[c], mu_ov_sigma[c], 1)
   }
 }
-write.table(dfn, file = "figure/T1/dzf_area_folded_normal.csv", 
+write.table(dfn, file = file.path(out_path, "dzf_area_folded_normal.csv"),
             append = FALSE, quote = TRUE, sep = ",",
             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
             col.names = TRUE, fileEncoding = "")
-
-
-
 
 # Calculate CDF at fixed offsets from mu/sigma
 cumprob = c(seq(0.5, 0.6, 0.02), seq(0.61, 0.99,0.01), .995, .999, .9995, .9999)
@@ -86,7 +83,7 @@ for (r in seq_along(cumprob)) {
       #   tol = .Machine$double.eps)$root
   }
 }
-write.table(zfn, file = "figure/T1/dcumprob_area_folded_normal.csv", 
+write.table(zfn, file = file.path(out_path, "dcumprob_area_folded_normal.csv"),
             append = FALSE, quote = TRUE, sep = ",",
             eol = "\n", na = "NA", dec = ".", row.names = TRUE,
             col.names = TRUE, fileEncoding = "")

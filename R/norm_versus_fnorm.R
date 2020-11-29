@@ -35,6 +35,7 @@ rfnorm_swept_param <- function (pop_mu,pop_sigma,n_samples=1e4, n_obs=100) {
   # Simulation results to be calculated
   # Rows: simulation #
   # Cols: swept mu value
+  # browser();
   norm_samples_mean <- matrix(rep(0,n_samples*n_sims), ncol = n_sims)
   norm_samples_sd <- matrix(rep(0,n_samples*n_sims), ncol = n_sims)
   

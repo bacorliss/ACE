@@ -30,7 +30,7 @@ base_dir = "mmd_z"
 
 # Script Parameters
 fig_num = "2"
-dir.create(file.path(getwd(), paste("figure/SF",fig_num,sep="")), showWarnings = FALSE)
+dir.create(file.path(getwd(), paste(base_dir,"/figure/SF",fig_num,sep="")), showWarnings = FALSE, recursive = TRUE)
 n_samples <- 1e3
 rand.seed <- 0
 overwrite = TRUE
@@ -76,7 +76,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 # Plot slope of heatmap by column
 gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
@@ -84,7 +84,7 @@ gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
   xlab(expression(mu)) + ylab(expression(paste("Slope By Column  (Diff ~ ",sigma,")"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff_vs_mus.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff_vs_mus.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 # Plot slope of heatmap by row
 gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
@@ -92,7 +92,7 @@ gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_row$slope_95L, ymax = grid_slopes$df_row$slope_95U), alpha=0.2) +
   xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (Diff ~ ",abs(~mu*phantom(.))*phantom(.)," )"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff_vs_sigmas.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a1 mmd diff_vs_sigmas.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 
 
@@ -123,7 +123,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 # Plot slope of heatmap by column
@@ -132,7 +132,7 @@ gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
   xlab(expression(mu)) + ylab(expression(paste("Slope By Column  (RDiff ~ ",sigma,")"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma_col.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma_col.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 # Plot slope of heatmap by row
 gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
@@ -141,7 +141,7 @@ gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
   xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (RDiff ~ ",abs(~mu*phantom(.))*phantom(.)," )"))) +
   theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma_row.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_sigma_row.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 
 
@@ -181,7 +181,7 @@ gg <- ggplot(df, aes(mu, sigma, fill = z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 # Plot slope of heatmap by column
@@ -190,7 +190,7 @@ gg <- ggplot(data = grid_slopes$df_col, aes(x = col_vals, y = slope)) +
   geom_ribbon(aes(ymin = grid_slopes$df_col$slope_95L, ymax = grid_slopes$df_col$slope_95U), alpha=0.2) +
   xlab(expression(mu)) + ylab(expression(paste("Slope By Column  (RDiff ~ ",sigma,")"))) + theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu_col.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu_col.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 # Plot slope of heatmap by row
 gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
@@ -199,6 +199,6 @@ gg <- ggplot(data = grid_slopes$df_row, aes(x = row_vals, y = slope)) +
   xlab(expression(sigma)) + ylab(expression(paste("Slope By Row  (RDiff ~ ",abs(~mu*phantom(.))*phantom(.)," )"))) +
   theme_classic(base_size=8)
 gg
-save_plot(paste("figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu_row.tiff",sep=""),
+save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_over_mu_row.tiff",sep=""),
           gg, base_height = 2.2, base_asp = 3, base_width = 2.2, dpi = 600) 
 

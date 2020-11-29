@@ -21,6 +21,10 @@ p_load(cowplot)
 source("R/norm_versus_fnorm.R")
 base_dir = "mmd_z"
 
+fig_num = "2"
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), recursive = TRUE, showWarnings = FALSE)
+
+
 # choose colors for plotting
 color_pal = brewer.pal(4, "Set1")
 
@@ -41,8 +45,7 @@ norm2fnorm_plot_height = 1.75
 plot_height = 1.25
 
 
-fig_num = "2"
-dir.create(file.path(getwd(), paste("figure/SF",fig_num,sep="")), showWarnings = FALSE)
+
 
 
 # Show how folded sample mean is changed as mu increases from zero --------------------------------------
@@ -52,7 +55,7 @@ delta_mu  = 1.5;
 pop_mus =  seq(-6,6, by = delta_mu)
 pop_sigmas = 1
 n_obs = 100
-# n_samples = 1e3
+n_samples = 1e3
 # Run Simulation, calculate mean and sd for each sample
 df_results <- rfnorm_swept_param(pop_mus,pop_sigmas,n_samples, n_obs)
 
@@ -73,7 +76,7 @@ p_1e <- ggplot(df_results, aes(x=pop_mu, y=sample_mean)) +
   xlab("Population Mean") + ylab("Sample Mean") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1e
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_a_mean_changes_sample_mean.tiff", sep = ""), p_1e, ncol = 1, nrow = 1, 
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_a_mean_changes_sample_mean.tiff", sep = ""), p_1e, ncol = 1, nrow = 1, 
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
 # Sample sd versus population mean
@@ -90,7 +93,7 @@ p_1f <- ggplot(df_results, aes(x=pop_mu, y=sample_sd)) +
   xlab("Population Mean") + ylab("Sample SD") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1f
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_b_mean_changes_sample_sd.tiff", sep = ""), p_1f, ncol = 1, nrow = 1,
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_b_mean_changes_sample_sd.tiff", sep = ""), p_1f, ncol = 1, nrow = 1,
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
 
@@ -121,7 +124,7 @@ p_1g <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean))+
   xlab("Population SD") + ylab("Sample Mean") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1g
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_c_sd_changes_sample_mean.tiff", sep = ""),
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_c_sd_changes_sample_mean.tiff", sep = ""),
           p_1g, ncol = 1, nrow = 1, 
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
@@ -139,7 +142,7 @@ p_1h <- ggplot(df_results, aes(x=pop_sigma, y=sample_sd)) +
   xlab("Population SD") + ylab("Sample SD") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1h
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_d_sd_changes_sample_sd.tiff", sep = ""), p_1h, ncol = 1, nrow = 1, 
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_d_sd_changes_sample_sd.tiff", sep = ""), p_1h, ncol = 1, nrow = 1, 
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
 
@@ -173,7 +176,7 @@ p_1i1 <- ggplot(df_results, aes(x=pop_sigma, y=sample_mean))+
   xlab("Population SD") + ylab("Sample Mean") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1i1
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_e_sd_changes_sample_mean.tiff", sep = ""), p_1i1, ncol = 1, nrow = 1,
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_e_sd_changes_sample_mean.tiff", sep = ""), p_1i1, ncol = 1, nrow = 1,
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
 
@@ -193,7 +196,7 @@ p_1i2 <- ggplot(df_results, aes(x=pop_sigma, y=sample_sd)) +
   xlab("Population SD") + ylab("Sample SD") +
   theme_classic(base_size=8) + theme(legend.position="none")
 p_1i2
-save_plot(paste("figure/SF", fig_num,"/SF", fig_num, "_f_sd_changes_sample_sd.tiff", sep = ""), p_1i2, ncol = 1, nrow = 1,
+save_plot(paste(base_dir, "/figure/SF", fig_num,"/SF", fig_num, "_f_sd_changes_sample_sd.tiff", sep = ""), p_1i2, ncol = 1, nrow = 1,
           base_height = norm2fnorm_plot_height, base_asp = 3, base_width = 3, dpi = 600)
 
 

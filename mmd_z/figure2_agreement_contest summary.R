@@ -36,16 +36,12 @@ make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
 # Export summary stats for un-scaled data
 #-------------------------------------------------------------------------------
 
-file.path
-
-
-
 if (!file.exists(file.path(summary_path, "temp/df_unscaled_null.RDS"))) {
-  source("sfigure8_unscaled_agreement_contest_null.R")
+  source(file.path(base_dir, "sfigure8_unscaled_agreement_contest_null.R"))
   } else {load(file = file.path(summary_path, "temp/df_unscaled_null.RDS"))}
 
 if (!file.exists(file.path(summary_path, "temp/df_unscaled_crit.RDS"))) {
-  source("sfigure9_unscaled_agreement_contest_critical.R")
+  source(file.path(base_dir, "sfigure9_unscaled_agreement_contest_critical.R"))
   } else {load(file = file.path(summary_path, "temp/df_unscaled_crit.RDS"))}
 
 
@@ -82,11 +78,11 @@ dev.off()
 #-------------------------------------------------------------------------------
 
 if (!file.exists(file.path(summary_path, "temp/df_relative_null.RDS"))) {
-  source("sfigure10_relative_agreement_contest_null.R")
+  source(file.path(base_dir, "sfigure10_relative_agreement_contest_null.R"))
   } else {load(file = file.path(summary_path, "temp/df_relative_null.RDS"))}
 
 if (!file.exists(file.path(summary_path, "temp/df_relative_crit.RDS"))) {
-  source("sfigure11_relative_agreement_contest_crit.R")
+  source(file.path(base_dir, "sfigure11_relative_agreement_contest_crit.R"))
   } else {load(file = file.path(summary_path, "temp/df_relative_crit.RDS"))}
 
 fig_num = "2" 

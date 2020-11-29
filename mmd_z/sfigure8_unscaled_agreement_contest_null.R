@@ -24,8 +24,9 @@ base_dir = "mmd_z"
 
 # Figure parameters
 fig_num = "8" 
-dir.create(file.path(getwd(), paste("figure/SF",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/SF",fig_num, "/",sep="")
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), 
+           showWarnings = FALSE, recursive = TRUE)
+fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 # Simulation parameters: A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
 n_sims = 1e3
@@ -35,7 +36,7 @@ rand.seed = 1
 
 parallel_sims = TRUE
 include_bf = TRUE
-scale_contest_path = paste("figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
+scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
 
 
 
@@ -192,8 +193,8 @@ df_unscaled_null[[6]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 
-
-save(df_unscaled_null, file = "temp/df_unscaled_null.RDS")
+dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)
+save(df_unscaled_null, file = paste(base_dir, "/temp/df_unscaled_null.RDS",sep=""))
 
 
 

@@ -131,7 +131,7 @@ quant_coverage_errors <-
     #'  @return df dataframe that stores population parameters and statistics
     
     # browser();
-    # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+    save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
     # load(file = "temp/debug.RData")
     
     # Calculate number of simulations, which is either length of mus_ao or mu_vsigmas_ao
@@ -335,14 +335,14 @@ row_locate_binary_bounds <- function (xb){
   
   
   row_max_inds <- apply(c,1, function(x) mean(which(x == max(x))))
-  browser()
+  # browser()
   return(row_max_inds)
   
 }
 
 
 locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_samples, n_obs,
-                                       temp_name, mu_ov_sigmas = NULL, rand.seed=0,
+                                       temp_path, mu_ov_sigmas = NULL, rand.seed=0,
                                        overwrite = TRUE,  mus_a = 0, sigmas_a = 0,
                                        parallel_proc = TRUE, negative_mu=TRUE){
   
@@ -372,7 +372,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   
   # Run simulations calculating error of mmd with mu and sigma swept
   df_right <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
-                                n_samples = n_samples, n_obs = n_obs, paste("temp/right_", temp_name,".rds"),
+                                n_samples = n_samples, n_obs = n_obs, paste(temp_path,"_right.rds"),
                                 mu_vsigmas_ao = mu_ov_sigmas, overwrite = overwrite,
                                 mus_a = mus_a, sigmas_a = sigmas_a, parallel_proc = parallel_proc) 
   df_right$side <- as.factor("Right")
@@ -380,7 +380,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   # Run simulations calculating error of mmd with mu and sigma swept
   df_left <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
                                       n_samples = n_samples, n_obs = n_obs, 
-                               paste("temp/right_", temp_name,".rds"), 
+                                   paste(temp_path,"_right.rds"),
                                mu_vsigmas_ao= neg_mu_ov_sigmas, overwrite = overwrite,
                                mus_a = mus_a, sigmas_a = sigmas_a, parallel_proc = parallel_proc) 
   df_left$side <- as.factor("Left")

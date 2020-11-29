@@ -43,8 +43,9 @@ base_dir = "mmd_z"
 
 # Figure parameters
 fig_num = "11" 
-dir.create(file.path(getwd(), paste("figure/SF",fig_num,sep="")), showWarnings = FALSE)
-fig_path = paste("figure/SF",fig_num, "/",sep="")
+fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
+dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
+
 # Simulation parameters
 # 
 #-------------------------------------------------------------------------------
@@ -57,9 +58,7 @@ rand.seed = 1
 
 parallel_sims = TRUE
 include_bf = TRUE
-rscale_contest_path = paste("figure/SF", fig_num, "/SF", fig_num,"_rscale_contest_results.csv",sep="")
-
-
+rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_rscale_contest_results.csv",sep="")
 df_relative_crit = list();
 
 
@@ -207,4 +206,7 @@ df_relative_crit[[6]] <- process_esize_simulations(df_init, gt_colname = gt_coln
                                            fig_path = fig_path)
 
 
-save(df_relative_crit, file = "temp/df_relative_crit.RDS")
+
+# Output results
+dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)
+save(df_relative_crit, file = paste(base_dir, "/temp/df_relative_crit.RDS",sep=""))

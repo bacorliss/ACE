@@ -16,8 +16,8 @@ source("R/row_effect_sizes.R")
 
 base_dir = "mmd_z"
 
-
-dir.create(file.path(getwd(), paste("figure/T2",sep="")), showWarnings = FALSE)
+out_dir = file.path(getwd(), paste("figure/T2",sep=""))
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
 
@@ -58,4 +58,4 @@ df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) /
 
 # Export LU table to disk
 df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$coeff_mmd_95)
-write.csv(x=df_lut, file=file.path(getwd(),"figure/T2/coeff_mmd_CLa_CL2a.csv"))
+write.csv(x=df_lut, file=file.path(out_dir,"coeff_mmd_CLa_CL2a.csv"))
