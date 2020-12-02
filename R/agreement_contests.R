@@ -1,10 +1,21 @@
-### Effect Size Contest
+
+
+#' Agreement Contests
+#' To probe how effective candidate statistics are at quantifying agreement 
+#' between study group means. A series of population parameter sets for two 
+#' experiments (Exp 1 and 2) with two groups (control group A & experiment 
+#' group B) are generated, each a row in the dataframe of generated experiment 
+#' data. Repeated samples are drawn from the population parameter sets and candidate
+#' statistics are quantified and used to determine whether exp 1 or exp 2 has 
+#' higher agreement.
+#' All three agreement parameters (mu_DM, sigma_D, df_D) can be varied as 
+#' independent variables to determine how effectize candidate statistics are in
+#' quatnifying agreement.
 
 
 
-# TODO: for specifying offset distribution in generateData(), should the standard
-# deviation for the control group be added by stds or variances?
-# Load package manager
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load package manager
 p_load(ggplot2)
@@ -20,48 +31,248 @@ p_load(foreach)
 p_load(doParallel)
 p_load(stringr)
 p_load(confintr)
+# User defined libraries
 source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
+
 
 # Parse all functions in file for parallel processing using user functions
 row_effect_sizes_fun <- parse_functions_source("R/row_effect_sizes.R")
 mmd_functions <- parse_functions_source("R/mmd.R")
 
-# Dictionary to keep track of variables tracking effect size metrics
-effect_size_dict <- vector(mode="list", length=4)
-names(effect_size_dict) <- c("prefix", "base", "suffix","label")
-effect_size_dict[[1]] <- c("fract", "mean_diff")
-effect_size_dict[[2]] <- c("xdbar", "rxdbar", "sdmd", "rsdmd", "bf", "pvalue",
-                           "tostp", "cohend", "mmd",  "rmmd","nrand")
-effect_size_dict[[3]] <- c("d2gtd1","2m1")
-effect_size_dict[[4]] <- c("bar(x)[DM]", "r*bar(x)[DM]", "s[DM]", "r*s[DM]","Bf", "p[NHST]*phantom(.)",
-                           "~p[TOST]", "Cd" , "delta[M]",
-                           "r*delta[M]","Rnd")
 
-
-pop_params_from_aoffset <- function( n_samples, n_sims, 
+# Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
+generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
+                                    # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
                                     mus_2a, sigmas_2a,
-                                    mus_1ao, sigmas_1ao, 
-                                    mus_2ao, sigmas_2ao,
-                                    n_1a, n_1b, n_2a, n_2b) {
-  # browser()
-  # Calculate D based on A and offset from A parameters
-  mus_1d = mus_1ao;  sigmas_1d = sigmas_1a + sigmas_1ao
-  mus_2d = mus_2ao;  sigmas_2d = sigmas_2a + sigmas_2ao
-  # calculate B from A and D
-  mus_1b = mus_1a + mus_1d;  sigmas_1b = sqrt(sigmas_1d^2 - sigmas_1a^2)
-  mus_2b = mus_2a + mus_2d;  sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
-  # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
-  df = tibble( n_obs = n_obs, n_samples = n_samples,
-    mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
-    mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
-    sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
-    sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
-  )
+                                    # Experiment group pop. parameters
+                                    mus_1b = NA, sigmas_1b = NA, 
+                                    mus_2b = NA, sigmas_2b = NA,
+                                    n_1a, n_1b, n_2a, n_2b,
+                                    # Difference distribution pop. parameters
+                                    mus_1ao = NA, sigmas_1ao = NA, 
+                                    mus_2ao = NA, sigmas_2ao = NA,
+                                    switch_group_ab = FALSE,
+                                    switch_sign_mean_ab = FALSE,
+                                    switch_sign_mean_d = FALSE,
+                                    switch_exp_12 = FALSE,
+                                    fig_name = "test.tiff",
+                                    fig_path = "Figure/",
+                                    gt_colnames, is_plotted = TRUE) {
+  #' @description Generate simulated experiment data for two experiments with 
+  #' distributions for mu and sigma specified as vectors (across samples)
+  #' 
+  #' @param n_samples number of samples drawn per simulation
+  #' @param n_sims number of simulations (rows in dataframe)
+  #' @param rand.seed seed for random number generation
+  #' @param mus_1a means for group a experiment 1
+  #' @param sigmas_1a stds for group a experiment 1 
+  #' @param mus_2a means for group a experiment 2
+  #' @param sigmas_2a stds for group a experiment 2
+  #' @param mus_1b means for group b experiment 1
+  #' @param sigmas_1b stds for group b experiment 1 
+  #' @param mus_2b means for group b experiment 2
+  #' @param sigmas_2b stds for group b experiment 2
+  #' @param n_1a sample size group a experiment 1
+  #' @param n_1b sample size group b experiment 1
+  #' @param n_2a sample size group a experiment 2
+  #' @param n_2b sample size group b experiment 2
+  #' @param mus_1ao mu offset between group a and b experiment 1
+  #' @param sigmas_1ao sigma offset between group a and b experiment 1
+  #' @param mus_2ao mu offset between group a and b experiment 2
+  #' @param sigmas_2ao sigma offset between group a and b experiment 2
+  #' @param switch_group_ab flag to randomly switch group a and b assigments
+  #' @param switch_sign_mean_d flag to randomly switch direction of change from a to b
+  #' @param switch_exp_12 flag to randomly switch experiment 1 and 2 assignments
+  #' @param fig_name base string name of output figures saved to disk
+  #' @param fig_path path to output figures saved to disk
+  #' @param gt_colnames list of columns in df that serves as independent variables
+  #'  and serve as groundtruth for determining whether exp 1 or 2 has higher 
+  #'  agreement for each pop. param set.
+  #' @param is_plotted flag to export figures about pop. param sets to disk
+  #' @return df dataframe with generated pop. param sets
+  
+
+  # Expand any singleton pop param arguments replicate to number of simulations
+  input_args <- formalArgs(generateExperiment_Data)
+  pargs <-grep("^(mus)|(sigmas)|(n_\\d)", input_args, value=TRUE)
+  # For any pop param not equal in length to n_sims, expand
+  for (n in seq_along(pargs)) {
+    if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
+  }
+
+  # Record some parameter values for simulations
+  set.seed(rand.seed +1)
+  
+  # Generate initial dataframe from params, no switching done yet  
+  if (any(is.na(mus_1b))) {
+    df_init <- 
+      pop_params_from_aoffset( n_samples = n_samples, n_sims= n_sims,
+                               mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
+                               mus_2a = mus_2a, sigmas_2a = sigmas_2a,
+                               mus_1ao = mus_1ao, sigmas_1ao = sigmas_1ao, 
+                               mus_2ao = mus_2ao, sigmas_2ao = sigmas_2ao,
+                               n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b) 
+  } else {
+    df_init   <- 
+      pop_params_from_ab( n_samples = n_samples, n_sims = n_sims, 
+                          mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
+                          mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
+                          n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b)
+  }
+  # Switch params if needed flag is specified
+  df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
+                            switch_sign_mean_ab = switch_sign_mean_ab, 
+                            switch_group_ab = switch_group_ab,
+                            switch_exp_12 = switch_exp_12)
+  
+  # Pop
+  # Mean of difference and DM
+  df$mu_1d <- df$mu_1b - df$mu_1a
+  df$mu_2d <- df$mu_2b - df$mu_2a
+  # Is: Exp2 mu[d] > Exp1 mu[d]
+  df$is_mud_2gt1 <-  abs(df$mu_2d) > abs(df$mu_1d)
+  
+  
+  # STD of the difference
+  df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
+  df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
+  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
+  
+  # Degrees of freedom of the difference and DM
+  df$df_1d <- df$n_1a + df$n_1b - 2
+  df$df_2d <- df$n_2a + df$n_2b - 2
+  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
+  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
+  
+  # Pooled standard deviation
+  df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
+                            (df$n_1a-1 + df$n_1b -1 )  )
+  df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
+                            (df$n_2a-1 + df$n_2b-1 ))
+  df$is_sigmapool_2gt1 <- df$sigma_2pool > df$sigma_1pool
+  
+  # Mean and std of difference in means (taken from mean of D since we had the option
+  # to invert the sign for D earlier in code)
+  df$mu_1dm <- df$mu_1d
+  df$mu_2dm <- df$mu_2d
+  df$is_mudm_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
+  
+  # STD of the difference in means
+  df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
+  df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
+  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
+  
+  # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
+  # determines whether results are in null region of critical region of t-test
+  df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm
+  df$mu_ov_sigma_2dm <- df$mu_2dm / df$sigma_2dm
+
+  # Statistics of difference of means distribution 
+  df$rmu_1dm <- df$mu_1dm / df$mu_1a
+  df$rmu_2dm <- df$mu_2dm / df$mu_2a
+  df$is_rmudm_2gt1 <-  abs(df$rmu_2dm) > abs(df$rmu_1dm)
+
+  # Relative sigma of difference
+  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
+  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
+  df$is_rsigmad_2gt1 <-  df$rsigma_2d > df$rsigma_1d
+  
+  # Relative Pooled Sigma
+  df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
+  df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
+  df$is_rsigmapool_2gt1 <-  df$rsigma_2pool > df$rsigma_1pool
+  
+  # sigma of the difference of means distirbution
+  df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
+  df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
+  df$is_rsigmadm_2gt1 <-  df$rsigma_2dm > df$rsigma_1dm
+  
+  # Diff:  pop_mean2 - pop_mean1
+  df$mean_mud_d2md1 <- df$mu_2dm - df$mu_1dm
+  df$mean_rmud_d2md1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
+  # Diff:  pop_std2 - pop_std1
+  df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
+  df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
+  
+  # Plot generated population parameters
+  if (is_plotted){
+    plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
+                           gt_colnames = gt_colnames)
+  } else {
+    # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
+    df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
+                     param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
+                               rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
+                               rep("df[pool]",dim(df)[1])), 
+                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
+    )
+    df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
+
+    gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
+      geom_line() +
+      facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
+      theme_classic(base_size = 8) +
+      theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),
+            panel.spacing = unit(0, "lines"),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            strip.background = element_blank(),
+            panel.border = element_rect(fill = NA,colour = "black")) 
+    print(gg)
+    save_plot(paste(fig_path,  '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+              base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
+  }
   return(df)
 }
+
+pop_params_from_aoffset <-
+  function( n_samples, n_sims, mus_1a, sigmas_1a, mus_2a, sigmas_2a,
+            mus_1ao, sigmas_1ao, mus_2ao, sigmas_2ao,
+            n_1a, n_1b, n_2a, n_2b) {
+    #' @description Given pop params for group A and offset values (AO), calculates pop params for
+    #' group b. This is useful for generating population params because the 
+    #' distribution of the offset between group params can be easily 
+    #' controlled by explicitly specifying them.
+    #' 
+    #' mus_ao = mus_b - mus_a
+    #' sigmas_ao = sigmas_b - sigmas_a
+    #' 
+    #' @param n_samples number of samples drawn per simulation
+    #' @param n_sims number of simulations (rows in dataframe)
+    #' @param mus_1a means for group a experiment 1
+    #' @param sigmas_1a stds for group a experiment 1 
+    #' @param mus_2a means for group a experiment 2
+    #' @param sigmas_2a stds for group a experiment 2
+    #' @param mus_1ao mu offset between group a and b experiment 1
+    #' @param sigmas_1ao sigma offset between group a and b experiment 1
+    #' @param mus_2ao mu offset between group a and b experiment 2
+    #' @param sigmas_2ao sigma offset between group a and b experiment 2
+    #' @param n_1a sample size group a experiment 1
+    #' @param n_1b sample size group b experiment 1
+    #' @param n_2a sample size group a experiment 2
+    #' @param n_2b sample size group b experiment 2
+    #' 
+    #' @return df dataframe of population params, where each row is a set. Repeated 
+    #' samples are taken with these params and statistics quantified
+    
+    # Calculate D based on A and offset from A parameters
+    mus_1d = mus_1ao;  sigmas_1d = sigmas_1a + sigmas_1ao
+    mus_2d = mus_2ao;  sigmas_2d = sigmas_2a + sigmas_2ao
+    # calculate B from A and D
+    mus_1b = mus_1a + mus_1d;  sigmas_1b = sqrt(sigmas_1d^2 - sigmas_1a^2)
+    mus_2b = mus_2a + mus_2d;  sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
+    # Initialize df with mu_1a, sigma_1a, mu_1b, sigma_1b, mu_1d,
+    df = tibble( n_obs = n_obs, n_samples = n_samples,
+                 mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
+                 mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
+                 sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
+                 sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
+    )
+    return(df)
+  }
 
 
 pop_params_from_ab <- function( n_samples, n_sims, 
@@ -70,6 +281,29 @@ pop_params_from_ab <- function( n_samples, n_sims,
                                 mus_1b, sigmas_1b, 
                                 mus_2b, sigmas_2b,
                                 n_1a, n_1b, n_2a, n_2b) {
+  #' @description Given pop params for group A and B, calculates pop params of D, 
+  #' the difference between A and B distribution.
+  #' 
+  #' mus_d = mus_b - mus_a
+  #' sigmas_d = sqrt(sigmas_a^2 + sigmas^2)
+  #' 
+  #' @param n_samples number of samples drawn per simulation
+  #' @param n_sims number of simulations (rows in dataframe)
+  #' @param mus_1a means for group a experiment 1
+  #' @param sigmas_1a stds for group a experiment 1 
+  #' @param mus_2a means for group a experiment 2
+  #' @param sigmas_2a stds for group a experiment 2
+  #' @param mus_1b means for group b experiment 1
+  #' @param sigmas_1b stds for group b experiment 1 
+  #' @param mus_2b means for group b experiment 2
+  #' @param sigmas_2b stds for group b experiment 2
+  #' @param n_1a sample size group a experiment 1
+  #' @param n_1b sample size group b experiment 1
+  #' @param n_2a sample size group a experiment 2
+  #' @param n_2b sample size group b experiment 2
+  #' 
+  #' @return df dataframe of population params, where each row is a set.
+  
   # Calculate D based on A and B parameters
   mus_1d = mus_1b - mus_1a;  sigmas_1d = sqrt(sigmas_1a^2 + sigmas_1b^2)
   mus_2d = mus_2b - mus_2a;  sigmas_2d = sqrt(sigmas_2a^2 + sigmas_2b^2)
@@ -86,8 +320,24 @@ pop_params_from_ab <- function( n_samples, n_sims,
 
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
                                 switch_group_ab, switch_exp_12) {
+  #' @description Apply various switches/alterations to group assignment of 
+  #' pop. param sets at random. These alterations allow the agreement parameters 
+  #' to be probed in an independent fashion by averaging out the effects of all 
+  #' other agreement parameters
+  #' 
+  #' @param df_init dataframe of population params
+  #' @param switch_sign_mean_d flag to randomly switch the sign of the difference 
+  #' in means between A and B. So if A is larger than a by some amount, B now 
+  #' becomes smaller than A by the same amount
+  #' @param switch_sign_mean_ab flag to randomly switch the sign of the means 
+  #' for A and B
+  #' @param switch_group_ab flag to randomly switch group assignments between 
+  #' A and B 
+  #' @param switch_exp_12 means for group a experiment 2
+  #' 
+  #' @return df dataframe of pop param sets with switches applied 
+  
   df <- df_init
-  # browser();
   # Randomly switch sign of D for both experiments, recalculate B
   if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
   df$mu_1d =  mus_sign * df$mu_1d
@@ -157,199 +407,24 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
 }
 
 
-# default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
-generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
-                                    # Control group pop. parameters
-                                    mus_1a, sigmas_1a, 
-                                    mus_2a, sigmas_2a,
-                                    # Experiment group pop. parameters
-                                    mus_1b = NA, sigmas_1b = NA, 
-                                    mus_2b = NA, sigmas_2b = NA,
-                                    n_1a, n_1b, n_2a, n_2b,
-                                    # Difference distribution pop. parameters
-                                    mus_1ao = NA, sigmas_1ao = NA, 
-                                    mus_2ao = NA, sigmas_2ao = NA,
-                                    switch_group_ab = FALSE,
-                                    switch_sign_mean_ab = FALSE,
-                                    switch_sign_mean_d = FALSE,
-                                    switch_exp_12 = FALSE,
-                                    fig_name = "test.tiff",
-                                    fig_path = "Figure/",
-                                    gt_colnames, is_plotted = TRUE) {
-  #' Generate simulated experiment data for two experiments 
-  #' 
-  #' @description Generate simulated experiment data for two experiments with 
-  #' distributions for mu and sigma specified as functions
-  #' 
-  #' @param n_samples number of samples (collection of observations), number of 
-  #' times that a simulated experiment is repeated
-  #' @param n_obs number of measurements in a sample/experiment
-  #' @param n_sims number of simulations run, which are sets of experiments with
-  #'  a single set of parameters for each (mu, sigma, n_obs)
-  #' @param rand.seed seed number of generating consistent random numbers
-  #' @param mus1 vector specifying distribution for population mean for
-  #'  experiment 1
-  #' @param sigmas1 vector specifying distribution for population standard deviation for
-  #'  experiment 1
-  #' @param mus2 vector specifying distribution for population mean for
-  #'  experiment 2
-  #' @param sigmas2 vector specifying distribution for population mean for
-  #'  experiment 12
-  
-  # browser();
-  # Expand any singleton pop param arguments replicate to number of simulations
-  input_args <- formalArgs(generateExperiment_Data)
-  pargs <-grep("^(mus)|(sigmas)|(n_\\d)", input_args, value=TRUE)
-  # For any pop param not equal in length to n_sims, expand
-  for (n in seq_along(pargs)) {
-    if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
-  }
-
-  # Record some parameter values for simulations
-  set.seed(rand.seed +1)
-  
-  # Generate initial dataframe from params, no switching done yet  
-  if (any(is.na(mus_1b))) {
-    df_init <- 
-      pop_params_from_aoffset( n_samples = n_samples, n_sims= n_sims,
-                               mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
-                               mus_2a = mus_2a, sigmas_2a = sigmas_2a,
-                               mus_1ao = mus_1ao, sigmas_1ao = sigmas_1ao, 
-                               mus_2ao = mus_2ao, sigmas_2ao = sigmas_2ao,
-                               n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b) 
-  } else {
-    df_init   <- 
-      pop_params_from_ab( n_samples = n_samples, n_sims = n_sims, 
-                          mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
-                          mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
-                          n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b)
-  }
-  # Switch params if needed flag is specified
-  df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
-                            switch_sign_mean_ab = switch_sign_mean_ab, 
-                            switch_group_ab = switch_group_ab,
-                            switch_exp_12 = switch_exp_12)
-  
-  # Pop
-  # Mean of difference and DM
-  df$mu_1d <- df$mu_1b - df$mu_1a
-  df$mu_2d <- df$mu_2b - df$mu_2a
-  # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_2gt1 <-  abs(df$mu_2d) > abs(df$mu_1d)
-  
-  # STD of the difference
-  df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
-  df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
-  
-  # Degrees of freedom of the difference and DM
-  df$df_1d <- df$n_1a + df$n_1b - 2
-  df$df_2d <- df$n_2a + df$n_2b - 2
-  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
-  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
-  
-  # Pooled standard deviation
-  df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
-                            (df$n_1a-1 + df$n_1b -1 )  )
-  df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
-                            (df$n_2a-1 + df$n_2b-1 ))
-  df$is_sigmapool_2gt1 <- df$sigma_2pool > df$sigma_1pool
-  
-  # Mean and std of difference in means (taken from mean of D since we had the option
-  # to invert the sign for D earlier in code)
-  df$mu_1dm <- df$mu_1d
-  df$mu_2dm <- df$mu_2d
-  df$is_mudm_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
-  
-  # STD of the difference in means
-  df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
-  df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
-  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
-  
-  # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
-  # determines whether results are in null region of critical region of t-test
-  df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm
-  df$mu_ov_sigma_2dm <- df$mu_2dm / df$sigma_2dm
-
-  # Statistics of difference of means distribution 
-  df$rmu_1dm <- df$mu_1dm / df$mu_1a
-  df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  df$is_rmudm_2gt1 <-  abs(df$rmu_2dm) > abs(df$rmu_1dm)
-
-  # Relative sigma of difference
-  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
-  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmad_2gt1 <-  df$rsigma_2d > df$rsigma_1d
-  
-  # Relative Pooled Sigma
-  df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
-  df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmapool_2gt1 <-  df$rsigma_2pool > df$rsigma_1pool
-  
-  # sigma of the difference of means distirbution
-  df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
-  df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
-  df$is_rsigmadm_2gt1 <-  df$rsigma_2dm > df$rsigma_1dm
-  
-  
-  
-  # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 <- df$mu_2dm - df$mu_1dm
-  df$mean_rmud_d2md1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
-  # Diff:  pop_std2 - pop_std1
-  df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
-  df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
-  
-  # Append columns for effect sizes, since multiple columns are used to analyze
-  # each effect size, a dictionary of prefix, base, and suffix variable names 
-  # are used.
-  # df[ paste(effect_size_dict$prefix[1], effect_size_dict$base,
-  #           effect_size_dict$suffix[1], sep="_") ] <- rep(NaN,n_sims)
-  # df[ paste(effect_size_dict$prefix[2], effect_size_dict$base,
-  #           effect_size_dict$suffix[2], sep="_") ] <- rep(NaN,n_sims)
-  
-  # Plot generated population parameters
-  if (is_plotted){
-    plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
-                           gt_colnames = gt_colnames)
-  } else {
-    # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-    df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
-                     param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
-                               rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
-                               rep("df[pool]",dim(df)[1])), 
-                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
-    )
-    df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
-
-    gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
-      geom_line() +
-      facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
-      theme_classic(base_size = 8) +
-      theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),
-            panel.spacing = unit(0, "lines"),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            strip.background = element_blank(),
-            panel.border = element_rect(fill = NA,colour = "black")) 
-    print(gg)
-    save_plot(paste(fig_path,  '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
-              base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
-  }
-  return(df)
-}
-
-
 plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
+  #' @description plots characterizing selection of pop. params across simulations.
+  #' 1) Plot fraction of pop param sets with exp 1 higher agreement than 
+  #' experiment 2 according to each candidate statistic, and test for non random
+  #'  correlation between agreement parameters.
+  #' 2) Plot histogram of mu[DM]/sigma[DM] to viusualize whether selected pop. 
+  #' params fall within null or critical region (threshold ~2.5 stds from mean).
   #'
-  #'
-  #'
-  #'
-  #'
-  #'
-  #'
-  #'
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  #' @param df_init initial dataframe of pop params, each row is a set
+  #' @param gt_colnames list of columns in df that serves as independent variables
+  #'  and serve as groundtruth for determining whether exp 1 or 2 has higher 
+  #'  agreement for each pop. param set.
+  #' @param fig_name
+  #' @param fig_path path to output figures saved to disk
+  #' 
+  #' @return no return, exports figures to disk
+
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
@@ -370,7 +445,6 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # versus every other.
   n_agreement = matrix(0, ncol = length(param_fields), nrow = length(param_fields))
   pwise_binom_p <- n_agreement
-  
   for (r in seq(1,length(param_fields),1)) {
     for (c in seq(1,length(param_fields),1)) {
       n_agreement[r,c]   <- sum(df_init[[param_fields[r]]] == df_init[[param_fields[c]]])
@@ -436,7 +510,6 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   print(gg)
   save_plot(paste(fig_path, '/gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
-  
 
   # Export csv file for agreement between each variable to others
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
@@ -476,23 +549,19 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
                                 parallel_sims = TRUE) {
-  #' Simulate experiments generated from generateExperiment_Data() and calculates
-  #'  various effect sizes
+  #' @description Given a data frame of pop. params and input data for each 
+  #' experiment group, quantify mean values and comparison error of various 
+  #' candidate statistics over repeated samples.
   #' 
-  #' @description Given a data frame of parameters and input data for each 
-  #' experiment group, quantifies data with various effect size metrics.
+  #' @param overwrite flag to overwrite data file storing results
+  #' @param out_path path to export data file to disk storing results
+  #' @param data_file_name filename of exported datafile storing results
+  #' @param rand.seed seed for random number generation
+  #' @param include_bf flag to include bayes factor in calculation (extremely slow)
+  #' @param parallel_sims flag to parallelize simulation across CPU cores (recommended)
   #' 
-  #' @param df input data frame generated from generateExperiment_Data() that 
-  #' holds parameters for simulated data, along with initialized fields to store
-  #'  effect size metrics
-  #' @param x_a base input data from group a (gets transformed into actual input
-  #'  data with parameters within df)
-  #' @param x_b base input data from group b (gets transformed into actual input
-  #'  data with parameters within df)
-  #' @param out_path file path to save results to disk
-  #' @param overwrite if results file already exists in out_path, skip 
-  #' calculation and load from disk
-
+  #' @return df dataframe with pop params and comparison error rates of each candidate statistics.
+  
   # Initialize output data frame
   # parallel_sims = FALSE
   n_sims = dim(df_in)[1]
@@ -506,7 +575,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
     
-    if (parallel_sims) { print("starting parallel processing")
+    if (parallel_sims) { #print("starting parallel processing")
       # Setup parallel back end to use many processors
       cl = makeCluster(detectCores()[1]-1)
       registerDoParallel(cl)
@@ -546,6 +615,20 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
 
 quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
                                       parallelize_bf = FALSE) {
+  #' @description Quantifies mean and comparison error of various candidate 
+  #' statistics across repeated samples specified by input population parameters
+  #' 
+  #' @param df input dataframe with a single row
+  #' @param include_bf flag whether to include bayes factor in calculation
+  #' @param rand.seed seed for random number generation
+  #' @param parallelize_bf  flag to parallize calculation of bayes factor 
+  #' (not recommended since each pop. param set is already parallelized 
+  #' in parent function call).
+  #' 
+  #' @return df_out output dataframe with a single row, with pop. params and the 
+  #' mean and std of each candidate statistic across samples along with their 
+  #' comparison error for determining higher agreement.
+  
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
   
@@ -583,8 +666,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
     dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]])
   }
 
-  browser();
-  
+ 
   for (i in seq_along(stat_list)) {
     # Determine if exp 1 has higher agreement than (hat) than exp 2
     dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
@@ -607,24 +689,36 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
 }
 
 
-tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TRUE,
+tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TRUE,
                                    ref_colname = NULL) {
-  #' Normalize a subset of variables in df and then flatten data frame
+  #' @description Converts comparison error rates for all candidate statistics 
+  #' from wide format to long format. 
+  #' Also applies normalization to error rates:
+  #' 1) Subtract comparison error rate of candidate statistics from the ground 
+  #' truth "error rate" determined by the underlying population parameters.
+  #' 2) Normalize error rates from ground truth as a fraction of the error rate 
+  #' from a priori selected gold standard reference statistic.
   #' 
-  #' @description Normalize a subset of variables in df, subract/compare to groundtruth, and 
-  #' then subtract out the reference value if included
+  #' @param df input data
+  #' @param gt_colname column names in df that serves as independent variable
+  #'  and groundtruth for determining whether exp 1 or 2 has higher 
+  #'  agreement for each pop. param set.
+  #' @param var_prefix
+  #' @param long_format flag to convert comparison error to long format
+  #' @param ref_colname string of column name for candidate statistics that is a
+  #'  gold standard reference variable that represent a best case comparison error 
+  #'  rate. Error rates are normalized as a fraction of this best case.
   #' 
-  #' @param df
-  #' @param gt_colname
-  #' @param var_suffix
-  #' @param long_format
-  #' @param ref_colname
+  #' @return df_tidy tidy (long) version of input dataframe
+  
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # # load(file = "temp/debug.RData")
   
   # Check if gt_colname exists
   if (length(grep(gt_colname, names(df))) == 0) stop("gt_colname does not exist in dataframe")
   
   # Get list of all variables that match the variable suffix string
-  matched_vars <- grep(var_suffix,colnames(df), perl=TRUE, value=TRUE)
+  matched_vars <- grep(var_prefix,colnames(df), perl=TRUE, value=TRUE)
   
   # Initialize new zeroed df with only selected vars
   data = matrix(0, dim(df)[1], length(matched_vars))
@@ -632,31 +726,32 @@ tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TR
   df_gt_sub <- as_tibble(data)
   
   # Fill in resulting values depending on variable type
-  # Frac: fraction of metrics of samples that satisfy some condition: to process,
+  # Frac: fraction of samples for a given metric that satisfies a condition: to process,
   #        subtract these values from ground truth.
   # mean_diff: mean value of difference between groups:  to process,
-  #        test for equaivalent logical values
+  #        test for equivalent logical values
   for (n in seq(1,length(matched_vars), by = 1)) {
-    if (var_suffix == "fract") {
-      # If var_suffix is "fract.*", for cases where GT vector is TRUE, compute (1-x)
+    if (var_prefix == "fract") {
+      # If var_prefix is "fract.*", for cases where GT vector is TRUE, compute (1-x)
       df_gt_sub[[matched_vars[n]]][ df[[gt_colname]]] <- 
         1 - df[[matched_vars[n]]][ df[[gt_colname]]]
       df_gt_sub[[matched_vars[n]]][!df[[gt_colname]]] <-   
         df[[matched_vars[n]]][!df[[gt_colname]]]
-    } else {
-      # if var_suffix is "mean_diff.*", subtract from GT
+    } else { # Matches mean_diff version of candidate statistics
+      # if var_prefix is "mean_diff.*", subtract from GT
       df_gt_sub[matched_vars[n]] = df[matched_vars[n]] - gt_vector
     }
   }
   
   # If reference value included, subtract in paired fashion (reference value 
-  # must be included in matched_variable list, with groundtruth subtract from it)
+  # must be included in matched_variable list, with ground truth subtracted from it already)
   df_ref_sub <- df_gt_sub
   if (!is.null(ref_colname)) {
     for (n in seq(1,length(matched_vars), by = 1)) {
-      df_ref_sub[matched_vars[n]] <- df_gt_sub[matched_vars[n]] - 
+      df_ref_sub[matched_vars[n]] <- df_gt_sub[matched_vars[n]] -
         df_gt_sub[ref_colname]
     }
+    print("Normalized by reference variable")
   }
   
   # Flatten df_ref_sub into df_tidy (wide format to long format data frame)
@@ -672,20 +767,22 @@ tidy_esize_simulations <- function (df, gt_colname, var_suffix, long_format = TR
   return(df_tidy)
 }
 
-pretty_esize_levels<- function(df, var_suffix) {
-  #' Convert long levels names to shorter ones for pretty print in plots
+pretty_esize_levels<- function(df, var_prefix) {
+  #' @description Convert long levels names to shorter ones for pretty print in plots
   #' 
-  #' @description 
-  #' @param df
-  #' @param var_suffix
+  #' @param df input dataframe
+  #' @param var_prefix string prefix that matches the comparison error rate for 
+  #' the candidate statistics
   #' 
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  #' @return
+  
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
 
   # Get current names for levels and the basenames for them to be matched against
   orig_levels <- levels(df$name)
   
-  base_names <- paste(var_suffix,"_",attr(df,'varnames'),sep='')
+  base_names <- paste(var_prefix,"_",attr(df,'varnames'),sep='')
   
   # Find index for each basename
   ind <- rep(0, length(base_names))
@@ -702,7 +799,18 @@ pretty_esize_levels<- function(df, var_suffix) {
 }
 
 
-plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp_dir = "Lower") {
+plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, 
+                                   compare_string = "Lower") {
+  #' @description Plot comparison error rates for candidates effect size statistics
+  #' 
+  #' @param df_pretty 
+  #' @param fig_name filename of figure exported to disk
+  #' @param fig_path path to output figures saved to disk
+  #' @param y_ax_str String denoting independent variable for comparison error plot. 
+  #' Either mu[DM], sigma[D], or df[D].
+  #' @param compare_string String to describe direction to higher agreement, either "Lower" or "Higher"
+  #' 
+  #' @return no return, exports figures to disk
   
   # Calculate group means and corrected confidence intervals
   # Note: if it errors here with df_result having one group then plyr package 
@@ -778,7 +886,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Statistic") +
-    ylab(parse(text=paste("Error~Rate~(~",comp_dir,"~phantom(.)*", y_ax_str,"*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
+    ylab(parse(text=paste("Error~Rate~(~",compare_string,"~phantom(.)*", y_ax_str,"*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
@@ -795,9 +903,29 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, comp
 }
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
-                                      fig_name, fig_path, var_suffix = "fract",include_bf = TRUE,
-                                      parallel_sims = TRUE, is_plotted = TRUE, comp_dir = "Lower") {
-  # browser();
+                                      fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
+                                      parallel_sims = TRUE, is_plotted = TRUE, compare_string = "Lower") {
+  #' @description 
+  #' 
+  #' @param df_init
+  #' @param gt_colname column names in df that serves as independent variable
+  #'  and groundtruth for determining whether exp 1 or 2 has higher 
+  #'  agreement for each pop. param set.
+  #' @param out_path 
+  #' @param y_ax_str 
+  #' @param out_path
+  #' @param fig_name filename of figure exported to disk
+  #' @param fig_path path to output figures saved to disk
+  #' @param var_prefix string suffix to identify the columns that should use
+  #' @param include_bf flag to include bayes factor in calculation (extremely slow)
+  #' @param parallel_sims
+  #' @param is_plotted
+  #' @param compare_string
+  #' 
+  #' @return
+
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
   
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
@@ -814,14 +942,14 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
-                                    var_suffix = var_suffix,long_format = TRUE,
+                                    var_prefix = var_prefix,long_format = TRUE,
                                     ref_colname = NULL)
-  df_pretty <- pretty_esize_levels(df = df_tidy, var_suffix = var_suffix)
+  df_pretty <- pretty_esize_levels(df = df_tidy, var_prefix = var_prefix)
   
   # Plot effect size results
   if (is_plotted) {
     df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, 
-                                         fig_path = fig_path, y_ax_str = y_ax_str, comp_dir = comp_dir)
+                                         fig_path = fig_path, y_ax_str = y_ax_str, compare_string = compare_string)
   }
   
   # Package dataframes throughout processing into single list for return
@@ -836,14 +964,22 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
 
 
 
-lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basenames = effect_size_dict[[2]], 
-                                     stats_labels = effect_size_dict[[4]], dir_to_agreement=1, alpha = 0.05) {
-  #' Plot correlation of independent variable versus mean values of all statistics
+lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basenames, 
+                                     stats_labels, dir_to_agreement=1, alpha = 0.05) {
+  #' @description Plot correlation of independent variable versus mean values of all statistics
   #' 
+  #' @param df
+  #' @param indvar
+  #' @param fig_name
+  #' @param fig_path
+  #' @param stats_basenames
+  #' @param stats_labels
+  #' @param dir_to_agreement
+  #' @param alpha
   #' 
-  #' 
-  #' 
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  #' @return
+ 
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   
   # Filter for stats metrics
@@ -865,9 +1001,6 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
 
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
-  
   
   df_mean_stat = tibble(variable = exp1_mean_vars, pearson_rho=rep(NA,length(exp1_mean_vars)),
                         pearson_rho_low=rep(NA,length(exp1_mean_vars)), pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
@@ -925,7 +1058,8 @@ df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
                  rep("df[pool]",dim(df)[1])), 
                  value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
                  )
-df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
+df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]",
+                                                  "r*sigma[pool]","df[pool]"))
 
 
 df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
@@ -933,11 +1067,6 @@ df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
   ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
 
-# browser();
-
-
-# df_means$ymin <-min(c(df_means$mean_value - 0.2 * df_means$mean_value, -.2))
-# df_means$ymax <-max(c(df_means$mean_value + 0.2 * df_means$mean_value, +.2))
 
 gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
   geom_line() +
@@ -949,7 +1078,7 @@ gg
 save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
           base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
 
-save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+# save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
 # load(file = "temp/debug.RData")
 
 

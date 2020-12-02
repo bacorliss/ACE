@@ -28,7 +28,7 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   #' @param paired boolean that specifies if 2-sample data is paired (default: FALSE)
   #' @param var.equal boolean if variance assumed equal (default: FALSE)
   #' @param conf.level confidence level for statistics (default 0.95)
-  #' @param verbose function prints out extra input during execution
+  #' @param verbose function prints out extra input during execution (default: FALSE)
   #' @param distribution string specifying assumed distribution ('t_dist', 
   #' 'z_dist') (Default: NULL). If not specified, t_dist chosen for cases under 
   #' 30 samples
@@ -75,7 +75,7 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
   #'
   #' @description  Calculate most mean difference statistic from integrating a
   #' central normal t-distribution pdf shifted by -x_bar Using a root finding 
-  #' function to integrate over a normal CDF with area  under the curve equal 
+  #' function to integrate over a normal CDF, with area under the curve equal 
   #' to (1-a). Calculate stats of the difference in means distribution for two 
   #' samples, or keeps same distribution for one sample case.
   #'

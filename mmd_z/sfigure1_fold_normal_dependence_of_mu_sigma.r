@@ -1,9 +1,11 @@
 
 
 
-# The absolute value transforms alters normal data in a nonlinear maner, and the population parameters mu[f] and
-# sigma f of a folded normal are dependent on each other.
-# Load package manager
+#' Repeated samples from swept popualtion parameters showing that an absolute 
+#' value transforms introduces dependence between mu_f and sigma_f
+
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
 p_load(ggplot2)
@@ -21,8 +23,11 @@ p_load(cowplot)
 source("R/norm_versus_fnorm.R")
 base_dir = "mmd_z"
 
+# Figure parameters
+#-------------------------------------------------------------------------------
 fig_num = "2"
-dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), recursive = TRUE, showWarnings = FALSE)
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), 
+           recursive = TRUE, showWarnings = FALSE)
 
 
 # choose colors for plotting
@@ -47,8 +52,8 @@ plot_height = 1.25
 
 
 
-
-# Show how folded sample mean is changed as mu increases from zero --------------------------------------
+# Show how folded sample mean is changed as mu increases from zero 
+#-------------------------------------------------------------------------------
 # With fixed sd, sweep mean from -3:.25:3, calculate folded mean and sd, show they vary
 set.seed(rand_seed)
 delta_mu  = 1.5;

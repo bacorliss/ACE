@@ -1,15 +1,15 @@
 
 
 
+#' Unscaled agreement contests, critical region
+#' Calculates comparison error for candidate statistics in determining which of 
+#' two results have higher unscaled agreement. Each investigation varies single agreement 
+#' parameter as independent variable (or varies multiple simultaneously). 
+#' Selected independent variable(s) are used as ground truth to determine error rates.
 
-
-
-# Unscaled agreement null region
-
-# Set workspace to location of this source file, since there are file dependencies
-# on a relative path basis
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)
@@ -21,18 +21,16 @@ p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
 source("R/agreement_contests.R")
-base_dir = "mmd_z"
-
-# Agreement COntests for Unscaled Error
-
 
 # Figure parameters
+#-------------------------------------------------------------------------------
+base_dir = "mmd_z"
 fig_num = "9" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(file.path(getwd(), fig_path), showWarnings = FALSE)
-# fig_path = paste("figure/SF",fig_num, "/",sep="")
-# Simulation parameters: A simulation is a set of samples with a fixed set of parameters
-# Parameters are randomly chosen
+
+# Simulation parameters
+#-------------------------------------------------------------------------------
 n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
@@ -40,9 +38,8 @@ rand.seed = 1
 
 parallel_sims = TRUE
 include_bf = TRUE
-scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
-
-
+scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
+                           "_scale_contest_results.csv",sep="")
 
 df_unscaled_crit = list();
 
@@ -190,4 +187,4 @@ df_unscaled_crit[[6]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)
-save(df_unscaled_crit, file = paste(base_dir, "/temp/df_unscaled_crit.RDS"))
+save(df_unscaled_crit, file = paste(base_dir, "/temp/df_unscaled_crit.RDS",sep=""))

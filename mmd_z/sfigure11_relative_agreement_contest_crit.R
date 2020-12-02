@@ -1,32 +1,15 @@
 
-# sfigure_relative_agreement_contests
 
 
+#' Relative agreement contests, critical region
+#' Calculates comparison error for candidate statistics in determining which of 
+#' two results have higher relative agreement. Each investigation varies single agreement 
+#' parameter as independent variable (or varies multiple simultaneously). 
+#' Selected independent variable(s) are used as ground truth to determine error rates.
 
-
-### Figure 2: MMD outperforms previous statistics of effect size.
-#
-# Metrics of sample effect size
-#
-##############################################
-#  Un-standardized measures of effect size
-#   * difference of sample means
-#   * relative difference of means
-#   * difference of sample variances
-#  Standardized measures of effect size
-#   * cohen's d
-#   * hedges g
-#   * glasses delta
-#   * MHD
-
-# Set workspace to location of this source file, since there are file dependencies
-# on a relative path basis
-# From #R Studio
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# setwd(getSrcDirectory()[1])
-# Load package manager
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)
@@ -42,6 +25,7 @@ base_dir = "mmd_z"
 
 
 # Figure parameters
+#-------------------------------------------------------------------------------
 fig_num = "11" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
@@ -49,8 +33,6 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 # Simulation parameters
 # 
 #-------------------------------------------------------------------------------
-# A simulation is a set of samples with a fixed set of parameters
-# Parameters are randomly chosen
 n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
@@ -58,8 +40,10 @@ rand.seed = 1
 
 parallel_sims = TRUE
 include_bf = TRUE
-rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_rscale_contest_results.csv",sep="")
+rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
+                            "_rscale_contest_results.csv",sep="")
 df_relative_crit = list();
+
 
 
 # Contest 1: lower rmu_dm

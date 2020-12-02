@@ -1,6 +1,11 @@
 
 
-# Load package manager
+#' Quantifies coverage error of the relative mmd (defined as how often abs(rmu)>rmmd_95 
+#' from repeated samples)
+#' Results computed in a grid with mu and sigma swept on each exis respectively
+
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
 p_load(ggplot2)
@@ -22,9 +27,11 @@ p_load(RColorBrewer)
 p_load(tidyr)
 p_load(docstring)
 
+
+
+# Figure parameters
+#-------------------------------------------------------------------------------
 base_dir = "mmd_z"
-
-
 # Script Parameters
 fig_num = "5"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
@@ -50,7 +57,7 @@ mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
-                                    paste(fig_path, "/temp/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
+                                    paste(fig_path, "mmd_Error_2D_mu_vs_sigma.rds",sep=""),
                                 overwrite=overwrite, mus_a=100, sigmas_a=1)
 
 
@@ -163,7 +170,7 @@ mu_ov_sigmas = NULL
 df_crit_mu <- 
   locate_bidir_binary_thresh(ind_var = "mmd", mus=mus, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
+                             temp_path = paste(fig_path, "/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary
@@ -205,7 +212,7 @@ mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
-                                    paste(fig_path, "/temp/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
+                                    paste(fig_path, "/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
                                        overwrite=overwrite, mus_a=100, sigmas_a=1)
 
 # Plot 6: Heatmap error rate of rMMD < rmu in mu space
@@ -269,7 +276,7 @@ mu_ov_sigmas = NULL
 df_crit_mu <- 
   locate_bidir_binary_thresh(ind_var = "mmd", mus = mus, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
+                             temp_path = paste(fig_path, "/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary
@@ -317,7 +324,7 @@ set.seed(rand.seed)
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
-                                paste(fig_path, "/temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", sep=""),
+                                paste(fig_path, "/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", sep=""),
                                 mu_ov_sigmas, overwrite = overwrite,mus_a=100, sigmas_a=1)
 
 # Plot 9: Heatmap error rate of rmmd < rmu in mu/sigma space
@@ -378,7 +385,7 @@ mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 df_crit_mu_ov_sigma <- 
   locate_bidir_binary_thresh(ind_var = "rmmd", mus=NULL, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
-                             temp_path = paste(fig_path, "/temp/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
+                             temp_path = paste(fig_path, "/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,
                              overwrite = TRUE,  mus_a = 100, sigmas_a = 1)
 # Pearson of each boundary

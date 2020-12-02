@@ -1,6 +1,11 @@
 
 
-# Load package manager
+
+#' Repeated samples from swept normal population parameters showing the the rev_tost
+#' is equivalent to the max( abs( 90% CI))
+
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
 p_load(ggplot2)
@@ -10,14 +15,16 @@ p_load(TOSTER)
 p_load(dplyr)
 p_load(tidyr)
 p_load(cowplot)
-
+# User defined functions
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
 
 
-base_dir = "mmd_z"
 
-fig_num = "4"
+# Figure parameters
+#-------------------------------------------------------------------------------
+base_dir = "mmd_z"
+fig_num = "3"
 dir.create(file.path(getwd(), paste(base_dir,"/figure/SF",fig_num,sep="")), 
            showWarnings = FALSE, recursive = TRUE)
 rand.seed = 0;

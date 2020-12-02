@@ -1,21 +1,29 @@
  
 
+#' A series of examples to illustrate the three parameters of unscaled agreement
+#' and relative agreement. Each example compares the difference in means or 
+#' relative difference in means between a hypothetical control and experiment
+#' group.
 
-library(ggplot2)
-library(dplyr)
-library(cowplot)
-library(RColorBrewer)
-library(stringr)
+
+# Load required packages
+#-------------------------------------------------------------------------------
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+p_load(ggplot2)
+p_load(dplyr)
+p_load(cowplot)
+p_load(RColorBrewer)
+p_load(stringr)
+
+
+# Figure parameters
+#-------------------------------------------------------------------------------
 base_dir = "mmd_z"
-
-
 fig_num = "1" 
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(file.path(getwd(), fig_path), showWarnings = FALSE)
-
 grp_color = brewer.pal(3, "Set1")
-
 yaxis_font_size = 7
 base_font_size = 8
 
@@ -137,7 +145,6 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
 # Absolute Scale
 
 #-------------------------------------------------------------------------------
-
 
 # Decreased mean offset for experiment 2
 rand_seed <- 0

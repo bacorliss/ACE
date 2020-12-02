@@ -1,7 +1,12 @@
 
-# Load package manager
-if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
+#' QUantifies coverage error of the mmd (defined as how often abs(mu)>mmd_95 
+#' from repeated samples)
+#' Results computed in a grid with mu and sigma swept on each exis respectively
+
+# Load required packages
+#-------------------------------------------------------------------------------
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load packages
 p_load(ggplot2)
 p_load(tibble)
@@ -25,9 +30,14 @@ p_load(tidyr)
 # https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
 # p_load(TOSTER)
 p_load(docstring)
+# User defined functions
+source("R/mmd.R")
+source("R/error_2d_utils.R")
+
+
+# Figure parameters
+#-------------------------------------------------------------------------------
 base_dir = "mmd_z"
-
-
 # Script Parameters
 fig_num = "4"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
@@ -37,9 +47,6 @@ rand.seed <- 0
 overwrite <- TRUE
 parallel_proc <- TRUE
 
-# Helper Functions
-source("R/mmd.R")
-source("R/error_2d_utils.R")
 
 
 # 2D visualization of mmd difference and error rate over mu and sigma
@@ -111,7 +118,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_2b xbar error test 2D.tiff",sep=""),
+save_plot(paste(fig_path,"/", fig_num, "_2b xbar error test 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -143,7 +150,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
@@ -169,7 +176,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_b4 mmd error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_b4 mmd error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -265,7 +272,7 @@ mus <- seq (.1/5, 2, by=0.02)
 mu_ov_sigmas = NULL
 
 df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs, 
-                                         temp_name = "mmd_Error_mu_vs_sigma.rds",
+                                         temp_path = paste(fig_path, "mmd_Error_mu_vs_sigma.rds",sep=""),
                                          mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 
@@ -291,35 +298,6 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu.tiff",
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # Box and Whiskers of Coverage Error Transition Region
-# p <- ggplot(df_crit_mu, aes(x=er, color = side,#group = interaction(er, side), 
-#                             y = abs(critical_mu))) + 
-#   #geom_violin( position = position_dodge( width = 0.9)) + 
-#   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
-#   theme_classic(base_size = 8) + theme(legend.position="none", 
-#                                        axis.title.x = element_blank()) +
-#   xlab("Error Rate Null Hypothesis") + 
-#   ylab(expression(abs(~mu~phantom(.))))+
-#   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
-# p
-# save_plot(paste(fig_path, "\\", fig_num, "_c mmd transition over mu.tiff", 
-#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-#           base_asp = 3, base_width = 2, dpi = 600)
 # 
 res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
 summary_mu <- summary(res.aov2)
@@ -336,7 +314,7 @@ sigmas <- seq(.1, 5, by = .1);
 mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
 df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs,
-                                      temp_name = "mmd_Error_mu_over_sigma_vs_sigma.rds", 
+                                      temp_path = paste(fig_path, "mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                                       mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 

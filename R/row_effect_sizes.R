@@ -201,9 +201,9 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   
   # Initialize data frames
   df = data.frame(xbar_dm=rep(0, n_samples))
-  df_hat = data.frame(xbar_dm=11)
-  df_name = data.frame(xbar_dm=11)
-  df_pretty = data.frame(xbar_dm=11)
+  df_hat = data.frame(xbar_dm=1)
+  df_name = data.frame(xbar_dm=1)
+  df_pretty = data.frame(xbar_dm=1)
     
   # 1) Mean of the difference of means
   df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)

@@ -1,8 +1,15 @@
 
 
-# Load package manager
-if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
+#' Sample a series of population parameter sets of a control and experiment group
+#' where one parameter of agreement is swept towards increasing agreement. 
+#' Candidate statistics are quantified based on repeated samples.
+#' Correlation between mean value of each statistic and the agreement parameters 
+#' are calculated and visualized in a heat map table. 
+
+# Load required packages
+#-------------------------------------------------------------------------------
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)
@@ -14,16 +21,16 @@ p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
 source("R/agreement_contests.R")
-base_dir = "mmd_z"
+
 
 # Figure parameters
+#-------------------------------------------------------------------------------
+base_dir = "mmd_z"
 fig_num = "1" 
-dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
-
+dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 
 # Simulation parameters
-# 
 #-------------------------------------------------------------------------------
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
@@ -34,10 +41,6 @@ rand.seed = 1
 gt_colnames = "is_mudm_2gt1"
 parallel_sims = TRUE
 include_bf = TRUE
-# scale_contest_path = paste("figure/F", fig_num, "/F", fig_num,"_scale_contest_results.csv",sep="")
-
-# Test how each metric responds to changing each characteristic of similarity
-
 
 
 
@@ -134,7 +137,6 @@ df_sigma_pearson <-
 
 # Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
 # Sweep sigma_1d, mu_1d = 10
-# TODO not working properly, I want to make rsigmaDM a constant, can't make it work
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
@@ -180,18 +182,14 @@ df_df_pearson <-
 
 #------------------------------------------------------------------------------
 
-# Relative Mean
-#------------------------------------------------------------------------------
-# Decreasing Rmu is more similar
 
-# Increase mu a
-# Same d
-# Increase std for a and b to match mu a
+
+# Relative Mean:  decreasing rmu has higher agreement
+#------------------------------------------------------------------------------
 set.seed(rand.seed)
 mus_a_vect =  seq(10,20,0.5); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+1
 sigmas_ab_vect = mus_a_vect + 0.5 * (mus_b_vect - mus_a_vect)
-
 
 
 gt_colnames = "is_mudm_2gt1"
@@ -226,7 +224,7 @@ df_rmu_pearson <-
 
 
 
-# Relative sigma
+# Relative sigma: decreasing rsigma has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect) 
@@ -263,8 +261,7 @@ df_rsigma_pearson <-
                            stats_labels = attr(df_esize$df_es,"varnames_pretty"))
 
 
-# Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
-# Sweep sigma_1d, mu_1d = 10
+# Sample Size:   increasing df has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(16, 100, 2); n_sims = length(n_1ab_vect)

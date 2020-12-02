@@ -1,6 +1,12 @@
+
+#' Characterize relation between mmd and two-tailed confidence intervals.
+#' Leverage relation to produce a look-up table to calculate the MMD which 
+#' accelerates computation.
+
+# Load required packages
+#-------------------------------------------------------------------------------
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(broom)
 p_load(scales)
 p_load(ggplot2)
@@ -14,12 +20,15 @@ p_load(cowplot)
 p_load(boot)
 p_load(tidyr)
 p_load(rbenchmark)
-# Calculate conifdence intervals
+# User defined libraries
 source("R/mmd.R")
 source("R/row_effect_sizes.R")
 source("R/norm_versus_fnorm.R")
-base_dir = "mmd_z"
 
+
+# Figure parameters
+#-------------------------------------------------------------------------------
+base_dir = "mmd_z"
 fig_num = "4"
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), showWarnings = FALSE,recursive = TRUE)
 
@@ -79,7 +88,7 @@ ztost <- function(x, delta) {
   return(p)
 }
 
-rztost <- function(xs, alpha) {
+rev_ztost <- function(xs, alpha) {
   #' Calculates the reverse two one sided tests for z distribution, returns the 
   #' largest equivalence region where results are still significant (p=0.05)
   rtost_crit <- uniroot(function(x) ztost(xs, delta=x) - alpha,
@@ -232,7 +241,7 @@ for (n in seq_along(mus)) {
   df$mean_coeff_mmd95[n]  <- mean(coeff_mmd95)
   df$sd_coeff_mmd95[n]    <- sd(coeff_mmd95)
   # calculate reverse TOST across all samples
-  rtost95 <- apply(xr, 1, function(x) rztost(x, alpha = 0.05)  )
+  rtost95 <- apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  )
   df$mean_rtost95[n]  <- mean(rtost95)
   df$sd_rtost95[n]    <- sd(rtost95)
   # Coeff relative
@@ -278,7 +287,7 @@ for (n in seq_along(mus)) {
                  simplify = TRUE))
   dfn <- tibble(mu = mus[n],sigma = sigmas, 
                 macl90 = apply(xr, 1, function(x) max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), a = 0.10)),
-                rtost95 = apply(xr, 1, function(x) rztost(x, alpha = 0.05)  ))
+                rtost95 = apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  ))
   df_list[[n]] <- dfn
 }
 df <- head(do.call(rbind, df_list))

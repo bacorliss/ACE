@@ -7,4 +7,4 @@
 tryCatch(setwd(dirname(rstudioapi::getActiveDocumentContext()$path)))
 
 
-dir.create(file.path(getwd(), "temp"))
+dir.create(file.path(getwd(), "temp"), showWarnings = FALSE)

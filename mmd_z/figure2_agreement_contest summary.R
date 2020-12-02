@@ -1,20 +1,27 @@
 
 
 
+#' Collate agreement contests for unscaled and relative agreement,
+#' Where the comparison error is calculated for each candidate statistic in a 
+#' series of investigations where only one agreemen parameter is varied as 
+#' Indepedent variable.
+#' Runs each investigation if the output data does not exist.
+#' DIsplays comparison error rates in a heatmap table, with error rates normalized
+#' to an apriori selected gold standard 
 
+# Figure parameters
+#-------------------------------------------------------------------------------
 fig_num = "2"
 base_dir = "mmd_z"
-
-
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 summary_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(file.path(getwd(), summary_path), showWarnings = FALSE)
 
 
-# OVerall contest heatmaps
+# Heatmap formatting
 #------------------------------------------------------------------------
 
-# Re-make heatmap with rectangles based on the selection
+# Remake heatmap with rectangles based on the selection
 my_palette <- colorRampPalette(c(rgb(255, 0, 0,maxColorValue = 255),"white",
                                  rgb(47, 117, 181,maxColorValue = 255)))(n = 299)
 col_breaks = c(seq(-1, -.1, length=100), seq(-.09, 0.09, length=100), 
@@ -33,18 +40,22 @@ make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
 
 
 
-# Export summary stats for un-scaled data
+# Export summary stats for unscaled data
 #-------------------------------------------------------------------------------
 
 if (!file.exists(file.path(summary_path, "temp/df_unscaled_null.RDS"))) {
+  print("SFig 8: unscaled agreement contest null")
   source(file.path(base_dir, "sfigure8_unscaled_agreement_contest_null.R"))
   } else {load(file = file.path(summary_path, "temp/df_unscaled_null.RDS"))}
 
 if (!file.exists(file.path(summary_path, "temp/df_unscaled_crit.RDS"))) {
+  print("SFig 9: unscaled agreement contest crit")
   source(file.path(base_dir, "sfigure9_unscaled_agreement_contest_critical.R"))
   } else {load(file = file.path(summary_path, "temp/df_unscaled_crit.RDS"))}
 
 
+# Heatmap of unscaled data
+#-------------------------------------------------------------------------------
 dfs_unscaled <- c(df_unscaled_null,df_unscaled_crit)
 scale_norm_ind = rep(c(1,3,3,1,3,3),2)
 
@@ -78,15 +89,20 @@ dev.off()
 #-------------------------------------------------------------------------------
 
 if (!file.exists(file.path(summary_path, "temp/df_relative_null.RDS"))) {
+  print("SFig 10: relative agreement contest null")
   source(file.path(base_dir, "sfigure10_relative_agreement_contest_null.R"))
   } else {load(file = file.path(summary_path, "temp/df_relative_null.RDS"))}
 
 if (!file.exists(file.path(summary_path, "temp/df_relative_crit.RDS"))) {
+  print("SFig 11: relative agreement contest crit")
   source(file.path(base_dir, "sfigure11_relative_agreement_contest_crit.R"))
   } else {load(file = file.path(summary_path, "temp/df_relative_crit.RDS"))}
 
 fig_num = "2" 
 
+
+# Heatmap of relative data
+#-------------------------------------------------------------------------------
 # Export summary stats for relative scale data
 dfs_relative <- c(df_relative_null,df_relative_crit)
 relative_norm_ind = rep(c(2,4,4,2,4,4),2)
@@ -104,7 +120,7 @@ rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5)
 rscale_score_norm <- sapply(relative_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_relative_null[[1]]$df_es,"varnames_pretty")))
 
-png(paste("figure/F", fig_num, "/F", fig_num, "es_contest relative scale.png",sep=""),    
+png(paste(summary_path,"/F", fig_num, "es_contest relative scale.png",sep=""),    
     width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
 heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 

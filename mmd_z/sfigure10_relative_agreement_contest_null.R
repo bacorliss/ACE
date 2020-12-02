@@ -1,11 +1,14 @@
-# sfigure_relative_agreement_contests
 
 
+#' Relative agreement contests, null region
+#' Calculates comparison error for candidate statistics in determining which of 
+#' two results have higher relative agreement. Each investigation varies single agreement 
+#' parameter as independent variable (or varies multiple simultaneously). 
+#' Selected independent variable(s) are used as ground truth to determine error rates.
 
-
-# Load package manager
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)
@@ -21,12 +24,13 @@ base_dir = "mmd_z"
 
 
 # Figure parameters
+#-------------------------------------------------------------------------------
 fig_num = "10" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 
+
 # Simulation parameters
-# 
 #-------------------------------------------------------------------------------
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
@@ -37,8 +41,8 @@ rand.seed = 1
 
 parallel_sims = TRUE
 include_bf = TRUE
-rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_rscale_contest_results.csv",sep="")
-
+rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
+                            "_rscale_contest_results.csv",sep="")
 
 df_relative_null = list();
 

@@ -349,8 +349,8 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   # browser();
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
-  
-  
+  # Create temp dir if it does not exist
+  dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
   
   #' Locate all 4 error transition boundaries
   #' Positive and negative direction, 0 and alpha error

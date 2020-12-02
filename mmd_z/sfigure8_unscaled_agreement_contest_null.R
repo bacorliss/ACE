@@ -1,11 +1,14 @@
 
 
-# Unscaled agreement null region
+#' Unscaled agreement contests, null region
+#' Calculates comparison error for candidate statistics in determining which of 
+#' two results have higherunscaled agreement. Each investigation varies single agreement 
+#' parameter as independent variable (or varies multiple simultaneously). 
+#' Selected independent variable(s) are used as ground truth to determine error rates.
 
-# Set workspace to location of this source file, since there are file dependencies
-# on a relative path basis
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(ggplot2)
 p_load(tibble)
 p_load(broom)
@@ -17,30 +20,28 @@ p_load(gplots)
 # User defined libraries
 source("R/mmd.R")
 source("R/agreement_contests.R")
-base_dir = "mmd_z"
-
-# Agreement COntests for Unscaled Error
 
 
 # Figure parameters
+#-------------------------------------------------------------------------------
+base_dir = "mmd_z"
 fig_num = "8" 
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), 
            showWarnings = FALSE, recursive = TRUE)
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
-# Simulation parameters: A simulation is a set of samples with a fixed set of parameters
-# Parameters are randomly chosen
+
+
+# Simulation parameters
+#-------------------------------------------------------------------------------
 n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
 rand.seed = 1
-
 parallel_sims = TRUE
 include_bf = TRUE
 scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
-
-
-
 df_unscaled_null = list();
+
 
 # Contest 1) Lower mu_d
 # [Near from zero]
@@ -140,7 +141,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)  
 df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "df[pool]", comp_dir ="Greater",
+                                    y_ax_str = "df[pool]", compare_string ="Greater",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
@@ -186,7 +187,7 @@ df_unscaled_null[[5]] <- process_esize_simulations(df_init, gt_colname = gt_coln
                                           fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
                                           fig_path = fig_path)
 df_unscaled_null[[6]] <- process_esize_simulations(df_init, gt_colname = gt_colnames[3], 
-                                          y_ax_str = "df[pool]", comp_dir ="Greater",
+                                          y_ax_str = "df[pool]", compare_string ="Greater",
                                           include_bf = include_bf, parallel_sims = parallel_sims,
                                           fig_name = paste(fig_name, "_df.tiff",sep = ""),
                                           fig_path = fig_path)

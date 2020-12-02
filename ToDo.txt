@@ -1,0 +1,4 @@
+
+add HAT values for each of the agreement parameters that indicate which direction leads to higher agreement.
+Use these values to determine which direction to use for groundtruth comparison
+Use these values to auto fill "Less than" or "Greater than" in y axis for comparison error plots

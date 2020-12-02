@@ -1,10 +1,12 @@
 
 
-# The magntiude of effect sizefrom normal data follows the folded normal 
+#' Empirical evidence that that agreement of means follows a folded normal
 
+
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}
 library(pacman)
-
 # Load packages
 p_load(ggplot2)
 p_load(tibble)
@@ -22,11 +24,13 @@ p_load(VGAM)
 # source("R/stat_helper.r")
 base_dir = "mmd_z"
 
-# choose colors for plotting
+
+# Figure parameters
+#-------------------------------------------------------------------------------
 color_pal = brewer.pal(4, "Set1")
 fig_num="1"
-dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), recursive = TRUE,
-           showWarnings = FALSE)
+dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), 
+           recursive = TRUE, showWarnings = FALSE)
 
 
 # Parameters

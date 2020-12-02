@@ -1,23 +1,32 @@
 
-# Load package manager
+#' Produce stats look-up table for calculating MMD
+
+
+# Load required packages
+#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(broom)
 p_load(scales)
 p_load(ggplot2)
-p_load(plyr)
 p_load(dplyr)
+p_load(plyr)
 p_load(grid)
 p_load(gridExtra)
 p_load(colorspace)
 p_load("RColorBrewer")
 p_load(cowplot)
+# User defined libraries
 source("R/mmd.R")
 source("R/row_effect_sizes.R")
 base_dir = "mmd_z"
 
+# Figure parameters
+#-------------------------------------------------------------------------------
 out_path = file.path(getwd(), paste(base_dir, "/figure/T1",sep=""))
 dir.create(out_path, showWarnings = FALSE)
 
+# Simulation parameters
+#-------------------------------------------------------------------------------
 mu_ov_sigma = c(seq(0, 0.5, 0.1), 0.75, 1, 2,3)
 n_samples = 35
 n_obs = 50
