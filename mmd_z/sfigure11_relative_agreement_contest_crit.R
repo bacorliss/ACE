@@ -50,7 +50,7 @@ df_relative_crit = list();
 #
 #-----------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_rmudm_2gt1"
+gt_colnames = "is_rmudm_1hat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_rmu_crit", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 100, 
@@ -84,7 +84,7 @@ df_relative_crit[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_rsigmad_2gt1"
+gt_colnames = "is_rsigmad_1hat2"
 fig_name = paste("F", fig_num, "_2_esize_contest_rsigma_crit", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 100, 
@@ -118,7 +118,7 @@ df_relative_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 set.seed(rand.seed)
 n1 <- runif(n_sims, 6, 75)
 n2 <- runif(n_sims, 6, 75)
-gt_colnames = "is_dfdm_2lt1"
+gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_crit", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 100, 
@@ -140,7 +140,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
 df_relative_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                                   y_ax_str = "df[pool]", comp_dir ="Greater",
+                                                   y_ax_str = "df[pool]", 
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path)
@@ -152,7 +152,7 @@ df_relative_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 set.seed(rand.seed)
 n1 <- runif(n_sims, 6, 75)
 n2 <- runif(n_sims, 6, 75)
-gt_colnames = c("is_rmudm_2gt1","is_rsigmad_2gt1","is_dfdm_2lt1")
+gt_colnames = c("is_rmudm_1hat2","is_rsigmad_1hat2","is_dfdm_1hat2")
 fig_name = paste("F", fig_num, "_4_esize_contest_free_crit", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 20, 
@@ -184,7 +184,7 @@ df_relative_crit[[5]] <- process_esize_simulations(df_init, gt_colname = gt_coln
                                            fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
                                            fig_path = fig_path)
 df_relative_crit[[6]] <- process_esize_simulations(df_init, gt_colname = gt_colnames[3], 
-                                           y_ax_str = "df[pool]", comp_dir ="Greater",
+                                           y_ax_str = "df[pool]", 
                                            include_bf = include_bf, parallel_sims = parallel_sims,
                                            fig_name = paste(fig_name, "_df.tiff",sep = ""),
                                            fig_path = fig_path)

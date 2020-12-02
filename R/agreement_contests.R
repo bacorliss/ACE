@@ -128,74 +128,115 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                             switch_group_ab = switch_group_ab,
                             switch_exp_12 = switch_exp_12)
   
-  # Pop
-  # Mean of difference and DM
+  # Dataframes that store direction of inequality for each parameter
+  # hat: Exp 1 higher agreement than exp 2
+  df_hat = data.frame(is_mud_1hat2=0)
+  # hdt: Exp 2 higher disagreement than exp 2
+  df_hdt = data.frame(is_mud_1hdt2=0)
+  
+  # Mean of the difference
   df$mu_1d <- df$mu_1b - df$mu_1a
   df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_2gt1 <-  abs(df$mu_2d) > abs(df$mu_1d)
-  
+  df$is_mud_1hat2 <-  abs(df$mu_1d) < abs(df$mu_2d)
+  df_hat$is_mud_1hat2 <- "lt"
+  df$is_mud_1hdt2 <- !df$is_mud_1hat2
+  df_hdt$is_mud_1hdt2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-  df$is_sigmad_2gt1 <-  df$sigma_2d   > df$sigma_1d
+  df$is_sigmad_1hat2 <-  df$sigma_1d < df$sigma_2d
+  df_hat$is_sigmad_1hat2 <- "lt"
+  df$is_sigmad_1hdt2 <- df$is_sigmad_1hat2
+  df_hdt$is_sigmad_1hdt2 <- "lt"
   
-  # Degrees of freedom of the difference and DM
+  # Degrees of freedom of the difference
   df$df_1d <- df$n_1a + df$n_1b - 2
   df$df_2d <- df$n_2a + df$n_2b - 2
-  df$is_dfd_2lt1 <- df$df_2d < df$df_1d
-  df$is_dfdm_2lt1 <- df$df_2d < df$df_1d
+  df$is_dfd_1hat2 <- df$df_1d > df$df_2d
+  df_hat$is_dfd_1hat2 <- "gt"
+  df$is_dfd_1hdt2 <- df$is_dfd_1hat2
+  df_hdt$is_dfd_1hdt2 <- "gt"
+  
+  # Degrees of freedom of the difference in means
+  df$is_dfdm_1hat2 <- df$df_1d > df$df_2d
+  df_hat$is_dfdm_1hat2 <- "gt"
+  df$is_dfdm_1hdt2 <- df$is_dfdm_1hat2
+  df_hdt$is_dfdm_1hdt2 <- "gt"
   
   # Pooled standard deviation
   df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
                             (df$n_1a-1 + df$n_1b -1 )  )
   df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
                             (df$n_2a-1 + df$n_2b-1 ))
-  df$is_sigmapool_2gt1 <- df$sigma_2pool > df$sigma_1pool
+  df$is_sigmapool_1hat2 <- df$sigma_1pool < df$sigma_2pool
+  df_hat$is_sigmapool_1hat2 <- "lt"
+  df$is_sigmapool_1hdt2 <-  df$is_sigmapool_1hat2
+  df_hdt$is_sigmapool_1hdt2 <- "lt"
   
   # Mean and std of difference in means (taken from mean of D since we had the option
   # to invert the sign for D earlier in code)
   df$mu_1dm <- df$mu_1d
   df$mu_2dm <- df$mu_2d
-  df$is_mudm_2gt1 <-  abs(df$mu_2dm) > abs(df$mu_1dm)
+  df$is_mudm_1hat2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
+  df_hat$is_mudm_1hat2 <- "lt"
+  df$is_mudm_1hdt2 <-  !df$is_mudm_1hat2
+  df_hdt$is_mudm_1hdt2 <- "gt"
   
   # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
   df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
-  df$is_sigmadm_2gt1 <-  df$sigma_2dm > df$sigma_1dm
+  df$is_sigmadm_1hat2 <-  df$sigma_1dm < df$sigma_2dm
+  df_hat$is_sigmadm_1hat2 <- "lt"
+  df$is_sigmadm_1hdt2 <- df$is_sigmadm_1hat2
+  df_hdt$is_sigmadm_1hdt2 <- "lt"
   
   # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
   # determines whether results are in null region of critical region of t-test
   df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm
   df$mu_ov_sigma_2dm <- df$mu_2dm / df$sigma_2dm
-
+  
   # Statistics of difference of means distribution 
   df$rmu_1dm <- df$mu_1dm / df$mu_1a
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  df$is_rmudm_2gt1 <-  abs(df$rmu_2dm) > abs(df$rmu_1dm)
-
+  df$is_rmudm_1hat2 <-  abs(df$rmu_1dm) < abs(df$rmu_2dm)
+  df_hat$is_rmudm_1hat2 <- "lt"
+  df$is_rmudm_1hdt2 <- !df$is_rmudm_1hat2
+  df_hdt$is_rmudm_1hdt2 <- "gt"
+  
   # Relative sigma of difference
   df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmad_2gt1 <-  df$rsigma_2d > df$rsigma_1d
+  df$is_rsigmad_1hat2 <-  df$rsigma_1d < df$rsigma_2d
+  df_hat$is_rsigmad_1hat2 <- "lt"
+  df$is_rsigmad_1hdt2 <-  df$is_rsigmad_1hat2
+  df_hdt$is_rsigmad_1hdt2 <- "lt"
   
   # Relative Pooled Sigma
   df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmapool_2gt1 <-  df$rsigma_2pool > df$rsigma_1pool
+  df$is_rsigmapool_1hat2 <-  df$rsigma_1pool < df$rsigma_2pool
+  df_hat$is_rsigmapool_1hat2 <- "lt"
+  df$is_rsigmapool_1hdt2 <-  df$is_rsigmapool_1hat2
+  df_hdt$is_rsigmapool_1hdt2 <- "lt"
   
-  # sigma of the difference of means distirbution
+  # sigma of the difference of means distribution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
-  df$is_rsigmadm_2gt1 <-  df$rsigma_2dm > df$rsigma_1dm
+  df$is_rsigmadm_1hat2 <- df$rsigma_1dm < df$rsigma_2dm
+  df_hat$is_rsigmadm_1hat2 <- "lt"
+  df$is_rsigmadm_1hdt2 <- df$is_rsigmadm_1hat2
+  df_hdt$is_rsigmadm_1hdt2 <- "lt"
   
-  # Diff:  pop_mean2 - pop_mean1
-  df$mean_mud_d2md1 <- df$mu_2dm - df$mu_1dm
-  df$mean_rmud_d2md1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
-  # Diff:  pop_std2 - pop_std1
+  # Population parameter differences
+  df$mean_mud_2m1 <- df$mu_2dm - df$mu_1dm
+  df$mean_rmud_2m1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
   df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
   df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
+  
+  attr(df,"df_hat") <- df_hat
+  attr(df,"df_hdt") <- df_hdt
   
   # Plot generated population parameters
   if (is_plotted){
@@ -428,11 +469,11 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # load(file = "temp/debug.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mudm_2gt1","is_rmudm_2gt1","is_sigmad_2gt1", #"is_sigmad_2gt1",
-                   "is_rsigmad_2gt1", "is_dfdm_2lt1")
-  # Alt sigmas: is_sigmapool_2gt1,is_rsigmapool_2gt1; is_sigmad_2gt1, is_rsigmad_2gt1
+  param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2", #"is_sigmad_1hat2",
+                   "is_rsigmad_1hat2", "is_dfdm_1hat2")
+  # Alt sigmas: is_sigmapool_1hat2,is_rsigmapool_1hat2; is_sigmad_1hat2, is_rsigmad_1hat2
   
-  bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
+  # bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
   if (!all(sapply(gt_colnames, function(x) any(x==param_fields)))) {stop("gt_colnames is not correctly worded")}
   
   
@@ -746,13 +787,13 @@ tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TR
   # If reference value included, subtract in paired fashion (reference value 
   # must be included in matched_variable list, with ground truth subtracted from it already)
   df_ref_sub <- df_gt_sub
-  if (!is.null(ref_colname)) {
-    for (n in seq(1,length(matched_vars), by = 1)) {
-      df_ref_sub[matched_vars[n]] <- df_gt_sub[matched_vars[n]] -
-        df_gt_sub[ref_colname]
-    }
-    print("Normalized by reference variable")
-  }
+  if (!is.null(ref_colname)) {stop("Reference normalization requested in tidy")}
+  #   for (n in seq(1,length(matched_vars), by = 1)) {
+  #     df_ref_sub[matched_vars[n]] <- df_gt_sub[matched_vars[n]] -
+  #       df_gt_sub[ref_colname]
+  #   }
+  #   print("Normalized by reference variable")
+  # }
   
   # Flatten df_ref_sub into df_tidy (wide format to long format data frame)
   if (long_format) {
@@ -800,17 +841,21 @@ pretty_esize_levels<- function(df, var_prefix) {
 
 
 plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, 
-                                   compare_string = "Lower") {
+                                   compare_string = "Lesser") {
   #' @description Plot comparison error rates for candidates effect size statistics
   #' 
-  #' @param df_pretty 
+  #' @param df_pretty dataframe of comparison error rates in long pretty format
   #' @param fig_name filename of figure exported to disk
   #' @param fig_path path to output figures saved to disk
   #' @param y_ax_str String denoting independent variable for comparison error plot. 
   #' Either mu[DM], sigma[D], or df[D].
-  #' @param compare_string String to describe direction to higher agreement, either "Lower" or "Higher"
+  #' @param compare_string String to describe direction to higher agreement, either
+  #'  "Lesser" or "Higher"
   #' 
   #' @return no return, exports figures to disk
+  
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
   
   # Calculate group means and corrected confidence intervals
   # Note: if it errors here with df_result having one group then plyr package 
@@ -826,6 +871,9 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
                                        function(x) as.numeric(x[1]))
   df_result$bs_ci_mean_upper <- sapply(strsplit(df_result$bs_ci_mean_str,","), 
                                        function(x) as.numeric(x[2]))
+  # Check that group by name succeeded
+  if (dim(df_result)[1]==1) {stop('dplr grouping failed, plyr loaded before dplyr?') }
+ 
   # If groups have no variance in mean, then boot returns NaNs, replace with mean
   df_result$bs_ci_mean_lower[is.na(df_result$bs_ci_mean_lower)] <- 
     df_result$mean[is.na(df_result$bs_ci_mean_lower)]
@@ -836,7 +884,6 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
     0.5 <= df_result$bs_ci_mean_upper
   ci_range <-  c(min(df_result$bs_ci_mean_lower), max(df_result$bs_ci_mean_upper))
   
-
   # Export CSV table of means and relative means for results write-up
   mean_by_group <- df_result$mean
   mean_row <- matrix(rep(df_result$mean,length(levels(df_pretty$name))), 
@@ -872,21 +919,23 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   siff_vjust = rep(0,length(levels(df_pretty$name)))
   # Set less than random to blue and -
   sig_labels[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  "-"
-  sig_colors[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  rgb(47, 117, 181,maxColorValue = 255)
+  sig_colors[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  
+    rgb(47, 117, 181,maxColorValue = 255)
   sig_sizes[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  5
   siff_vjust[df_result$bs_ci_mean_lower<0.5 & df_result$bs_ci_mean_upper<0.5] =  .017
   # Set greater than random to red and +
   sig_labels[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  "+"
-  sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] =  rgb(255, 0, 0,maxColorValue = 255)
+  sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] = 
+    rgb(255, 0, 0,maxColorValue = 255)
 
-  # browser()
   # Basic violin plot
   p <- ggplot(df_result, aes(x=name,  y=mean, group=name)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Statistic") +
-    ylab(parse(text=paste("Error~Rate~(~",compare_string,"~phantom(.)*", y_ax_str,"*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
+    ylab(parse(text=paste("Error~Rate~(~",compare_string,"~phantom(.)*", y_ax_str,
+                          "*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
@@ -896,7 +945,6 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   print(p)
   save_plot(paste(fig_path,  '/', fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 3, dpi = 600)
-   #browser()
 
   return(df_result)
   
@@ -904,27 +952,26 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
-                                      parallel_sims = TRUE, is_plotted = TRUE, compare_string = "Lower") {
+                                      parallel_sims = TRUE, is_plotted = TRUE) {
   #' @description 
   #' 
-  #' @param df_init
+  #' @param df_init dataframe of population param sets by row
   #' @param gt_colname column names in df that serves as independent variable
   #'  and groundtruth for determining whether exp 1 or 2 has higher 
   #'  agreement for each pop. param set.
-  #' @param out_path 
-  #' @param y_ax_str 
-  #' @param out_path
+  #' @param out_path path to export data files
+  #' @param y_ax_str pretty format of independent variable
+  #' @param fig_path path to export figures
   #' @param fig_name filename of figure exported to disk
   #' @param fig_path path to output figures saved to disk
   #' @param var_prefix string suffix to identify the columns that should use
   #' @param include_bf flag to include bayes factor in calculation (extremely slow)
-  #' @param parallel_sims
-  #' @param is_plotted
-  #' @param compare_string
+  #' @param parallel_sims flat to process simulation (pop param sets) in parallel
+  #' @param is_plotted flag whether results should be plotted and exported to disk
   #' 
-  #' @return
+  #' @return all_dfs a named list of all dataframes for each of the processing steps
 
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
@@ -948,8 +995,11 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   
   # Plot effect size results
   if (is_plotted) {
-    df_plotted <- plot_esize_simulations(df = df_pretty, fig_name = fig_name, 
-                                         fig_path = fig_path, y_ax_str = y_ax_str, compare_string = compare_string)
+    df_compare_string <- tibble(lt="Lesser", gt = "Greater")
+    df_plotted <- 
+      plot_esize_simulations(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
+                             compare_string = df_compare_string[[attr(df_init,'df_hat')[[gt_colname]]]],
+                             y_ax_str = y_ax_str)
   }
   
   # Package dataframes throughout processing into single list for return
