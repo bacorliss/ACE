@@ -38,7 +38,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 n_samples = 1e3
 n_obs = 50
 rand.seed = 1
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 parallel_sims = TRUE
 include_bf = TRUE
 
@@ -60,7 +60,7 @@ mus_a_vect = mus_d_vect*2
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect=1e-2
 
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1a_stat_correlation_mu_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -86,9 +86,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_mu_pearson <- 
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path,  dir_to_agreement = 1)
 
 
 
@@ -105,7 +103,7 @@ mus_a_vect = sigmas_ab_vect
 mus_b_vect = mus_a_vect;
   
 
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1b_stat_correlation_sigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -130,9 +128,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_sigma_pearson <- 
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path,  dir_to_agreement = 1)
 
 
 # Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
@@ -143,7 +139,7 @@ n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
 mus_ab_vect = 1
 sigmas_ab_vect = 1
 
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1c_stat_correlation_df_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_ab_vect, 
@@ -168,9 +164,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_df_pearson <- 
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path, dir_to_agreement = -1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path, dir_to_agreement = -1)
 
 
 
@@ -192,7 +186,7 @@ mus_b_vect =  mus_a_vect+1
 sigmas_ab_vect = mus_a_vect + 0.5 * (mus_b_vect - mus_a_vect)
 
 
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1d_stat_correlation_rmu_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
@@ -218,9 +212,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_rmu_pearson <-
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1dm",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_agreement = 1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path,  dir_to_agreement = 1)
 
 
 
@@ -231,7 +223,7 @@ mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect)
 mus_a_vect = mus_b_vect
 sigmas_ab_vect = 1
 
-gt_colnames = "is_mudm_2gt1"
+gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1e_stat_correlation_rsigma_sweep", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -256,9 +248,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_rsigma_pearson <- 
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1dm", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path, dir_to_agreement = 1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path, dir_to_agreement = 1)
 
 
 # Sample Size:   increasing df has higher agreement
@@ -293,9 +283,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
 df_rdf_pearson <- 
   lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_agreement = -1,
-                           stats_basenames = attr(df_esize$df_es,"varnames"),
-                           stats_labels = attr(df_esize$df_es,"varnames_pretty"))
+                           fig_path = fig_path,  dir_to_agreement = -1)
 
 
 
@@ -337,7 +325,7 @@ png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_unit
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
-          labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
+          labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scores)[1]),
           notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))
@@ -359,7 +347,7 @@ png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_relative_scal
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scores_sig,2)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
-          labRow =  sapply(effect_size_dict[[4]], function(x) parse(text=x)),labCol = "",
+          labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scores)[1]),
           notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))

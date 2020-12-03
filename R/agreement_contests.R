@@ -787,7 +787,7 @@ tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TR
   # If reference value included, subtract in paired fashion (reference value 
   # must be included in matched_variable list, with ground truth subtracted from it already)
   df_ref_sub <- df_gt_sub
-  if (!is.null(ref_colname)) {stop("Reference normalization requested in tidy")}
+  if (!is.null(ref_colname)) {stop("Reference normalization requested in tidy, discontinued")}
   #   for (n in seq(1,length(matched_vars), by = 1)) {
   #     df_ref_sub[matched_vars[n]] <- df_gt_sub[matched_vars[n]] -
   #       df_gt_sub[ref_colname]
@@ -815,7 +815,7 @@ pretty_esize_levels<- function(df, var_prefix) {
   #' @param var_prefix string prefix that matches the comparison error rate for 
   #' the candidate statistics
   #' 
-  #' @return
+  #' @return df_pretty converts levels of df into pretty format (for plotting)
   
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
@@ -1014,44 +1014,46 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
 
 
 
-lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basenames, 
-                                     stats_labels, dir_to_agreement=1, alpha = 0.05) {
-  #' @description Plot correlation of independent variable versus mean values of all statistics
+lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
+                                     dir_to_agreement=1, alpha = 0.05) {
+  #' @description Plot mean values across samples of candidate statistics versus 
+  #' a swept independent variable, and calculates correlation with pearson rho.
   #' 
-  #' @param df
-  #' @param indvar
-  #' @param fig_name
-  #' @param fig_path
-  #' @param stats_basenames
-  #' @param stats_labels
-  #' @param dir_to_agreement
-  #' @param alpha
+  #' @param df input dataframe of processed pop. params (returned from 
+  #' process_esize_simulations)
+  #' @param indvar string of the column name dscribing the indepedent variable, 
+  #' will be one of the agreement parameters
+  #' @param fig_name base name of exported figure
+  #' @param fig_path path of eported figure
+  #' @param dir_to_agreement which direction leads to higher agreements (+1,-1)
+  #' @param alpha confidence level
   #' 
-  #' @return
- 
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  #' @return null exports figrues to disk
+  
+  
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   
   # Filter for stats metrics
   col_list <- colnames(df)
-  exp1_mean_vars = paste("exp1_mean_", stats_basenames,sep="")
-  exp1_sd_vars   = paste("exp1_sd_", stats_basenames,sep="")
+  exp1_mean_vars = paste("exp1_mean_", attr(df,"varnames"),sep="")
+  exp1_sd_vars   = paste("exp1_sd_", attr(df,"varnames"),sep="")
   
   # Calculate mean value of statistics for each value of indvar
   df_means <- df %>% gather("variable", "value", exp1_mean_vars)
- 
+  
   df_means <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "mean_value") %>%
     select(c(all_of(indvar),"variable", "mean_value"))
   df_sd <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "sd_value")
   # subset(df_means, variable = "exp1_mean_xdbar")
   df_means$variable <- as.factor(df_means$variable)
   
-  
+  # indvar must vary for correlation
   if (length(unique(df_means[[indvar]]))==1) {
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
-
   
+  # Calculate pearson rho for the mean of each candidate stat versus independent var
   df_mean_stat = tibble(variable = exp1_mean_vars, pearson_rho=rep(NA,length(exp1_mean_vars)),
                         pearson_rho_low=rep(NA,length(exp1_mean_vars)), pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
                         slope=rep(NA,length(exp1_mean_vars)), 
@@ -1060,7 +1062,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     # print(n)
     df_sub = subset(df_means, df_means$variable == exp1_mean_vars[n])
     
-    
+    #Calculate pearson rho if stat varies, assign zero if not
     if (length(unique((abs(df_sub$mean_value)))) > 1) {
       # Pearson correlation
       ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*-dir_to_agreement, 
@@ -1071,11 +1073,11 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
       df_mean_stat$pearson_rho_low[n] = ci_pearson[[2]][1]
       df_mean_stat$pearson_rho_high[n] = ci_pearson[[2]][2]
     } else { 
-    df_mean_stat$pearson_rho[n]    <- 0
-    df_mean_stat$pearson_rho_low[n]  <- 0
-    df_mean_stat$pearson_rho_high[n] <- 0
+      df_mean_stat$pearson_rho[n]    <- 0
+      df_mean_stat$pearson_rho_low[n]  <- 0
+      df_mean_stat$pearson_rho_high[n] <- 0
     }
-    # LInear regression
+    # Linear regression
     stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_agreement,
                                          y2 = abs(df_sub$mean_value)))
     sd_slope <- summary(stat.lm)[[4]][2]
@@ -1084,53 +1086,74 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path, stats_basen
     df_mean_stat$slope_high[n] = df_mean_stat$slope[n] + 1.96*sd_slope
   }
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
-  df_mean_stat$label <- factor(stats_labels, levels = stats_labels)
+  df_mean_stat$label <- factor(attr(df,"varnames_pretty"), levels = attr(df,"varnames_pretty"))
   df_mean_stat$is_pearson_rho_sig <-  !(0>df_mean_stat$pearson_rho_low & 0<df_mean_stat$pearson_rho_high)
   df_mean_stat$is_slope_sig <-  !(0>df_mean_stat$slope_low & 0<df_mean_stat$slope_high)
   
+  # Plot notations for positive and negative pearson rho
+  # Labels of statistical significance for each group
+  sig_labels = rep("",length(attr(df,"varnames")))
+  sig_colors = rep("black",length(attr(df,"varnames")))
+  sig_sizes = rep(4,length(attr(df,"varnames")))
+  siff_vjust = rep(0,length(attr(df,"varnames")))
+  # Set less than random to blue and -
+  sig_labels[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  "-"
+  sig_colors[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  
+    rgb(47, 117, 181,maxColorValue = 255)
+  sig_sizes[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  5
+  siff_vjust[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  .017
+  # Set greater than random to red and +
+  sig_labels[df_mean_stat$pearson_rho_low>0.05 & df_mean_stat$pearson_rho_high>0.05] =  "+"
+  sig_colors[df_mean_stat$pearson_rho_low>0.05 & df_mean_stat$pearson_rho_high>0.05] = 
+    rgb(255, 0, 0,maxColorValue = 255)
   
-gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
-  geom_point(shape=1, size=1) + ylim(-1,1) +
-  geom_hline(yintercept=0,linetype="dashed") +
-  geom_linerange(aes(ymin = pearson_rho_low, ymax = pearson_rho_high)) +
-  ylab("Pearson's r") + xlab("Statistic") +
-  scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
-  theme_classic(base_size=8) + theme(legend.position="none") 
-print(gg)  
-save_plot(paste(fig_path, '/', fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
-          base_height = 1.75, base_asp = 3, base_width = 3, dpi = 600)
-
-
-# Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
-                 param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
-                 rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
-                 rep("df[pool]",dim(df)[1])), 
-                 value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
-                 )
-df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]",
-                                                  "r*sigma[pool]","df[pool]"))
-
-
-df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
-  mean_value=mean(value),  is_constant = all(mean(value) == value),
-  ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
-  ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
-
-
-gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
-  geom_line() +
-  facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
-  theme_classic(base_size=8) +
-  theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) 
+  # Plot pearson rho confidence intervals for each candidate stat  
+  gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
+    geom_point(shape=1, size=1) + ylim(-1,1) +
+    geom_hline(yintercept=0,linetype="dashed") +
+    geom_linerange(aes(ymin = pearson_rho_low, ymax = pearson_rho_high)) +
+    ylab("Pearson's r") + xlab("Statistic") +
+    scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
+    geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
+              color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
+    theme_classic(base_size=8) + theme(legend.position="none") 
+  print(gg)  
+  save_plot(paste(fig_path, '/', fig_name, sep = ""), gg, ncol = 1, nrow = 1, 
+            base_height = 1.75, base_asp = 3, base_width = 3, dpi = 600)
+  
+  
+  # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
+  df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
+                   param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
+                             rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
+                             rep("df[pool]",dim(df)[1])), 
+                   value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
+  )
+  df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]",
+                                                    "r*sigma[pool]","df[pool]"))
+  
+  
+  # Calculate mean value of each stat at each point in the series
+  # df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
+  #   mean_value=mean(value),  is_constant = all(mean(value) == value),
+  #   ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
+  #   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
+  
+  
+  # Faceted lineplot of each agreement parameter versus indepedent variable
+  gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
+    geom_line() +
+    facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
+    theme_classic(base_size=8) +
+    theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) 
   # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
-gg
-save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
-          base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
-
-# save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-# load(file = "temp/debug.RData")
-
-
-return(df_mean_stat)
+  gg
+  save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
+            base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
+  
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # load(file = "temp/debug.RData")
+  
+  
+  return(df_mean_stat)
 }
