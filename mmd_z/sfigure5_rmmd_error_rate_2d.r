@@ -47,7 +47,6 @@ source("R/error_2d_utils.R")
 
 
 # First Row
-
 # Coverage error simulations for mu space   
 mus <- seq(-2.5, 2.5, by = .1)
 sigmas <- seq(.1, 5, by = .1)
@@ -57,7 +56,7 @@ mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
-                                    paste(fig_path, "mmd_Error_2D_mu_vs_sigma.rds",sep=""),
+                                    paste(fig_path, "rmmd_Error_2D_mu_vs_sigma.rds",sep=""),
                                 overwrite=overwrite, mus_a=100, sigmas_a=1)
 
 

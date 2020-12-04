@@ -1028,7 +1028,8 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
   #' @param dir_to_agreement which direction leads to higher agreements (+1,-1)
   #' @param alpha confidence level
   #' 
-  #' @return null exports figrues to disk
+  #' @return df_mean_stat dataframe of pearson correlation and regression of each 
+  #' candidate statistics versus the indepdent variable.
   
   
   save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
@@ -1114,8 +1115,9 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
     geom_linerange(aes(ymin = pearson_rho_low, ymax = pearson_rho_high)) +
     ylab("Pearson's r") + xlab("Statistic") +
     scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
-    geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
+    geom_text(y = 1.17+siff_vjust, aes(label = sig_labels), 
               color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +
+    coord_cartesian(ylim = c(-1,1.15), expand = TRUE) +
     theme_classic(base_size=8) + theme(legend.position="none") 
   print(gg)  
   save_plot(paste(fig_path, '/', fig_name, sep = ""), gg, ncol = 1, nrow = 1, 

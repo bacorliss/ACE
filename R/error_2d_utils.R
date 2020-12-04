@@ -84,17 +84,19 @@ slopes_by_rowcol <- function(m, row_vals, col_vals) {
 
 
 error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
-  #' Assign codes for error rate whether null hypothesis is rejected
-  #' 
-  #' @description Test if proportion of mmds that are above mu (error rate) are equal to 0.05 
-  #' and 0.00, return code do delineate combinations of both results
+  #' @description Assign codes for error rate whether null hypothesis is rejected
+  #' for use in a heatmap of hypothesis outcomes. Test if proportion of mmds that
+  #' are above mu (error rate) are equal to 0.05 and 0.00, return code do delineate
+  #' combinations of both results:
   #'  (0) E = neither,  (1) E == 0.00
   #'  (2) E == 0.05,  (3) E == both
   assign_code <- function(z,a) { if (z & a) {value=3} else if(z & !a) {value = 2}
     else if(!z & a) {value = 1} else {value = 0}; return(value)
   }
-  error_rate_codes <- matrix(mapply(assign_code, is_error_rate_zero, is_error_rate_alpha, SIMPLIFY = TRUE,
-                                    USE.NAMES = FALSE), nrow = dim(is_error_rate_zero)[1], ncol = dim(is_error_rate_zero)[2])
+  error_rate_codes <- matrix(mapply(assign_code, is_error_rate_zero, 
+                                    is_error_rate_alpha, SIMPLIFY = TRUE,
+                                    USE.NAMES = FALSE), nrow = dim(is_error_rate_zero)[1], 
+                             ncol = dim(is_error_rate_zero)[2])
   colnames(error_rate_codes) <- colnames(is_error_rate_zero)
   rownames(error_rate_codes) <- rownames(is_error_rate_zero)
   return(error_rate_codes)
@@ -108,7 +110,7 @@ quant_coverage_errors <-
             mu_vsigmas_ao = NULL, overwrite = FALSE, rand.seed=0,
             mus_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao)))),
             sigmas_a = rep(0, max(c(length(mus_ao),length(mu_vsigmas_ao)))),
-            parallel_proc = TRUE) {
+            is_parallel_proc = TRUE) {
     #' Perform parameter sweep with specified mus and sigmas
     #' 
     #' @description QUantifies stats of a series of simulations of normal random 
@@ -130,8 +132,10 @@ quant_coverage_errors <-
     #'  
     #'  @return df dataframe that stores population parameters and statistics
     
+    dir.create(dirname(out_path),showWarnings = FALSE, recursive = TRUE)
     # browser();
-    save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+    
+    # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
     # load(file = "temp/debug.RData")
     
     # Calculate number of simulations, which is either length of mus_ao or mu_vsigmas_ao
@@ -139,14 +143,11 @@ quant_coverage_errors <-
     # Fill out vectors if single number specified
     if (length(mus_a)==1) {mus_a = rep(mus_a,n_mus_ao)}
     if (length(sigmas_a)==1) {sigmas_a = rep(sigmas_a,length(sigmas_ao))}
-    
-    
-    
+
     # Store results to disk since calculations are significant
     set.seed(rand.seed)
     if (!file.exists(out_path) || overwrite) {
-      
-      
+
       # Matrix diff and error of mmd
       if (!is.null(mus_ao)) {dimnames = list(sigmas_ao,mus_ao)
       } else {dimnames = list(sigmas_ao,mu_vsigmas_ao)}
@@ -182,7 +183,7 @@ quant_coverage_errors <-
       
       
       # Process parallel or serially
-      if (parallel_proc) { 
+      if (is_parallel_proc) { 
         cl = makeCluster(detectCores()[1]-1)
         registerDoParallel(cl)
         df_lin2 <- foreach(n = seq(1,length(sigmas_ao)*length(mus_ao),1),
@@ -225,12 +226,13 @@ quant_coverage_errors <-
 
 
 quant_coverage_error <-  function(df, n_samples, n_obs) {
+  #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
   #'
-  #'
-  #' @param df: assumed to be a single row dataframe
-  #' Assumed columns of df: "mu_a", "sigma_a","mu_ao", "sigma_ao","mu_d", 
-  #' "sigma_d", "mu_vsigma_d","fract_neg_x_bar_a"
-  #' 
+  #' @param df: a single row dataframe generated from agreement_contest
+  #'  library, returned from generateExperiment_Data()
+  #' @param n_samples: number of samples drawn to evaluate converage error
+  #' @param n_obs: 
+  #' @return null, exports figures to disk
 
   
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
@@ -241,7 +243,7 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
   x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
   # Each row is a separate sample, columns are observations
   
-  # Difference x_bar to mu: Success is x_bar > mu
+  # Quantify coverage error of the mean (how often abs(x_bar) < abs(mu))
   abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d)
   df$mean_abs_diff_xbar_mu  <- mean(abs_diff_xbar_mu)
   n_errors                       <- sum(abs_diff_xbar_mu < 0)
@@ -314,7 +316,8 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
 
 
 row_locate_binary_bounds <- function (xb){
-  #' Given a logical matrix, locates the border between true and false
+  #' Given a logical matrix, locates the border between true and false with a simple algroithm
+  #' TODO|: replace algorithm, this one is not effective
   
   # Helper function to flip matrix left to right
   fliplr <- function(x) x[,ncol(x):1]
@@ -344,17 +347,40 @@ row_locate_binary_bounds <- function (xb){
 locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_samples, n_obs,
                                        temp_path, mu_ov_sigmas = NULL, rand.seed=0,
                                        overwrite = TRUE,  mus_a = 0, sigmas_a = 0,
-                                       parallel_proc = TRUE, negative_mu=TRUE){
+                                       is_parallel_proc = TRUE){
+  #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
+  #'
+  #' @param ind_var statistic evaluted for coeverage error
+  #' @param mus vector of range of population mu values to be quantified
+  #' @param sigmas vector of range of population sigma values to be quantified
+  #' @param n_samples number of samples drawn or each combination of mu and sigma
+  #' @param n_obs number of observations drawn for each simulation
+  #' @param temp_path path to store temp data
+  #' @param mu_ov_sigmas vector of range of mu/sigma values to be quantified, 
+  #' @param rand.seed seed for random number generation
+  #' @param overwrite flag to overwrite temp data (if not, load temp if exist)
+  #' @param mus_a vector of means for the control group (for quantifying coverage
+  #'  error of relative x_bar and mmd, the mean of of the control group must be
+  #'  specified.
+  #' @param sigmas_a vector of stds for the control group (for quantifying coverage
+  #'  error of relative x_bar and mmd, the std of the control group must be
+  #'  specified.
+  #' @param is_parallel_proc flag whether simulations are run in parallel across cores
+  #' 
+  #' @return df_crit dataframe that identifies the boundary between error regions
+
+  # Create temp directory and set random seet
+  dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
+  set.seed(rand.seed)
   
-  # browser();
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
   # Create temp dir if it does not exist
-  dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
+  
   
   #' Locate all 4 error transition boundaries
   #' Positive and negative direction, 0 and alpha error
-  set.seed(rand.seed)
+  
   n_cols <- max(c(length(mus), length(mu_ov_sigmas)))
   if (!is.null(mus)) {
     col_values = mus; 
@@ -367,14 +393,12 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
 
   }
   
-  
-  # error_cnd(all(unique(sign(mus))>=0), "mus must be positive or zero, sign gets flipped automatically")
-  
+
   # Run simulations calculating error of mmd with mu and sigma swept
   df_right <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
                                 n_samples = n_samples, n_obs = n_obs, paste(temp_path,"_right.rds"),
                                 mu_vsigmas_ao = mu_ov_sigmas, overwrite = overwrite,
-                                mus_a = mus_a, sigmas_a = sigmas_a, parallel_proc = parallel_proc) 
+                                mus_a = mus_a, sigmas_a = sigmas_a, is_parallel_proc = is_parallel_proc) 
   df_right$side <- as.factor("Right")
   
   # Run simulations calculating error of mmd with mu and sigma swept
@@ -382,7 +406,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
                                       n_samples = n_samples, n_obs = n_obs, 
                                    paste(temp_path,"_right.rds"),
                                mu_vsigmas_ao= neg_mu_ov_sigmas, overwrite = overwrite,
-                               mus_a = mus_a, sigmas_a = sigmas_a, parallel_proc = parallel_proc) 
+                               mus_a = mus_a, sigmas_a = sigmas_a, is_parallel_proc = is_parallel_proc) 
   df_left$side <- as.factor("Left")
   
 

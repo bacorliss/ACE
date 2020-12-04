@@ -45,7 +45,7 @@ dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 n_samples <- 1e3
 rand.seed <- 0
 overwrite <- TRUE
-parallel_proc <- TRUE
+is_parallel_proc <- TRUE
 
 
 
@@ -59,13 +59,9 @@ mu_ov_sigmas = NULL
 
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples = n_samples, 
-                                    n_obs = n_obs, out_path = "temp/mmd_Error_2D_mu_vs_sigma.rds",
-                                overwrite = overwrite, parallel_proc = parallel_proc)
+                                    n_obs = n_obs, out_path = paste(fig_path, "/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
+                                overwrite = overwrite, is_parallel_proc = is_parallel_proc)
 
-
-# Assemble results into square matrix
-# grid_slopes <- slopes_by_rowcol(df_results$mean_diff_mmd_mu, sigmas, mus)
-# # Difference MMD from Mu
 
 
 
@@ -195,7 +191,7 @@ n_obs <- 50
 set.seed(rand.seed)
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
-                           "temp/mmd_Error_2D_mu_over_sigma_vs_sigma.rds", mu_ov_sigmas,
+                           paste(fig_path, "/mmd_Error_2D_mu_over_sigma_vs_sigma.rds",sep=""), mu_ov_sigmas,
                            overwrite = overwrite)
 
 # Error rate of MMD < mu in mu/sigma space
@@ -272,7 +268,7 @@ mus <- seq (.1/5, 2, by=0.02)
 mu_ov_sigmas = NULL
 
 df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs, 
-                                         temp_path = paste(fig_path, "mmd_Error_mu_vs_sigma.rds",sep=""),
+                                         temp_path = paste(fig_path, "/mmd_Error_mu_vs_sigma.rds",sep=""),
                                          mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 
@@ -314,7 +310,7 @@ sigmas <- seq(.1, 5, by = .1);
 mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
 df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs,
-                                      temp_path = paste(fig_path, "mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
+                                      temp_path = paste(fig_path, "/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                                       mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 

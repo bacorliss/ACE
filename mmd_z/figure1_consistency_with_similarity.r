@@ -171,11 +171,9 @@ df_df_pearson <-
 
 
 
-
 # Relative Scale
 
 #------------------------------------------------------------------------------
-
 
 
 # Relative Mean:  decreasing rmu has higher agreement
@@ -298,8 +296,8 @@ df_rdf_pearson <-
 #------------------------------------------------------------------------
 
 # Re-make heatmap with rectangles based on the selection
-my_palette <- colorRampPalette(c(rgb(255, 0, 0,maxColorValue = 255),"white",
-                                 rgb(47, 117, 181,maxColorValue = 255)))(n = 299)
+my_palette <- colorRampPalette(c(rgb(47, 117, 181,maxColorValue = 255),"white",
+                               rgb(255, 0, 0,maxColorValue = 255)))(n = 299)
 col_breaks = c(seq(-1, -.1, length=100), seq(-.09, 0.09, length=100), 
                seq(0.1, 1.0,length=100))
 # Function for making selection rectangles around selection cells

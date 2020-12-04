@@ -1,5 +1,11 @@
 
 
+
+#' Library of functions to compute various 2-sample effect size statistics in a 
+#' row-by-row fashion. Input are two mxn matrices with m samples as rows and n 
+#' measurements as columns as columns. All functions return a vector of length m, 
+#' with an effect size quantified for each sample.
+
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 
@@ -114,7 +120,6 @@ row_tost_2s_slow <- function (m1,m2) {
       high_eqbound = 1e6, eqbound_type = "d", alpha = 0.05,
       desc = FALSE, plots = FALSE)$tost)$'p[0]'
   
-  
   tost_p <- sapply(1:dim(m1)[1], function(i)   tost_fun(m1[i,], m2[i,]))
  
 }
@@ -190,7 +195,7 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   #' @param x_b matrix of observations from experiment group where rows are 
   #' separate samples 
   #' @param parallelize_bf flag for parallel processing of Bayes Factor 
-  #' (since current implementation in R is ridiculously slow)
+  #' (since current implementation in R is slow)
   #' 
   #' @return dataframe of mean and standard deviation for each effect size statistic
   
