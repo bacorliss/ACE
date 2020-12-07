@@ -3,11 +3,29 @@
 #  Calculates the upper bounds of the mean of the effect size from a single distribution
 # or difference between two distributions.
 
-# TODO var.equal = TRUE not coded yet
+
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(docstring)
+
+
+
+rmmd_normal <- function(x,y,...) {
+  #' @description Calculates the relative most mean difference assuming a normal
+  #' 
+  #' @param x vector of measurements in x
+  #' @param y vector of measurements in y
+  #'
+  #' @return relative most mean difference
+  
+  # Calculate mmd
+  mmd <- mmd_normal(x,y,...)
+  
+  # Normalize 
+  rmmd <- mmd/mean(x)
+  
+  return(mmd)
+}
 
 
 
@@ -101,24 +119,24 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
   # Pooled mean, degrees of freedom, and standard deviation
   if (is.null(y)) {
     # 1-sample stats
-    d_bar <- mean(x)
+    xbar_dm <- mean(x)
     df_d <- n_x - 1
     sd_d <- sd_x
-    sem_d = sqrt( sd_x^2 / n_x)
+    sd_dm = sqrt( sd_x^2 / n_x)
     
   } else { 
     # 2-sample stats
-    d_bar <- mean(y) - mean(x)
+    xbar_dm <- mean(y) - mean(x)
     df_d <- n_x + n_y - 2
     sd_d <- sqrt( (( n_x-1)*sd_x^2 + (n_y - 1) * sd_y^2 ) / df_d)
-    sem_d = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    if (verbose) print(sprintf("d_bar: %.3f", d_bar))  
+    sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
+    if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
   }
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   #alpha = (1 - conf.level)
-  #ci_mean_alpha  <- qt( c(  alpha/2, 1 -   alpha/2), ncp = d_bar, sd = sd_d)
-  #ci_mean_2alpha <- qt( c(2*alpha/2, 1 - 2*alpha/2), ncp = d_bar, sd = sd_d)
+  #ci_mean_alpha  <- qt( c(  alpha/2, 1 -   alpha/2), ncp = xbar_dm, sd = sd_d)
+  #ci_mean_2alpha <- qt( c(2*alpha/2, 1 - 2*alpha/2), ncp = xbar_dm, sd = sd_d)
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   ci_mean_alpha  <- t.test(x,y, conf.level = conf.level, paired = FALSE, 
@@ -135,8 +153,8 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
   
   # Calculate MMD with root finding optmization
   # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_standard <- function(x) {pt(q = (-d_bar + x) / sem_d, df = df_d) - 
-                                  pt(q = (-d_bar - x) / sem_d, df = df_d) - conf.level}
+  t_star_standard <- function(x) {pt(q = (-xbar_dm + x) / sd_dm, df = df_d) - 
+                                  pt(q = (-xbar_dm - x) / sd_dm, df = df_d) - conf.level}
   
   # Debugging search bounds are correct
   if (verbose) {
@@ -195,37 +213,37 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   if (is.null(y)) {
     # 1-sample stats
     df_d <- n_x - 1
-    d_bar <- mean(x)
+    xbar_dm <- mean(x)
     sd_d <- sd_x
-    sem_d = sd_x / sqrt(n_x)
+    sd_dm = sd_x / sqrt(n_x)
     
   } else { 
     # 2-sample stats
     df_d <- n_x + n_y - 2
-    d_bar <- mean(y) - mean(x)
+    xbar_dm <- mean(y) - mean(x)
     sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
-    sem_d = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    # if (verbose) print(sprintf("d_bar: %.3f", d_bar))  
+    sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
+    # if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
   }
   
   # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
   alpha = (1 - conf.level)
   if (method =="standard") {
-    lower_bounds = max_abs_cl_mean_z_standard(d_bar, sem_d, 2*alpha)
-    upper_bounds= max_abs_cl_mean_z_standard(d_bar, sem_d, alpha)
+    lower_bounds = max_abs_cl_mean_z_standard(xbar_dm, sd_dm, 2*alpha)
+    upper_bounds= max_abs_cl_mean_z_standard(xbar_dm, sd_dm, alpha)
     
-    # Note: d_bar and x do not need to be in z_score units because they are z 
+    # Note: xbar_dm and x do not need to be in z_score units because they are z 
     # normalized after insertion into function
-    z_star_fcn <- function(x) { pnorm( (-d_bar + x)/sem_d, mean = 0, sd = 1) - 
-        pnorm( (-d_bar - x)/sem_d, mean = 0, sd = 1) - conf.level - d_bar}
+    z_star_fcn <- function(x) { pnorm( (-xbar_dm + x)/sd_dm, mean = 0, sd = 1) - 
+        pnorm( (-xbar_dm - x)/sd_dm, mean = 0, sd = 1) - conf.level - xbar_dm}
     
   } else if (method =="nonstandard") {
-    lower_bounds = max_abs_cl_mean_z(d_bar, sem_d, 2*alpha)
-    upper_bounds = max_abs_cl_mean_z(d_bar, sem_d, alpha)
+    lower_bounds = max_abs_cl_mean_z(xbar_dm, sd_dm, 2*alpha)
+    upper_bounds = max_abs_cl_mean_z(xbar_dm, sd_dm, alpha)
     
     # Integration of folded z-distribution from standard central z-distribution
-    z_star_fcn <- function(x) {pnorm( +x, mean = d_bar, sd = sem_d) - 
-        pnorm( -x, mean = d_bar, sd = sem_d) - conf.level}
+    z_star_fcn <- function(x) {pnorm( +x, mean = xbar_dm, sd = sd_dm) - 
+        pnorm( -x, mean = xbar_dm, sd = sd_dm) - conf.level}
     
   }
 

@@ -25,10 +25,6 @@ p_load(VGAM)
 p_load(gplots)
 p_load(RColorBrewer)
 p_load(tidyr)
-# https://cran.r-project.org/web/packages/equivalence/equivalence.pdf
-# p_load(equivalence)
-# https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
-# p_load(TOSTER)
 p_load(docstring)
 # User defined functions
 source("R/mmd.R")
