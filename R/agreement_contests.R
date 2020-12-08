@@ -708,7 +708,9 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   }
 
  
+  # Compare magnitude and difference with each statistic between exp 1 and exp 2
   for (i in seq_along(stat_list)) {
+
     # Determine if exp 1 has higher agreement than (hat) than exp 2
     dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
       sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
