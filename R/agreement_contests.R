@@ -35,12 +35,12 @@ p_load(confintr)
 source("R/parallel_utils.R")
 source("R/row_effect_sizes.R")
 source("R/mmd.R")
-
+source("R/ldm.R")
 
 # Parse all functions in file for parallel processing using user functions
 row_effect_sizes_fun <- parse_functions_source("R/row_effect_sizes.R")
 mmd_functions <- parse_functions_source("R/mmd.R")
-
+ldm_functions <- parse_functions_source("R/ldm.R")
 
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
@@ -589,7 +589,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
 quantify_esize_simulations <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
-                                parallel_sims = TRUE) {
+                                parallel_sims = TRUE,  stat_exclude_list = NULL) {
   #' @description Given a data frame of pop. params and input data for each 
   #' experiment group, quantify mean values and comparison error of various 
   #' candidate statistics over repeated samples.
@@ -602,7 +602,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   #' @param parallel_sims flag to parallelize simulation across CPU cores (recommended)
   #' 
   #' @return df dataframe with pop params and comparison error rates of each candidate statistics.
-  
+
   # Initialize output data frame
   # parallel_sims = FALSE
   n_sims = dim(df_in)[1]
@@ -623,12 +623,12 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER"),
-                .export = c(row_effect_sizes_fun, mmd_functions,
+                .export = c(row_effect_sizes_fun, mmd_functions,ldm_functions,
                             "quantify_esize_simulation")) %dopar% {
         #calling a function
-        tempMatrix <- quantify_esize_simulation(df[n,], include_bf, 
-                                               rand.seed = rand.seed+n,
-                                               parallelize_bf = FALSE) 
+        tempMatrix <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n,
+                                               parallelize_bf = FALSE,
+                                               stat_exclude_list = stat_exclude_list) 
         tempMatrix
       }
       #stop cluster
@@ -638,7 +638,8 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       # Process effect sizes serially and bind rows into one dataframe
       for (n in seq(1,n_sims)) {
         df_list[[n]] <- quantify_esize_simulation(df_in[n,], include_bf, rand.seed = rand.seed+n, 
-                                            parallelize_bf = FALSE) 
+                                            parallelize_bf = FALSE, 
+                                            stat_exclude_list = stat_exclude_list) 
       }
       df <- bind_rows(df_list)
     }
@@ -655,7 +656,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
 
 
 quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE) {
+                                      parallelize_bf = FALSE, stat_exclude_list = NULL) {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
   #' 
@@ -691,10 +692,13 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   # # load(file = "temp/debug.RData")
   
   # Calculate effect sizes for both experiments
-  dfs_1 <- quantify_row_effect_sizes(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE)
-  dfs_2 <- quantify_row_effect_sizes(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE)
+  dfs_1 <- quantify_row_effect_sizes(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+                                     stat_exclude_list = stat_exclude_list)
+  dfs_2 <- quantify_row_effect_sizes(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
+                                     stat_exclude_list = stat_exclude_list)
   stat_list <- colnames(dfs_1)
   
+  # browser();
   
   dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
   # Means and std of each statistic
@@ -954,7 +958,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
 
 process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
-                                      parallel_sims = TRUE, is_plotted = TRUE) {
+                                      parallel_sims = TRUE, is_plotted = TRUE, 
+                                      stat_exclude_list= c("ldm", "rldm")) {
   #' @description 
   #' 
   #' @param df_init dataframe of population param sets by row
@@ -970,6 +975,8 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' @param include_bf flag to include bayes factor in calculation (extremely slow)
   #' @param parallel_sims flat to process simulation (pop param sets) in parallel
   #' @param is_plotted flag whether results should be plotted and exported to disk
+  #' @param stat_exclude_list list of candidate statistics to excluide in the 
+  #' analysis
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
 
@@ -986,7 +993,8 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
-                                      include_bf = include_bf,parallel_sims = parallel_sims)
+                                      include_bf = include_bf,parallel_sims = parallel_sims,
+                                      stat_exclude_list=stat_exclude_list)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary

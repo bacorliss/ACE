@@ -106,6 +106,13 @@ row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
 }
 
 
+
+
+row_ldm_2s_zdist <- function(m1, m2,...) {
+  ldm <- sapply(1:dim(m1)[1], function(i)  ldm_normal_zdist(x=m1[i,], y=m2[i,], ...))
+  return(ldm)
+}
+
 row_tost_2s_slow <- function (m1,m2) {
   
   n1 <- dim(m1)[2]
@@ -166,8 +173,8 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 ## Test data
 # 
-# m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
-# m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
+m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
+m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
 # 
 # # Z score and test
 # z = rowzScore(m1, m2)
@@ -184,11 +191,13 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 
 
-quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
+quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 
-  #' supports same sample size within x_a and x_b)
+  #' supports same sample size within x_a and x_b). Sign is preserved with the 
+  #' statistics, when comparing them for agreement and disagreement, the 
+  #' magnitude is taken (parent function).
   #' 
   #' @param x_a matrix of observations from control group where rows are separate
   #'  samples
@@ -196,6 +205,7 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   #' separate samples 
   #' @param parallelize_bf flag for parallel processing of Bayes Factor 
   #' (since current implementation in R is slow)
+  #' @param exclude_list list of variables to exclude
   #' 
   #' @return dataframe of mean and standard deviation for each effect size statistic
   
@@ -204,12 +214,16 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   n_samples = dim(x_a)[1]
   df_d = n_a + n_b - 2
   
-  # Initialize data frames
-  df = data.frame(xbar_dm=rep(0, n_samples))
-  df_hat = data.frame(xbar_dm=1)
-  df_hdt = data.frame(xbar_dm=1)
-  df_name = data.frame(xbar_dm=1)
-  df_pretty = data.frame(xbar_dm=1)
+  # Initialize data frames so that
+  stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp",
+                 "cohend", "mmd", "rmmd", "ldm", "rldm", "rand")
+  
+  df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
+  colnames(df) <- stat_list
+  df_hat <- df[1,]
+  df_hdt <- df[1,]
+  df_name <- df[1,]
+  df_pretty <- df[1,]
     
   # 1) Mean of the difference of means
   df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
@@ -254,7 +268,6 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   df_hdt$tostp <- ">"
   df_pretty$tostp <- "p[TOST]"
   
-  
   # 8) Cohens D
   df$cohend = row_cohend(x_a, x_b)
   df_hat$cohend <- "<"
@@ -273,12 +286,34 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE) {
   df_hdt$rmmd <- ">"
   df_pretty$rmmd <- "r*delta[M]"
   
-  # 11) Random group
+  
+  # 11) Least Difference in Means
+  df$ldm = row_ldm_2s_zdist(x_a, x_b)
+  df_hat$ldm <- "<"
+  df_hdt$ldm <- ">"
+  df_pretty$ldm <- "delta[L]"
+  
+  # 12) Relative Least Difference in Means
+  df$rldm = df$ldm / rowMeans(x_a)
+  df_hat$rldm <- "<"
+  df_hdt$rldm <- ">"
+  df_pretty$rldm <- "r*delta[L]"
+  
+  
+  # 13) Random group
   df$rand = rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
                            nrow = n_samples, ncol = 50))
   df_hat$rand <- "<"
   df_hdt$rand <- ">"
   df_pretty$rand <- "Rnd"
+  
+  
+  # Drop any statistics requested by user
+  df <- df[ , !(names(df) %in% stat_exclude_list)]
+  df_hat <- df_hat[ , !(names(df_hat) %in% stat_exclude_list)]
+  df_hdt <- df_hdt[ , !(names(df_hdt) %in% stat_exclude_list)]
+  df_pretty <- df_pretty[ , !(names(df_pretty) %in% stat_exclude_list)]
+
   
   # Store attributes within df
   attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
