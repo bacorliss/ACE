@@ -211,7 +211,7 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 
 
-quantify_row_stats_toolbox <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL) {
+quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL, alpha = 0.05) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 

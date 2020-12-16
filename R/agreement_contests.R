@@ -54,6 +54,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                                     # Difference distribution pop. parameters
                                     mus_1ao = NA, sigmas_1ao = NA, 
                                     mus_2ao = NA, sigmas_2ao = NA,
+                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                     switch_group_ab = FALSE,
                                     switch_sign_mean_ab = FALSE,
                                     switch_sign_mean_d = FALSE,
@@ -114,13 +115,15 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                                mus_2a = mus_2a, sigmas_2a = sigmas_2a,
                                mus_1ao = mus_1ao, sigmas_1ao = sigmas_1ao, 
                                mus_2ao = mus_2ao, sigmas_2ao = sigmas_2ao,
-                               n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b) 
+                               n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b, 
+                               alpha_1 = alpha_1, alpha_2 = alpha_2) 
   } else {
     df_init   <- 
       pop_params_from_ab( n_samples = n_samples, n_sims = n_sims, 
                           mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
                           mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
-                          n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b)
+                          n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b, 
+                          alpha_1 = alpha_1, alpha_2 = alpha_2) 
   }
   # Switch params if needed flag is specified
   df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
@@ -272,7 +275,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
 pop_params_from_aoffset <-
   function( n_samples, n_sims, mus_1a, sigmas_1a, mus_2a, sigmas_2a,
             mus_1ao, sigmas_1ao, mus_2ao, sigmas_2ao,
-            n_1a, n_1b, n_2a, n_2b) {
+            n_1a, n_1b, n_2a, n_2b, alpha_1, alpha_2) {
     #' @description Given pop params for group A and offset values (AO), calculates pop params for
     #' group b. This is useful for generating population params because the 
     #' distribution of the offset between group params can be easily 
@@ -310,7 +313,8 @@ pop_params_from_aoffset <-
                  mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
                  mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
                  sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
-                 sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
+                 sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d,
+                 alpha_1 = alpha_1, alpha_2 = alpha_2 
     )
     return(df)
   }
@@ -321,7 +325,7 @@ pop_params_from_ab <- function( n_samples, n_sims,
                                 mus_2a, sigmas_2a,
                                 mus_1b, sigmas_1b, 
                                 mus_2b, sigmas_2b,
-                                n_1a, n_1b, n_2a, n_2b) {
+                                n_1a, n_1b, n_2a, n_2b, alpha_1, alpha_2) {
   #' @description Given pop params for group A and B, calculates pop params of D, 
   #' the difference between A and B distribution.
   #' 
@@ -353,7 +357,8 @@ pop_params_from_ab <- function( n_samples, n_sims,
                mu_1a = mus_1a, mu_1b = mus_1b, mu_1d = mus_1d,  n_1a = n_1a, n_1b = n_1b,
                mu_2a = mus_2a, mu_2b = mus_2b, mu_2d = mus_2d,  n_2a = n_2a, n_2b = n_2b, 
                sigma_1a = sigmas_1a, sigma_1b = sigmas_1b, sigma_1d = sigmas_1d,
-               sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d
+               sigma_2a = sigmas_2a, sigma_2b = sigmas_2b, sigma_2d = sigmas_2d,
+               alpha_1 = alpha_1, alpha_2 = alpha_2
   )
   return(df)
 }
@@ -428,6 +433,7 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     temp_mu_1b     <- df$mu_1b;    temp_sigma_1b  <- df$sigma_1b
     temp_mu_2a     <- df$mu_2a;    temp_sigma_2a  <- df$sigma_2a
     temp_mu_2b     <- df$mu_2b;    temp_sigma_2b  <- df$sigma_2b
+    temp_alpha_1 <- df$alpha_1;    temp_alpha_2   <-  df$alpha_2;
     # Determine which simulations to switch parameters for a and b
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
     # Switch specified parameters
@@ -435,11 +441,14 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     df$sigma_1a[switch_boolean]   <- temp_sigma_2a[switch_boolean]
     df$mu_1b[switch_boolean]      <- temp_mu_2b[switch_boolean]
     df$sigma_1b[switch_boolean]   <- temp_sigma_2b[switch_boolean]
+    df$alpha_1[switch_boolean]    <- temp_alpha_2[switch_boolean]
     
     df$mu_2a[switch_boolean]      <- temp_mu_1a[switch_boolean]
     df$sigma_2a[switch_boolean]   <- temp_sigma_1a[switch_boolean]
     df$mu_2b[switch_boolean]      <- temp_mu_1b[switch_boolean]
     df$sigma_2b[switch_boolean]   <- temp_sigma_1b[switch_boolean]
+    df$alpha_2[switch_boolean]    <- temp_alpha_1[switch_boolean]
+    
     # Recalculate D
     df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
     df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
@@ -692,10 +701,10 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   # # load(file = "temp/debug.RData")
   
   # Calculate effect sizes for both experiments
-  dfs_1 <- quantify_row_stats_toolbox(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
-                                     stat_exclude_list = stat_exclude_list)
-  dfs_2 <- quantify_row_stats_toolbox(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
-                                     stat_exclude_list = stat_exclude_list)
+  dfs_1 <- quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+                                     stat_exclude_list = stat_exclude_list, alpha = df$alpha_1)
+  dfs_2 <- quantify_row_stats(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
+                                     stat_exclude_list = stat_exclude_list, alpha = df$alpha_2)
   stat_list <- colnames(dfs_1)
   
   
