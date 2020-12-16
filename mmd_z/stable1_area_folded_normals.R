@@ -17,7 +17,7 @@ p_load("RColorBrewer")
 p_load(cowplot)
 # User defined libraries
 source("R/mmd.R")
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
 base_dir = "mmd_z"
 
 # Figure parameters

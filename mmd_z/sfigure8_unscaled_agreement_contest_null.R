@@ -48,7 +48,7 @@ df_unscaled_null = list();
 #
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
 set.seed(rand.seed)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_near_zero", sep = "")

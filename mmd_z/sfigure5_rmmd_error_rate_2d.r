@@ -26,7 +26,8 @@ p_load(gplots)
 p_load(RColorBrewer)
 p_load(tidyr)
 p_load(docstring)
-
+# User toolboxes
+source("R/coverage_error_toolbox.R")
 
 
 # Figure parameters
@@ -39,9 +40,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive=TRUE)
 rand.seed <- 0
 overwrite <- TRUE
 
-# Helper Functions
-source("R/mmd.R")
-source("R/error_2d_utils.R")
+
 
 
 
@@ -159,7 +158,7 @@ save_plot(paste(fig_path, "/", fig_num, "_2b mmd error test.tiff",sep=""),
 # Plot 5: Line plot of location of coverage error boundaries of rmmd in mu space
 #                                                                              
 #______________________________________________________________________________
-source("R/error_2d_utils.R")
+source("R/coverage_error_toolbox.R")
 n_samples <- 1e3
 n_obs <- 50
 sigmas <- seq(1.5, 5, by = .1); 
@@ -265,7 +264,7 @@ save_plot(paste(fig_path, "/", fig_num, "_2b mmd error test.tiff",sep=""),
 # Plot 8: Line plot of location of coverage error boundaries of rmmd with mu space
 #                                                                              #
 #______________________________________________________________________________#
-source("R/error_2d_utils.R")
+source("R/coverage_error_toolbox.R")
 n_samples <- 1e3
 n_obs <- 50
 sigmas <- seq(1.5, 5, by = .1); 

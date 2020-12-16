@@ -8,10 +8,11 @@
 
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-
 p_load(BayesFactor)
 p_load(TOSTER)
 
+source("R/ldm.R")
+source("R/mmd.R")
 
 ## User defined functions
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -210,7 +211,7 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 
 
-quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL) {
+quantify_row_stats_toolbox <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 

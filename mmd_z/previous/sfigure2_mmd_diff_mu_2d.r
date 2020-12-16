@@ -37,7 +37,7 @@ overwrite = TRUE
 
 # Helper Functions
 source("R/mmd.R")
-source("R/error_2d_utils.R")
+source("R/coverage_error_toolbox.R")
 
 
 
@@ -149,7 +149,7 @@ save_plot(paste(base_dir,"/figure/SF", fig_num, "/SF", fig_num, "_a2 mmd rdiff_o
 
 
 
-source("R/error_2d_utils.R")
+source("R/coverage_error_toolbox.R")
 # Relative Difference MMD normalized by sigma
 #------------------------------------------------------------------------------
 mus <- seq(-2.5, 2.5, by = .1); mus<- mus[mus!=0]

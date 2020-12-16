@@ -33,12 +33,12 @@ p_load(stringr)
 p_load(confintr)
 # User defined libraries
 source("R/parallel_utils.R")
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
 source("R/mmd.R")
 source("R/ldm.R")
 
 # Parse all functions in file for parallel processing using user functions
-row_effect_sizes_fun <- parse_functions_source("R/row_effect_sizes.R")
+row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
 mmd_functions <- parse_functions_source("R/mmd.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
 
@@ -623,7 +623,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER"),
-                .export = c(row_effect_sizes_fun, mmd_functions,ldm_functions,
+                .export = c(row_stats_toolbox_fun, mmd_functions,ldm_functions,
                             "quantify_esize_simulation")) %dopar% {
         #calling a function
         tempMatrix <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n,
@@ -692,9 +692,9 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   # # load(file = "temp/debug.RData")
   
   # Calculate effect sizes for both experiments
-  dfs_1 <- quantify_row_effect_sizes(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+  dfs_1 <- quantify_row_stats_toolbox(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
                                      stat_exclude_list = stat_exclude_list)
-  dfs_2 <- quantify_row_effect_sizes(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
+  dfs_2 <- quantify_row_stats_toolbox(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
                                      stat_exclude_list = stat_exclude_list)
   stat_list <- colnames(dfs_1)
   

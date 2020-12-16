@@ -8,10 +8,11 @@ p_load(tidyr)
 source("R/parallel_utils.R")
 source("R/mmd.R")
 source("R/ldm.R")
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
+
 mmd_functions <- parse_functions_source("R/mmd.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
-row_effect_size_functions <- parse_functions_source("R/row_effect_sizes.R")
+row_effect_size_functions <- parse_functions_source("R/row_stats_toolbox.R")
 
 RowVar <- function(x, ...) rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
 # Test if a value is within an interval (inclusive)

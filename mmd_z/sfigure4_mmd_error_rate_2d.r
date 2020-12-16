@@ -28,7 +28,7 @@ p_load(tidyr)
 p_load(docstring)
 # User defined functions
 source("R/mmd.R")
-source("R/error_2d_utils.R")
+source("R/coverage_error_utils")
 
 
 # Figure parameters
@@ -257,7 +257,6 @@ save_plot(paste(fig_path, "\\", fig_num, "_3b mmd error test mu_over_sigma.tiff"
 # Identify location of coverage error boundaries with mu space
 #                                                                              #
 #______________________________________________________________________________#
-source("R/error_2d_utils.R")
 n_obs <- 50
 sigmas <- seq(.1, 5, by = .1); 
 mus <- seq (.1/5, 2, by=0.02)

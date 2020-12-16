@@ -22,7 +22,7 @@ p_load(tidyr)
 p_load(rbenchmark)
 # User defined libraries
 source("R/mmd.R")
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
 source("R/norm_versus_fnorm.R")
 
 

@@ -23,9 +23,9 @@ parse_functions_source <- function(file_path) {
   
   return(function_list)
 }
-# # functions = Filter(is_function, parse("R/row_effect_sizes.R"))
-# row_effect_sizes_fun <-
-#   unlist(Map(function_name,   Filter(is_function, parse("R/row_effect_sizes.R"))))
+# # functions = Filter(is_function, parse("R/row_stats_toolbox.R"))
+# row_stats_toolbox_fun <-
+#   unlist(Map(function_name,   Filter(is_function, parse("R/row_stats_toolbox.R"))))
 # 
 # mmd_functions <-
-#   unlist(Map(function_name,   Filter(is_function, parse("R/row_effect_sizes.R"))))
+#   unlist(Map(function_name,   Filter(is_function, parse("R/row_stats_toolbox.R"))))

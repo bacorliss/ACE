@@ -16,7 +16,7 @@ p_load(dplyr)
 p_load(tidyr)
 p_load(cowplot)
 # User defined functions
-source("R/row_effect_sizes.R")
+source("R/row_stats_toolbox.R")
 source("R/mmd.R")
 
 
