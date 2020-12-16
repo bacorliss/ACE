@@ -519,7 +519,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
   set.seed(rand.seed)
   
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
   # load(file = "temp/debug.RData")
   # Create temp dir if it does not exist
   
@@ -555,9 +555,11 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
                                mus_a = mus_a, sigmas_a = sigmas_a, is_parallel_proc = is_parallel_proc) 
   df_left$side <- as.factor("Left")
   
-
-  ind_var_zero <- paste("pval_",ind_var,"_err_eq_zero",sep="")
-  ind_var_alpha <- paste("pval_",ind_var,"_err_eq_alpha",sep="")
+  save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
+  
+  # pval_err_eq_alpha_abs_mmd_lt_mu_dm
+  ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_mu_dm",sep="")
+  ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_mu_dm",sep="")
   
   # Equivalence test versus middle column of same row
   p_threshold = 0.05 /(n_cols*length(sigmas))

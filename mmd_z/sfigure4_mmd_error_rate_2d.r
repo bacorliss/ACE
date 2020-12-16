@@ -64,7 +64,7 @@ df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples 
 # Error rate of xbar < mu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_xbar_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_xbar_dm_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
@@ -193,7 +193,7 @@ df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
 # Error rate of MMD < mu in mu/sigma space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mmd_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
@@ -220,8 +220,8 @@ save_plot(paste(fig_path, "\\", fig_num, "_3a mmd error rate 2D.tiff",sep=""),
 # Tested error rate MMD < mu in mu/sigma space
 #-------------------------------------------------------------------------------
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_mmd_err_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
-  df_results$pval_mmd_err_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
+  df_results$pval_err_eq_zero_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
+  df_results$pval_err_eq_alpha_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
   gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
