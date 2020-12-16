@@ -19,13 +19,13 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/agreement_contests.R")
 
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 fig_num = "1" 
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)

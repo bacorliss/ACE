@@ -15,7 +15,7 @@ p_load(dplyr)
 # p_load(effsize)
 p_load(boot)
 # User defined libraries
-source("mmd.R")
+source("mdm.R")
 source("effect_size_contests.R")
 
 
@@ -46,30 +46,30 @@ u_1d = 10
 sd_d <- sapply(Ca * seq(.1, 1, by=0.1), function(s) sd(s * (x_d) + u_1d))
 sd_md = sd_d/sqrt(n_obs)
 
-mmd_d <- sapply(Ca * seq(.1, 1, by=0.1), function(s) mmd_normal(s * (x_d) + u_1d,
+mdm_d <- sapply(Ca * seq(.1, 1, by=0.1), function(s) mdm_normal(s * (x_d) + u_1d,
                                                            paired = FALSE))
 
-mmd_d/u_1a
+mdm_d/u_1a
 1.64*sd_md/u_1a
 
 
 
 sd_md
-mmd_d
+mdm_d
 
-(mmd_d-u_1d)/(1.645*(sd_md))
+(mdm_d-u_1d)/(1.645*(sd_md))
 
 
 
-plot(2*sd_md, mmd_d)
+plot(2*sd_md, mdm_d)
 
 
 
 rsd_x <- sd_x/1
-rmmd_x <- mmd_x/1
+rmdm_x <- mdm_x/1
 
 
-plot(rsd_x,rmmd_x)
+plot(rsd_x,rmdm_x)
 
 
 
@@ -98,10 +98,10 @@ x_2at <- x_a * sigma_2a + u_2a
 x_2bt <- x_b * sqrt(sigma_2a^2 + sigma_2d^2) + (u_2a + u_2d)
 
 
-mmd1 = mmd_normal(x_1at, x_1bt,paired = FALSE)
-rmmd1 = mmd1/mean(x_1at)
+mdm1 = mdm_normal(x_1at, x_1bt,paired = FALSE)
+rmdm1 = mdm1/mean(x_1at)
 
 
-mmd2 = mmd_normal(x_2at, x_2bt,paired = FALSE)
-rmmd2 = mmd2/mean(x_2at)
+mdm2 = mdm_normal(x_2at, x_2bt,paired = FALSE)
+rmdm2 = mdm2/mean(x_2at)
 

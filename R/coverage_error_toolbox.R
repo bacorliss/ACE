@@ -6,11 +6,11 @@ p_load(doParallel)
 p_load(tidyr)
 
 source("R/parallel_utils.R")
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/ldm.R")
 source("R/row_stats_toolbox.R")
 
-mmd_functions <- parse_functions_source("R/mmd.R")
+mdm_functions <- parse_functions_source("R/mdm.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
 row_effect_size_functions <- parse_functions_source("R/row_stats_toolbox.R")
 
@@ -90,7 +90,7 @@ slopes_by_rowcol <- function(m, row_vals, col_vals) {
 
 error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
   #' @description Assign codes for error rate whether null hypothesis is rejected
-  #' for use in a heatmap of hypothesis outcomes. Test if proportion of mmds that
+  #' for use in a heatmap of hypothesis outcomes. Test if proportion of mdms that
   #' are above mu (error rate) are equal to 0.05 and 0.00, return code do delineate
   #' combinations of both results:
   #'  (0) E = neither,  (1) E == 0.00
@@ -153,7 +153,7 @@ quant_coverage_errors <-
     set.seed(rand.seed)
     if (!file.exists(out_path) || overwrite) {
 
-      # Matrix diff and error of mmd
+      # Matrix diff and error of mdm
       if (!is.null(mus_ao)) {dimnames = list(sigmas_ao,mus_ao)
       } else {dimnames = list(sigmas_ao,mu_vsigmas_ao)}
       
@@ -194,7 +194,7 @@ quant_coverage_errors <-
         cl = makeCluster(detectCores()[1]-1)
         registerDoParallel(cl)
         df_lin2 <- foreach(n = seq(1,length(sigmas_ao)*length(mus_ao),1),
-                           .export = c(mmd_functions, ldm_functions,row_effect_size_functions, 
+                           .export = c(mdm_functions, ldm_functions,row_effect_size_functions, 
                                        "quant_coverage_error","quant_error_rate"), 
                            .combine = rbind, .packages = c("tidyr")) %dopar% {
                              #calling a function
@@ -235,7 +235,7 @@ quant_coverage_errors <-
 
 
 quant_coverage_error <-  function(df, n_samples, n_obs) {
-  #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
+  #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
   #'  library, returned from generateExperiment_Data()
@@ -255,10 +255,10 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
   # Each row is a separate sample, columns are observations
   
   ci_mean = row_ci_mean_2s_zdist(m1 = x_a, m2 = x_a+x_d)
-  df_init = data.frame(xbar_dm = rowMeans(x_d), mmd = row_mmd_2s_zdist(x_a, x_a+x_d), 
+  df_init = data.frame(xbar_dm = rowMeans(x_d), mdm = row_mdm_2s_zdist(x_a, x_a+x_d), 
                     ldm = row_ldm_2s_zdist(x_a, x_a+x_d), ci_lower_z = ci_mean$ci_lower, 
                     ci_upper_z = ci_mean$ci_upper, mu_dm = df$mu_d)
-  df_init$rmmd = df_init$mmd/ rowMeans(x_a)
+  df_init$rmdm = df_init$mdm/ rowMeans(x_a)
   df_init$rldm = df_init$ldm/ rowMeans(x_a)
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
@@ -279,9 +279,9 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
                               gt_name = "mu_dm", use_absolute = FALSE)
   
   # Confidence intervals of the mean, z distribution
-  df_list[[5]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mmd" ,  
+  df_list[[5]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mdm" ,  
                               gt_name = "mu_dm", use_absolute = TRUE)
-  df_list[[6]] <- quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmmd" ,  
+  df_list[[6]] <- quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,  
                             gt_name = "rmu_dm", use_absolute = TRUE)
   df_err = do.call("cbind", df_list)
 
@@ -311,44 +311,44 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
 #     n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
 # } else {df$pval_rxbar_err_eq_zero= NaN; df$pval_rxbar_err_eq_alpha = NaN}
 # 
-# # Calculate the mmd from samples from the difference distribution
-# mmd_d = apply(x_d, 1, function (x) mmd_normal_zdist(x, conf.level = 0.95) )
-# # Difference mmd to mu
+# # Calculate the mdm from samples from the difference distribution
+# mdm_d = apply(x_d, 1, function (x) mdm_normal_zdist(x, conf.level = 0.95) )
+# # Difference mdm to mu
 # #----------------------------------------------------------------------
-# abs_diff_mmd_mu <- mmd_d - abs(df$mu_d)
-# # Relative difference mmd to mu
-# df$mean_diff_mmd_mu        <- mean(abs_diff_mmd_mu)
-# df$mean_diff_mmd_mu_vmu    <- df$mean_diff_mmd_mu / abs(df$mu_d)
-# df$mean_diff_mmd_mu_vsigma <- df$mean_diff_mmd_mu / df$sigma_d
-# # Error rate mmd_d and mu
-# n_errors                        <- sum(abs_diff_mmd_mu < 0)
-# df$mean_mmd_error_rate     <- n_errors / n_samples
+# abs_diff_mdm_mu <- mdm_d - abs(df$mu_d)
+# # Relative difference mdm to mu
+# df$mean_diff_mdm_mu        <- mean(abs_diff_mdm_mu)
+# df$mean_diff_mdm_mu_vmu    <- df$mean_diff_mdm_mu / abs(df$mu_d)
+# df$mean_diff_mdm_mu_vsigma <- df$mean_diff_mdm_mu / df$sigma_d
+# # Error rate mdm_d and mu
+# n_errors                        <- sum(abs_diff_mdm_mu < 0)
+# df$mean_mdm_error_rate     <- n_errors / n_samples
 # # Caluate p-values for test against error rate == 0
-# df$pval_mmd_err_eq_zero <- binom.test(
+# df$pval_mdm_err_eq_zero <- binom.test(
 #   n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
 # # Caluate p-values for test against error rate == alpha
-# df$pval_mmd_err_eq_alpha <- binom.test(
+# df$pval_mdm_err_eq_alpha <- binom.test(
 #   n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
 # 
-# # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
+# # Relative MDM: Difference r-mdm (mdm/ sample mean) to rmu
 # #----------------------------------------------------------------------
-# rmmd                         <- mmd_d / abs(rowMeans(x_a))
-# df$mean_rmmd            <- mean(rmmd)
+# rmdm                         <- mdm_d / abs(rowMeans(x_a))
+# df$mean_rmdm            <- mean(rmdm)
 # # Quality check: no means of group a should be below zero for relative change
 # df$fract_neg_x_bar_a    <- sum(rowMeans(x_a)<0) / n_samples
-# diff_rmmd_rmu                <- rmmd - abs(df$rmu)
-# df$mean_diff_rmmd_rmu   <- mean(diff_rmmd_rmu)
-# # Error rate rmmd > rmu
-# n_errors                     <- sum(diff_rmmd_rmu < 0)
-# df$mean_rmmd_error_rate <- n_errors / n_samples
-# # Calculate p-values for test rmmd error rate == 0
+# diff_rmdm_rmu                <- rmdm - abs(df$rmu)
+# df$mean_diff_rmdm_rmu   <- mean(diff_rmdm_rmu)
+# # Error rate rmdm > rmu
+# n_errors                     <- sum(diff_rmdm_rmu < 0)
+# df$mean_rmdm_error_rate <- n_errors / n_samples
+# # Calculate p-values for test rmdm error rate == 0
 # if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
-#   df$pval_rmmd_err_eq_zero <- binom.test(
+#   df$pval_rmdm_err_eq_zero <- binom.test(
 #     n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-#   # Calculate p-values for test rmmd error rate == alpha
-#   df$pval_rmmd_err_eq_alpha <- binom.test(
+#   # Calculate p-values for test rmdm error rate == alpha
+#   df$pval_rmdm_err_eq_alpha <- binom.test(
 #     n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-# }else {df$pval_rmmd_err_eq_zero= NaN; df$pval_rmmd_err_eq_alpha = NaN}
+# }else {df$pval_rmdm_err_eq_zero= NaN; df$pval_rmdm_err_eq_alpha = NaN}
 # 
 
 quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name, 
@@ -491,11 +491,11 @@ row_locate_binary_bounds <- function (xb){
 }
 
 
-locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_samples, n_obs,
+locate_bidir_binary_thresh <- function(ind_var = "mdm", mus = NULL, sigmas, n_samples, n_obs,
                                        temp_path, mu_ov_sigmas = NULL, rand.seed=0,
                                        overwrite = TRUE,  mus_a = 0, sigmas_a = 0,
                                        is_parallel_proc = TRUE){
-  #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
+  #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
   #'
   #' @param ind_var statistic evaluted for coeverage error
   #' @param mus vector of range of population mu values to be quantified
@@ -507,10 +507,10 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   #' @param rand.seed seed for random number generation
   #' @param overwrite flag to overwrite temp data (if not, load temp if exist)
   #' @param mus_a vector of means for the control group (for quantifying coverage
-  #'  error of relative x_bar and mmd, the mean of of the control group must be
+  #'  error of relative x_bar and mdm, the mean of of the control group must be
   #'  specified.
   #' @param sigmas_a vector of stds for the control group (for quantifying coverage
-  #'  error of relative x_bar and mmd, the std of the control group must be
+  #'  error of relative x_bar and mdm, the std of the control group must be
   #'  specified.
   #' @param is_parallel_proc flag whether simulations are run in parallel across cores
   #' 
@@ -541,14 +541,14 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   }
   
 
-  # Run simulations calculating error of mmd with mu and sigma swept
+  # Run simulations calculating error of mdm with mu and sigma swept
   df_right <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
                                 n_samples = n_samples, n_obs = n_obs, paste(temp_path,"_right.rds"),
                                 mu_vsigmas_ao = mu_ov_sigmas, overwrite = overwrite,
                                 mus_a = mus_a, sigmas_a = sigmas_a, is_parallel_proc = is_parallel_proc) 
   df_right$side <- as.factor("Right")
   
-  # Run simulations calculating error of mmd with mu and sigma swept
+  # Run simulations calculating error of mdm with mu and sigma swept
   df_left <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
                                       n_samples = n_samples, n_obs = n_obs, 
                                    paste(temp_path,"_right.rds"),
@@ -558,7 +558,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mmd", mus = NULL, sigmas, n_sa
   
   save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
   
-  # pval_err_eq_alpha_abs_mmd_lt_mu_dm
+  # pval_err_eq_alpha_abs_mdm_lt_mu_dm
   ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_mu_dm",sep="")
   ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_mu_dm",sep="")
   

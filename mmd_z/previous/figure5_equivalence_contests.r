@@ -1,6 +1,6 @@
 
 
-### Figure 2: MMD outperforms previous statistics of effect size.
+### Figure 2: MDM outperforms previous statistics of effect size.
 #
 # Metrics of sample effect size
 #
@@ -32,7 +32,7 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/equivalence_contests.R")
 
 

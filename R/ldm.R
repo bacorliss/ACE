@@ -7,7 +7,7 @@
 
 ldm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
                        verbose = FALSE, distribution = NULL) {
-  #' @description  Most mean difference is the largest 
+  #' @description  most difference in means is the largest 
   #' difference than could exist between group(s) in the data.
   #' 
   #' Calculates the least difference in means based on the confidence limits
@@ -21,7 +21,7 @@ ldm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   #' @param distribution string specifying assumed distribution ('t_dist', 
   #' 'z_dist') (Default: NULL). If not specified, t_dist chosen for cases under 
   #' 30 samples
-  #' @return Returns most mean difference (single value)
+  #' @return Returns most difference in means (single value)
   #' @usage ldm_normal_tdist(x)
   #' @usage ldm_normal_tdist(x, y)
   #' @usage ldm_normal_tdist(x, y, conf.level = 0.95)

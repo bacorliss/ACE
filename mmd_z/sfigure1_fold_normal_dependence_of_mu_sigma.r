@@ -21,7 +21,7 @@ p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
 source("R/norm_versus_fnorm.R")
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 
 # Figure parameters
 #-------------------------------------------------------------------------------

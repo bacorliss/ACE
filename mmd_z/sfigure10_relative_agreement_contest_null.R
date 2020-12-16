@@ -18,9 +18,9 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/agreement_contests.R")
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 
 
 # Figure parameters

@@ -1,5 +1,5 @@
 
-#' Produce stats look-up table for calculating MMD
+#' Produce stats look-up table for calculating MDM
 
 
 # Load required packages
@@ -16,9 +16,9 @@ p_load(colorspace)
 p_load("RColorBrewer")
 p_load(cowplot)
 # User defined libraries
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/row_stats_toolbox.R")
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 
 # Figure parameters
 #-------------------------------------------------------------------------------

@@ -12,7 +12,7 @@
 # Figure parameters
 #-------------------------------------------------------------------------------
 fig_num = "2"
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 sum_fig_path = paste(getwd(),'/', base_dir,"/figure/F",fig_num, sep="")
 dir.create(sum_fig_path, showWarnings = FALSE, recursive = TRUE)
 

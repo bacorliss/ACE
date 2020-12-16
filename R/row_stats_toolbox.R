@@ -12,7 +12,7 @@ p_load(BayesFactor)
 p_load(TOSTER)
 
 source("R/ldm.R")
-source("R/mmd.R")
+source("R/mdm.R")
 
 ## User defined functions
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -107,8 +107,8 @@ row_ci_mean_2s_zdist <-function(m1,m2, conf.level=0.95) {
   return(ci)
 }
 
-row_mmd_2s_zdist <- function(m1, m2, ...) {
-  mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal_zdist(m1[i,], m2[i,], ...))
+row_mdm_2s_zdist <- function(m1, m2, ...) {
+  mdm <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], ...))
 }
 
 
@@ -236,7 +236,7 @@ quantify_row_stats_toolbox <- function(x_a, x_b, parallelize_bf = FALSE, stat_ex
   
   # Initialize data frames so that
   stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp",
-                 "cohend", "mmd", "rmmd", "ldm", "rldm", "rand")
+                 "cohend", "mdm", "rmdm", "ldm", "rldm", "rand")
   
   df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
   colnames(df) <- stat_list
@@ -294,17 +294,17 @@ quantify_row_stats_toolbox <- function(x_a, x_b, parallelize_bf = FALSE, stat_ex
   df_hdt$cohend <- ">"
   df_pretty$cohend <- "Cd"
   
-  # 9) Most Mean Diff
-  df$mmd = row_mmd_2s_zdist(x_a, x_b)
-  df_hat$mmd <- "<"
-  df_hdt$mmd <- ">"
-  df_pretty$mmd <- "delta[M]"
+  # 9) most difference in means
+  df$mdm = row_mdm_2s_zdist(x_a, x_b)
+  df_hat$mdm <- "<"
+  df_hdt$mdm <- ">"
+  df_pretty$mdm <- "delta[M]"
   
-  # 10) Relative Most Mean Diff
-  df$rmmd = df$mmd / rowMeans(x_a)
-  df_hat$rmmd <- "<"
-  df_hdt$rmmd <- ">"
-  df_pretty$rmmd <- "r*delta[M]"
+  # 10) Relative most difference in means
+  df$rmdm = df$mdm / rowMeans(x_a)
+  df_hat$rmdm <- "<"
+  df_hdt$rmdm <- ">"
+  df_pretty$rmdm <- "r*delta[M]"
   
   # 11) Least Difference in Means
   df$ldm = row_ldm_2s_zdist(x_a, x_b)

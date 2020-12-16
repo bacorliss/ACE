@@ -1,6 +1,6 @@
 
 
-#' QUantifies coverage error of the mmd (defined as how often abs(mu)>mmd_95 
+#' QUantifies coverage error of the mdm (defined as how often abs(mu)>mdm_95 
 #' from repeated samples)
 #' Results computed in a grid with mu and sigma swept on each exis respectively
 
@@ -27,13 +27,13 @@ p_load(RColorBrewer)
 p_load(tidyr)
 p_load(docstring)
 # User defined functions
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/coverage_error_utils")
 
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 # Script Parameters
 fig_num = "4"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
@@ -45,7 +45,7 @@ is_parallel_proc <- TRUE
 
 
 
-# 2D visualization of mmd difference and error rate over mu and sigma
+# 2D visualization of mdm difference and error rate over mu and sigma
 #                                                                              #
 #______________________________________________________________________________#
 mus <- seq(-2.5, 2.5, by = .1)
@@ -53,9 +53,9 @@ sigmas <- seq(.1, 5, by = .1)
 n_obs <- 50
 mu_ov_sigmas = NULL
 
-# Run simulations calculating error of mmd with mu and sigma swept
+# Run simulations calculating error of mdm with mu and sigma swept
 df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples = n_samples, 
-                                    n_obs = n_obs, out_path = paste(fig_path, "/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
+                                    n_obs = n_obs, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
                                 overwrite = overwrite, is_parallel_proc = TRUE)
 
 
@@ -119,13 +119,13 @@ save_plot(paste(fig_path,"/", fig_num, "_2b xbar error test 2D.tiff",sep=""),
 
 
 
-# Error rate of MMD < mu
+# Error rate of MDM < mu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mmd_lt_mu_dm)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-# grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -142,18 +142,18 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "/", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_a3 mdm error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
 
-# 2D visualization of hypothesized coverage error of MMD in mu space
+# 2D visualization of hypothesized coverage error of MDM in mu space
 #                                                                              #
 #______________________________________________________________________________#
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_err_eq_alpha_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))
@@ -168,7 +168,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "/", fig_num, "_b4 mmd error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_b4 mdm error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -177,7 +177,7 @@ save_plot(paste(fig_path, "/", fig_num, "_b4 mmd error test.tiff",sep=""),
 
 
 
-# Row 3: error rate of mmd in mu/sigma space
+# Row 3: error rate of mdm in mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
 sigmas <- seq(.1, 5, by = .1)
@@ -185,18 +185,18 @@ mu_ov_sigmas <- seq (-.5, .5, by=0.01)
 mus = NULL
 n_obs <- 50
 set.seed(rand.seed)
-# Run simulations calculating error of mmd with mu and sigma swept
+# Run simulations calculating error of mdm with mu and sigma swept
 df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
-                           paste(fig_path, "/mmd_Error_2D_mu_over_sigma_vs_sigma.rds",sep=""), mu_ov_sigmas,
+                           paste(fig_path, "/mdm_Error_2D_mu_over_sigma_vs_sigma.rds",sep=""), mu_ov_sigmas,
                            overwrite = overwrite)
 
-# Error rate of MMD < mu in mu/sigma space
+# Error rate of MDM < mu in mu/sigma space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mmd_lt_mu_dm)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
-# grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
+# grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
@@ -213,15 +213,15 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_3a mmd error rate 2D.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_3a mdm error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 
-# Tested error rate MMD < mu in mu/sigma space
+# Tested error rate MDM < mu in mu/sigma space
 #-------------------------------------------------------------------------------
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
-  df_results$pval_err_eq_alpha_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
+  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
+  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
   gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
@@ -237,7 +237,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_3b mmd error test mu_over_sigma.tiff",sep=""),
+save_plot(paste(fig_path, "\\", fig_num, "_3b mdm error test mu_over_sigma.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -263,7 +263,7 @@ mus <- seq (.1/5, 2, by=0.02)
 mu_ov_sigmas = NULL
 
 df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs, 
-                                         temp_path = paste(fig_path, "/mmd_Error_mu_vs_sigma.rds",sep=""),
+                                         temp_path = paste(fig_path, "/mdm_Error_mu_vs_sigma.rds",sep=""),
                                          mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 
@@ -285,7 +285,7 @@ gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
   # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  ")) +
   scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu.tiff", 
+save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
@@ -293,7 +293,7 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu.tiff",
 res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
 summary_mu <- summary(res.aov2)
 capture.output(summary_mu, file = paste(fig_path, "\\", fig_num,
-                                        "_c mmd transition over mu.txt", sep=""))
+                                        "_c mdm transition over mu.txt", sep=""))
 
 
 # Identify location of coverage error boundaries with mu/sigma space
@@ -305,7 +305,7 @@ sigmas <- seq(.1, 5, by = .1);
 mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
 df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs,
-                                      temp_path = paste(fig_path, "/mmd_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
+                                      temp_path = paste(fig_path, "/mdm_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                                       mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 
@@ -325,7 +325,7 @@ gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma,
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
   # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
 gg
-save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu_sigma.tiff", 
+save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu_sigma.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
@@ -340,13 +340,13 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mmd boundaries over mu_sigma.tiff",
 #   ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
 # scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # p
-# save_plot(paste(fig_path, "\\", fig_num, "_c mmd transition over mu sigma.tiff",
+# save_plot(paste(fig_path, "\\", fig_num, "_c mdm transition over mu sigma.tiff",
 #                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
 #           base_asp = 3, base_width = 2, dpi = 600)
 
 res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
 summary_mu_ov_sigma <- summary(res.aov2)
 capture.output(summary_mu_ov_sigma, file = paste(fig_path, "\\", fig_num,
-                                        "_c mmd transition over mu sigma.txt", sep=""))
+                                        "_c mdm transition over mu sigma.txt", sep=""))
 
 

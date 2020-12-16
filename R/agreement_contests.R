@@ -34,12 +34,12 @@ p_load(confintr)
 # User defined libraries
 source("R/parallel_utils.R")
 source("R/row_stats_toolbox.R")
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/ldm.R")
 
 # Parse all functions in file for parallel processing using user functions
 row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
-mmd_functions <- parse_functions_source("R/mmd.R")
+mdm_functions <- parse_functions_source("R/mdm.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
 
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
@@ -623,7 +623,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER"),
-                .export = c(row_stats_toolbox_fun, mmd_functions,ldm_functions,
+                .export = c(row_stats_toolbox_fun, mdm_functions,ldm_functions,
                             "quantify_esize_simulation")) %dopar% {
         #calling a function
         tempMatrix <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n,

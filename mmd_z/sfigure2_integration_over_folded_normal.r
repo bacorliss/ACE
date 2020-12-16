@@ -16,7 +16,7 @@ p_load(VGAM)
 p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 
 fig_num = "2"
 dir.create(file.path(getwd(), paste(base_dir,"/figure/F",fig_num,sep="")), 
@@ -223,7 +223,7 @@ save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "f correlation Q-Q
 
 
 
-# Calculate MMD with three different integration methods
+# Calculate MDM with three different integration methods
 #-------------------------------------------------------------------------------
 n_samples <- 1e3
 mus=runif(n_samples,-5,5)
@@ -231,24 +231,24 @@ sigmas=runif(n_samples,.1,5)
 conf.level = 0.95
 
 
-mmd_fn   <- rep(0,length(mus))
-mmd_nn <- rep(0,length(mus))
-mmd_sn <- rep(0,length(mus))
+mdm_fn   <- rep(0,length(mus))
+mdm_nn <- rep(0,length(mus))
+mdm_sn <- rep(0,length(mus))
 for (n in seq_along(mus)) {
-  mmd_fn [n] <- uniroot(function(x) fun_pfoldnorm(x, mus[n],sigmas[n])-0.95, 
+  mdm_fn [n] <- uniroot(function(x) fun_pfoldnorm(x, mus[n],sigmas[n])-0.95, 
                               c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
                               tol = .Machine$double.eps)$root
-  mmd_nn [n] <- uniroot(function(x) fun_pnstandnorm(x, mus[n],sigmas[n])-0.95, 
+  mdm_nn [n] <- uniroot(function(x) fun_pnstandnorm(x, mus[n],sigmas[n])-0.95, 
                                 c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
                                 tol = .Machine$double.eps)$root
-  mmd_sn [n] <- uniroot(function(x) fun_pstandnorm(x, mus[n],sigmas[n])-0.95, 
+  mdm_sn [n] <- uniroot(function(x) fun_pstandnorm(x, mus[n],sigmas[n])-0.95, 
                                c(abs(mus[n]), abs(mus[n]) + 6*sigmas[n]),  
                                tol = .Machine$double.eps)$root
 }
 
 # Compare FN vs NN
-df_fn_vs_nn <- tibble(x = (mmd_fn + mmd_nn)/2, y = (mmd_fn - mmd_nn) / 
-                        (mmd_fn + mmd_nn)/2)
+df_fn_vs_nn <- tibble(x = (mdm_fn + mdm_nn)/2, y = (mdm_fn - mdm_nn) / 
+                        (mdm_fn + mdm_nn)/2)
 gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_hline(yintercept = 1.96*sd(df_fn_vs_nn$y), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_fn_vs_nn$y), color = "red", linetype="dashed", size=0.25) +
@@ -260,12 +260,12 @@ gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_blank(aes(y = -0.6E-15)) +
   geom_blank(aes(y = .6E-15))
 gg
-save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_NN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MDM_FN_vs_NN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600)  
 # Compare FN vs SN
-df_fn_vs_sn <- tibble(x = (mmd_fn + mmd_sn)/2, y = (mmd_fn - mmd_sn) / 
-                        (mmd_fn + mmd_sn)/2)
+df_fn_vs_sn <- tibble(x = (mdm_fn + mdm_sn)/2, y = (mdm_fn - mdm_sn) / 
+                        (mdm_fn + mdm_sn)/2)
 gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_hline(yintercept = 1.96*sd(df_fn_vs_sn$y), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_fn_vs_sn$y), color = "red", linetype="dashed", size=0.25) +
@@ -277,7 +277,7 @@ gg <- ggplot(df_fn_vs_nn, aes(x=x,y=y)) +
   geom_blank(aes(y = -0.6E-15)) +
   geom_blank(aes(y = 0.6E-15))
 gg
-save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MMD_FN_vs_SN.tiff", 
+save_plot(paste(base_dir,"/figure/F", fig_num, "/F", fig_num, "g_bland_altman MDM_FN_vs_SN.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.45,
           base_asp = 3, base_width = 2, dpi = 600) 
 

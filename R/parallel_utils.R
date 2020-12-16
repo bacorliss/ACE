@@ -27,5 +27,5 @@ parse_functions_source <- function(file_path) {
 # row_stats_toolbox_fun <-
 #   unlist(Map(function_name,   Filter(is_function, parse("R/row_stats_toolbox.R"))))
 # 
-# mmd_functions <-
+# mdm_functions <-
 #   unlist(Map(function_name,   Filter(is_function, parse("R/row_stats_toolbox.R"))))

@@ -1,6 +1,6 @@
 
-#' Characterize relation between mmd and two-tailed confidence intervals.
-#' Leverage relation to produce a look-up table to calculate the MMD which 
+#' Characterize relation between mdm and two-tailed confidence intervals.
+#' Leverage relation to produce a look-up table to calculate the MDM which 
 #' accelerates computation.
 
 # Load required packages
@@ -21,23 +21,23 @@ p_load(boot)
 p_load(tidyr)
 p_load(rbenchmark)
 # User defined libraries
-source("R/mmd.R")
+source("R/mdm.R")
 source("R/row_stats_toolbox.R")
 source("R/norm_versus_fnorm.R")
 
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 fig_num = "4"
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), showWarnings = FALSE,recursive = TRUE)
 
 # Colors for figure
-# Orange: MMD, [255, 127, 0], #FF7F00
+# Orange: MDM, [255, 127, 0], #FF7F00
 # CL90 Blue, [255, 151, 151], #FF9797
 # CL95 Red, [147, 173, 221], #93ADDD
 # rTOST95, Purple, [112, 48, 160], #7030A0
-col_pal <- data.frame(mmd95 = "#FF7F00", CL95 ="#FFA7A7", CL90 = "#BFCFEB", rTOST95 = "#7030A0")
+col_pal <- data.frame(mdm95 = "#FF7F00", CL95 ="#FFA7A7", CL90 = "#BFCFEB", rTOST95 = "#7030A0")
 
 ztest <- function(x, y = NULL, mu = 0, conf.level= 0.95, alternative = "two.sided") {
   #' Classic Z test of one or two samples
@@ -116,7 +116,7 @@ RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
 
 
 
-# Compare MMD, CL95, CL90 through null region
+# Compare MDM, CL95, CL90 through null region
 #
 #------------------------------------------------------------------------------
 # Generate repeatable sample of random normal numbers
@@ -137,7 +137,7 @@ y_expanded + dim(df$x[row(y_expanded)])
 y_sweep <- sweep(y_expanded,1, df$x,'+')
 
 # Calculate most hidden difference
-df$mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
+df$mdm_95    <- apply(y_sweep, 1, mdm_normal_zdist)
 # Max absolute confidence level
 df$mcl_90   <- apply(y_sweep, 1, function (x)  
   max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
@@ -145,19 +145,19 @@ df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs(
   max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )))
 # T test p value
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
-# df$mmd_95 - df$mcl_90 
+# df$mdm_95 - df$mcl_90 
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 ci_labels = c(bquote(max((~abs(CI[95])))~" "),
-              bquote(max((~abs(CI[90])))), bquote(MMD[95]))
+              bquote(max((~abs(CI[90])))), bquote(MDM[95]))
 
-## Subplot A,B: MMD[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
-g1A = ggplot(data=df,mapping = aes(x=x,y=mmd_95))
+## Subplot A,B: MDM[a] transitions from CI[a] to CI[a/2] as the sample mean departs from zero 
+g1A = ggplot(data=df,mapping = aes(x=x,y=mdm_95))
 g1A <- g1A + theme_classic() +
   geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_line(aes(x=x,y=mcl_90, col="CL_90"), size=.8, linetype="solid", color = col_pal$CL90) +
   geom_line(aes(x=x,y=mcl_95, col="CL_95"), size=.8, linetype="solid",color = col_pal$CL95) +
-  geom_point(aes(col="MMD_95"), shape = 16,size = 1, color = col_pal$mmd95) +
+  geom_point(aes(col="MDM_95"), shape = 16,size = 1, color = col_pal$mdm95) +
   xlab("") + ylab("f(x)") +
   theme_classic(base_size=8) + theme(
     axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(),
@@ -192,7 +192,7 @@ g1B
 # Use cowplot to align subplots
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
 cg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2AB_MMD_vs_CI95.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2AB_MDM_vs_CI95.tiff",sep=""),
           cg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
 graphics.off()
@@ -200,7 +200,7 @@ graphics.off()
 
 
 
-# MMD and rTOST compared to CL95 and CL90
+# MDM and rTOST compared to CL95 and CL90
 #
 #-------------------------------------------------------------------------------
 # n_sims = 101
@@ -212,9 +212,9 @@ sigmas <- rep(.1, length(mus))
 df <- tibble(mu = mus, sigma = sigmas, 
              mean_macl90 = length(mus),          sd_macl90 = rep(0, length(mus)),
              mean_macl95 = length(mus),          sd_macl95 = rep(0, length(mus)),
-             mean_mmd95 = rep(0, length(mus)), sd_mmd95 = rep(0, length(mus)), 
+             mean_mdm95 = rep(0, length(mus)), sd_mdm95 = rep(0, length(mus)), 
              mean_rtost95 = length(mus),   sd_rtost95 = rep(0, length(mus)),
-             mean_coeff_mmd95 = rep(0, length(mus)), sd_coeff_mmd95 = rep(0, length(mus)), 
+             mean_coeff_mdm95 = rep(0, length(mus)), sd_coeff_mdm95 = rep(0, length(mus)), 
              mean_coeff_rtost95 = length(mus),   sd_coeff_rtost95 = rep(0, length(mus)))
 
 x0 = t(sapply(1:n_samples, function(x) rnorm(n_obs, mean = 0, sd = 1),
@@ -232,14 +232,14 @@ for (n in seq_along(mus)) {
   macl95 <- apply(xr, 1, function(x) max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), a = 0.05))
   df$mean_macl95[n]  <- mean(macl95)
   df$sd_macl95[n]    <- sd(macl95)  
-  # Calculate MMD across samples
-  mmd95 <- apply(xr, 1, function(x) mmd_normal_zdist(x, conf.level = 0.95))
-  df$mean_mmd95[n]  <- mean(mmd95)
-  df$sd_mmd95[n]    <- sd(mmd95)
+  # Calculate MDM across samples
+  mdm95 <- apply(xr, 1, function(x) mdm_normal_zdist(x, conf.level = 0.95))
+  df$mean_mdm95[n]  <- mean(mdm95)
+  df$sd_mdm95[n]    <- sd(mdm95)
   # Coeff relative
-  coeff_mmd95 <- (mmd95-macl90)/(macl95-macl90)
-  df$mean_coeff_mmd95[n]  <- mean(coeff_mmd95)
-  df$sd_coeff_mmd95[n]    <- sd(coeff_mmd95)
+  coeff_mdm95 <- (mdm95-macl90)/(macl95-macl90)
+  df$mean_coeff_mdm95[n]  <- mean(coeff_mdm95)
+  df$sd_coeff_mdm95[n]    <- sd(coeff_mdm95)
   # calculate reverse TOST across all samples
   rtost95 <- apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  )
   df$mean_rtost95[n]  <- mean(rtost95)
@@ -254,7 +254,7 @@ df_plot <- df %>% gather(metric, mean_y, starts_with("mean_coeff")) #%>%
 # gather(metric, sd_y, starts_with("sd_coeff"))
 df_plot$metric <- as.factor(df_plot$metric)
 
-# Plot MMD and rTOST normlaized to CL95 and CL90
+# Plot MDM and rTOST normlaized to CL95 and CL90
 gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   geom_hline(aes(yintercept = 0, linetype = "CL_90"), color = "#377eb8",  size = 1, alpha = 0.2) +
   geom_hline(aes(yintercept = 1, linetype = "CL_95"), color = "#e41a1c", size = 1, alpha = 0.2) +
@@ -262,12 +262,12 @@ gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   scale_linetype_manual(name = "", labels = c(expression(Max(abs(CL[95]))),
                                               expression(Max(abs(CL[90])))),
                         values = c("solid", "solid")) +
-  scale_color_manual(name="", labels = c( expression(MMD[95]), expression(rTOST[95])),
+  scale_color_manual(name="", labels = c( expression(MDM[95]), expression(rTOST[95])),
                      values=c("#ff7f00","#984ea3")) +
   xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
   theme_classic(base_size = 8) + theme(legend.position = "none")
 gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F3a_RTOST_vs_MMD.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F3a_RTOST_vs_MDM.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.25, base_width = 3.5, dpi = 600) 
 
 
@@ -296,7 +296,7 @@ df <- bind_rows(df_list, .id = "column_label")
 df_compare <- tibble(mu = df$mu, sigma = df$sigma, 
                      rdiffs = (df$macl90 - df$rtost95)/rowMeans(cbind(df$macl90,df$rtost95 )),
                      means = rowMeans(cbind(df$macl90,df$rtost95 )))
-# Bland altman of agreement between MMD algorithms
+# Bland altman of agreement between MDM algorithms
 gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
   geom_hline(yintercept = 1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
@@ -319,10 +319,10 @@ save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs
 
 
 
-# MMD transition as LUT between CL95 and CL90 across post-normalized samples
+# MDM transition as LUT between CL95 and CL90 across post-normalized samples
 #
 # -----------------------------------------------------------------------------
-# Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
+# Generate 1000 samples, loop through different shifts, and quantify MDM, UCL_95, UCL_90
 mus = c(seq(0-0.00001,0.33,0.00001), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
 # mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
 
@@ -330,22 +330,22 @@ sigmas = runif(length(mus),0.1, 2)
 n_samples = 50
 n_obs = 50
 set.seed(0)
-df_coeff <- data.frame(mu=mus, sigma=sigmas, mean_mmd_96 = rep(0,length(mus)),
-                       sd_mmd_95 = rep(0,length(mus)), mean_mabs_cl_95 = rep(0,length(mus)),
+df_coeff <- data.frame(mu=mus, sigma=sigmas, mean_mdm_96 = rep(0,length(mus)),
+                       sd_mdm_95 = rep(0,length(mus)), mean_mabs_cl_95 = rep(0,length(mus)),
                        sd_mabs_cl_95 = rep(0,length(mus)), mean_maabs_cl_90 = rep(0,length(mus)), 
                        sd_mabs_cl_90 = rep(0,length(mus)))
 # Sample around mean
 for (n in seq_along(mus)) {  # print(mus[n])
-  # For each mu, generate samples, align them, calculate mean MMD, CI_95, CL_90
+  # For each mu, generate samples, align them, calculate mean MDM, CI_95, CL_90
   xi <- matrix(rnorm(n_samples*n_obs,mean = mus[n],sd=sigmas), nrow = n_samples, byrow = TRUE)
   
   # Normalize samples (x_bar = mu and sd = 1)
   xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mus[n]
   
-  # Calculate MMD
-  mmd_95 <- apply(xnorm, 1, mmd_normal_zdist)
-  df_coeff$mean_mmd_95[n] <-  mean(mmd_95)
-  df_coeff$sd_mmd_95[n] <-    sd(mmd_95)
+  # Calculate MDM
+  mdm_95 <- apply(xnorm, 1, mdm_normal_zdist)
+  df_coeff$mean_mdm_95[n] <-  mean(mdm_95)
+  df_coeff$sd_mdm_95[n] <-    sd(mdm_95)
   # Calculate 90% max abs CL
   mabs_cl_90 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.10) )
   df_coeff$mean_mabs_cl_90[n] <- mean(mabs_cl_90)
@@ -354,39 +354,39 @@ for (n in seq_along(mus)) {  # print(mus[n])
   mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.05) )
   df_coeff$mean_mabs_cl_95[n] <- mean(mabs_cl_95)
   df_coeff$sd_mabs_cl_95[n] <-   sd(mabs_cl_95)
-  # Calcualte mmd coeff
-  coeffs_mmd_95 <- (mmd_95 - mabs_cl_90)/ (mabs_cl_95 - mabs_cl_90)
-  df_coeff$mean_coeff_mmd_95[n] <- mean(coeffs_mmd_95)
-  df_coeff$sd_coeff_mmd_95[n] <- sd(coeffs_mmd_95)
+  # Calcualte mdm coeff
+  coeffs_mdm_95 <- (mdm_95 - mabs_cl_90)/ (mabs_cl_95 - mabs_cl_90)
+  df_coeff$mean_coeff_mdm_95[n] <- mean(coeffs_mdm_95)
+  df_coeff$sd_coeff_mdm_95[n] <- sd(coeffs_mdm_95)
   
 }
-# # Calculate Coefficient for mmd
-# df_coeff$coeff_mmd_95 <- (df_coeff$mean_mmd_95-df_coeff$mean_mabs_cl_90) / 
+# # Calculate Coefficient for mdm
+# df_coeff$coeff_mdm_95 <- (df_coeff$mean_mdm_95-df_coeff$mean_mabs_cl_90) / 
 #   (df_coeff$mean_mabs_cl_95 - df_coeff$mean_mabs_cl_90)
-mean(df_coeff$sd_mmd_95)
+mean(df_coeff$sd_mdm_95)
 mean(df_coeff$sd_mabs_cl_90)
 mean(df_coeff$sd_mabs_cl_95)
 
 # Plot look up table results
-gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mmd_95)) +
+gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mdm_95)) +
   geom_line(size=0.15) +
-  geom_ribbon(aes(ymin = mean_coeff_mmd_95-1.96*sd_coeff_mmd_95,
-                  ymax=mean_coeff_mmd_95+1.96*sd_coeff_mmd_95), fill = "grey") +
+  geom_ribbon(aes(ymin = mean_coeff_mdm_95-1.96*sd_coeff_mdm_95,
+                  ymax=mean_coeff_mdm_95+1.96*sd_coeff_mdm_95), fill = "grey") +
   xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
-  ylab(expression(Coeff.~MMD[95])) +
+  ylab(expression(Coeff.~MDM[95])) +
   theme_classic(base_size=8)
 gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2C_Coeff_mmd_CLa_CL2a.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2C_Coeff_mdm_CLa_CL2a.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) # paper="letter"
 graphics.off()
 
 # Export LU table to disk
-df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mmd_95 = df_coeff$mean_coeff_mmd_95)
-write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
+df_lut = data.frame(abs_nmu = df_coeff$mu, coeff_mdm_95 = df_coeff$mean_coeff_mdm_95)
+write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mdm_CLa_CL2a.csv"))
 
 
-# Test agreement with MMD lut to MMD root Bland altman
+# Test agreement with MDM lut to MDM root Bland altman
 #
 #-------------------------------------------------------------------------------
 mus = seq(0,0.5,0.001)
@@ -400,84 +400,84 @@ sigmas = runif(n_samples,.1,10)
 x_samples = t(mapply(function(x,y) rnorm(n_obs, mean=x, sd=y),mus,sigmas, SIMPLIFY = TRUE))
 
 # Load csv Look up table to convert to spline interp function
-df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mmd_CLa_CL2a.csv"))
-interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mmd_95, method="fmm",  ties = mean)
+df_lut <- read.csv(file=file.path(getwd(),"/R/coeff_mdm_CLa_CL2a.csv"))
+interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mdm_95, method="fmm",  ties = mean)
 
-# Function to determine 95% MMD with LUT
-mmd_95_lut <- function (x,interp_fun) {
+# Function to determine 95% MDM with LUT
+mdm_95_lut <- function (x,interp_fun) {
   mabs_cl_90 <- max_abs_cl_mean_z(x=x, alpha=0.10)
   mabs_cl_95 <- max_abs_cl_mean_z(x=x, alpha=0.05)
   # Normalized mu
   abs_nmu = abs(mean(x)/sd(x))
-  coeff_mmd <- interp_fun(abs_nmu)
-  mmd_95 <- coeff_mmd * (mabs_cl_95 - mabs_cl_90) + mabs_cl_90
+  coeff_mdm <- interp_fun(abs_nmu)
+  mdm_95 <- coeff_mdm * (mabs_cl_95 - mabs_cl_90) + mabs_cl_90
   
-  return(mmd_95)
+  return(mdm_95)
 }
 #
-df_compare <- data.frame(mmd_root = apply(x_samples, 1, mmd_normal_zdist), 
-                         mmd_lut  = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun)))
-df_compare$diffs = df_compare$mmd_root - df_compare$mmd_lut
-df_compare$means = rowMeans(cbind(df_compare$mmd_root,df_compare$mmd_lut ))
-# Bland altman of agreement between MMD algorithms
+df_compare <- data.frame(mdm_root = apply(x_samples, 1, mdm_normal_zdist), 
+                         mdm_lut  = apply(x_samples, 1, function(x) mdm_95_lut(x, interp_fun)))
+df_compare$diffs = df_compare$mdm_root - df_compare$mdm_lut
+df_compare$means = rowMeans(cbind(df_compare$mdm_root,df_compare$mdm_lut ))
+# Bland altman of agreement between MDM algorithms
 gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   geom_hline(yintercept = 1.96*sd(df_compare$diffs), color = "grey30", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_compare$diffs), color = "grey30", linetype="dashed", size=0.25) +
   geom_hline(yintercept = 0, color="grey30", size=0.25)+
   geom_point(size=0.05) +
-  # xlab(expression((MMD[root]+MMD[lut])/2)) + 
-  # ylab(expression(MMD[root]-MMD[lut])) +
+  # xlab(expression((MDM[root]+MDM[lut])/2)) + 
+  # ylab(expression(MDM[root]-MDM[lut])) +
   xlab("Mean") + 
   ylab("Diff.") +
   theme_classic(base_size=8)
 gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA MMD root vs MMD lut.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA MDM root vs MDM lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
 
-# Speed benchmark between MMD algorithms
+# Speed benchmark between MDM algorithms
 #
 #-------------------------------------------------------------------------------
-mmd_root_time = rep(0,100)
-mmd_lut_time = rep(0,100)
+mdm_root_time = rep(0,100)
+mdm_lut_time = rep(0,100)
 for (n in 1:100) {
-  results <- benchmark("mmd_root" = {
-    mmd_root = apply(x_samples, 1, mmd_normal_zdist)
+  results <- benchmark("mdm_root" = {
+    mdm_root = apply(x_samples, 1, mdm_normal_zdist)
   },
-  "mmd_lut" = {
-    mmd_lut = apply(x_samples, 1, function(x) mmd_95_lut(x, interp_fun))
+  "mdm_lut" = {
+    mdm_lut = apply(x_samples, 1, function(x) mdm_95_lut(x, interp_fun))
   },
   replications = 1,
   columns = c("user.self"))
-  mmd_root_time[n] <- results$user.self[2]
-  mmd_lut_time[n] <- results$user.self[1]
+  mdm_root_time[n] <- results$user.self[2]
+  mdm_lut_time[n] <- results$user.self[1]
 }
-t.test(mmd_root_time, mmd_lut_time)
-1- 60*mean(mmd_lut_time)/(60*mean(mmd_root_time))
-df_speed <- tibble(x = as.factor(c(rep("MMD[root]",100),rep("MMD[lut]",100))),
-                   mmd_root = c(mmd_root_time, mmd_lut_time)*60)
-gg <- ggplot(data = df_speed,  aes(x=x, y=mmd_root)) + 
+t.test(mdm_root_time, mdm_lut_time)
+1- 60*mean(mdm_lut_time)/(60*mean(mdm_root_time))
+df_speed <- tibble(x = as.factor(c(rep("MDM[root]",100),rep("MDM[lut]",100))),
+                   mdm_root = c(mdm_root_time, mdm_lut_time)*60)
+gg <- ggplot(data = df_speed,  aes(x=x, y=mdm_root)) + 
   geom_boxplot( outlier.size = 1) + theme_classic(base_size = 8) +
   ylab("Sec./1000 Runs") + xlab("Algorithm") +
   scale_x_discrete(limits = rev(levels(df_speed$x)),
-                   labels = c('MMD[root]' = expression(MMD[root]),
-                              'MMD[lut]'   = expression(MMD[lut])))
+                   labels = c('MDM[root]' = expression(MDM[root]),
+                              'MDM[lut]'   = expression(MDM[lut])))
 gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_Speed MMD root vs MMD lut.tiff", 
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_Speed MDM root vs MDM lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
           base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
 
-## Explore trends between MMD and CI at a population level
+## Explore trends between MDM and CI at a population level
 #
 #--------------------------------------------------------------------------------------#
 
-# Generate 1000 samples, loop through different shifts, and quantify MMD, UCL_95, UCL_90
+# Generate 1000 samples, loop through different shifts, and quantify MDM, UCL_95, UCL_90
 mus = seq(-1,1,.2)
 sigma = 1
 n_samples = 1000
@@ -491,8 +491,8 @@ df_list <- list()
 for (n in seq(1,length(mus),1)) {
   
   y_sweep <- matrix(rnorm(n_samples*n_obs,mus[n],sigma), nrow = n_samples, byrow = TRUE)
-  # Calculate MMD and max abs confidence intervals
-  mmd_95    <- apply(y_sweep, 1, mmd_normal_zdist)
+  # Calculate MDM and max abs confidence intervals
+  mdm_95    <- apply(y_sweep, 1, mdm_normal_zdist)
   # Two tailed confidence intervals
   mcl_90   <- apply(y_sweep, 1, function (x)  
     max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
@@ -500,12 +500,12 @@ for (n in seq(1,length(mus),1)) {
     max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
   # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.10)$conf.int )))
   # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.05)$conf.int )))
-  mmd_diff <- mmd_95 - mcl_90
+  mdm_diff <- mdm_95 - mcl_90
   ci_diff <- mcl_95 - mcl_90
-  coeff_mmd95 <- mmd_diff/ci_diff
+  coeff_mdm95 <- mdm_diff/ci_diff
   print(mus[n])
   df_list[[n]] = tibble(n = as.factor(n), 
-                        coeff_mmd95 = coeff_mmd95, mmd_95 = mmd_95, 
+                        coeff_mdm95 = coeff_mdm95, mdm_95 = mdm_95, 
                         mcl_90 = mcl_90, mcl_95 = mcl_95)
   df_list[[n]]$mu <-as.factor(mus[n])
 }
@@ -514,23 +514,23 @@ df <- ldply(df_list, rbind)
 # df$mu <- as.factor(df$mu)
 # Get groups means and CI of mean
 df_plotted <- df %>% group_by(mu) %>% 
-  summarize(mean_coeff_mmd95 = mean(coeff_mmd95)) 
-            # lcl_mu = boot.ci(boot(df$coeff_mmd95, statistic=
+  summarize(mean_coeff_mdm95 = mean(coeff_mdm95)) 
+            # lcl_mu = boot.ci(boot(df$coeff_mdm95, statistic=
             #                         function(data, i) {return(mean(data[i]))}, R=1000), 
             #                  conf=0.95, type="bca")$bca[4],
-            # ucl_mu = boot.ci(boot(df$coeff_mmd95, statistic=
+            # ucl_mu = boot.ci(boot(df$coeff_mdm95, statistic=
             #                         function(data, i) {return(mean(data[i]))}, R=1000), 
             #                  conf=0.95, type="bca")$bca[5])
 df_plotted$mu <- as.factor(df_plotted)
 # Pairwise test between groups
-pw_means <- pairwise.t.test(df$coeff_mmd95, df$mu, p.adjust.method = "bonferroni",
+pw_means <- pairwise.t.test(df$coeff_mdm95, df$mu, p.adjust.method = "bonferroni",
                                 paired = TRUE, alternative = "two.sided")
 adj_sig_str <- adjacent_compare_str(pw_means$p.value<0.05,'*')
   
-# Plotting MMD vs coefficient population level
-gg <- ggplot(df, aes(x = mu, y=coeff_mmd95)) +
+# Plotting MDM vs coefficient population level
+gg <- ggplot(df, aes(x = mu, y=coeff_mdm95)) +
   geom_violin(scale = "width", fill = "grey85", color="white") +
-  geom_point(data=df_plotted, aes(x=mu,y=mean_coeff_mmd95), color ="#FF7F00") +
+  geom_point(data=df_plotted, aes(x=mu,y=mean_coeff_mdm95), color ="#FF7F00") +
   geom_hline(aes(yintercept = 0), color = "#377eb8",  size = 1, alpha = 0.2) +
   geom_hline(aes(yintercept = 1), color = "#e41a1c", size = 1, alpha = 0.2) +
   xlab(expression(mu)) + ylab("Coeff. CL [90, 95]") +
@@ -540,7 +540,7 @@ gg <- ggplot(df, aes(x = mu, y=coeff_mmd95)) +
   theme_classic(base_size=8)
 gg
 # Export figure to disk
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "5a_coeff_MMD_from_pop.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "5a_coeff_MDM_from_pop.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.5,
           base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
 graphics.off()

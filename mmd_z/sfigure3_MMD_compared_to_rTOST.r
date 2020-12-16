@@ -17,13 +17,13 @@ p_load(tidyr)
 p_load(cowplot)
 # User defined functions
 source("R/row_stats_toolbox.R")
-source("R/mmd.R")
+source("R/mdm.R")
 
 
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mmd_z"
+base_dir = "mdm_z"
 fig_num = "3"
 dir.create(file.path(getwd(), paste(base_dir,"/figure/SF",fig_num,sep="")), 
            showWarnings = FALSE, recursive = TRUE)
@@ -89,7 +89,7 @@ rztost <- function(xs, alpha) {
 
 
 
-# MMD and rTOST compared to CL95 and CL90
+# MDM and rTOST compared to CL95 and CL90
 #
 #-------------------------------------------------------------------------------
 # n_sims = 101
@@ -101,9 +101,9 @@ sigmas <- rep(.1, length(mus))
 df <- tibble(mu = mus, sigma = sigmas, 
              mean_macl90 = length(mus),          sd_macl90 = rep(0, length(mus)),
              mean_macl95 = length(mus),          sd_macl95 = rep(0, length(mus)),
-             mean_mmd95 = rep(0, length(mus)), sd_mmd95 = rep(0, length(mus)), 
+             mean_mdm95 = rep(0, length(mus)), sd_mdm95 = rep(0, length(mus)), 
              mean_rtost95 = length(mus),   sd_rtost95 = rep(0, length(mus)),
-             mean_coeff_mmd95 = rep(0, length(mus)), sd_coeff_mmd95 = rep(0, length(mus)), 
+             mean_coeff_mdm95 = rep(0, length(mus)), sd_coeff_mdm95 = rep(0, length(mus)), 
              mean_coeff_rtost95 = length(mus),   sd_coeff_rtost95 = rep(0, length(mus)))
 
 x0 = t(sapply(1:n_samples, function(x) rnorm(n_obs, mean = 0, sd = 1),
@@ -122,14 +122,14 @@ for (n in seq_along(mus)) {
   df$mean_macl95[n]  <- mean(macl95)
   df$sd_macl95[n]    <- sd(macl95)  
   
-  # Calculate MMD across samples
-  mmd95 <- apply(xr, 1, function(x) mmd_normal_zdist(x, conf.level = 0.95))
-  df$mean_mmd95[n]  <- mean(mmd95)
-  df$sd_mmd95[n]    <- sd(mmd95)
+  # Calculate MDM across samples
+  mdm95 <- apply(xr, 1, function(x) mdm_normal_zdist(x, conf.level = 0.95))
+  df$mean_mdm95[n]  <- mean(mdm95)
+  df$sd_mdm95[n]    <- sd(mdm95)
   # Coeff relative
-  coeff_mmd95 <- (mmd95-macl90)/(macl95-macl90)
-  df$mean_coeff_mmd95[n]  <- mean(coeff_mmd95)
-  df$sd_coeff_mmd95[n]    <- sd(coeff_mmd95)
+  coeff_mdm95 <- (mdm95-macl90)/(macl95-macl90)
+  df$mean_coeff_mdm95[n]  <- mean(coeff_mdm95)
+  df$sd_coeff_mdm95[n]    <- sd(coeff_mdm95)
   
   # calculate reverse TOST across all samples
   rtost95 <- apply(xr, 1, function(x) rztost(x, alpha = 0.05)  )
@@ -145,7 +145,7 @@ df_plot <- df %>% gather(metric, mean_y, starts_with("mean_coeff")) #%>%
   # gather(metric, sd_y, starts_with("sd_coeff"))
 df_plot$metric <- as.factor(df_plot$metric)
 
-# Plot MMD and rTOST normlaized to CL95 and CL90
+# Plot MDM and rTOST normlaized to CL95 and CL90
 gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   geom_hline(aes(yintercept = 0, linetype = "CL_90"), color = "#e41a1c",  size = 2, alpha = 0.2) +
   geom_hline(aes(yintercept = 1, linetype = "CL_95"), color = "#377eb8", size = 2, alpha = 0.2) +
@@ -153,12 +153,12 @@ gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
   scale_linetype_manual(name = "", labels = c(expression(Max(abs(CL[95]))),
                                             expression(Max(abs(CL[90])))),
   values = c("solid", "solid")) +
-  scale_color_manual(name="", labels = c( expression(MMD[95]), expression(rTOST[95])),
+  scale_color_manual(name="", labels = c( expression(MDM[95]), expression(rTOST[95])),
                      values=c("#ff7f00","#984ea3")) +
   xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
   theme_classic(base_size = 8)
 gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F4_RTOST_vs_MMD.tiff",sep=""),
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F4_RTOST_vs_MDM.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 1.75, base_width = 4, dpi = 600) 
 
 
@@ -186,7 +186,7 @@ df <- bind_rows(df_list, .id = "column_label")
 df_compare <- tibble(mu = df$mu, sigma = df$sigma, 
                      rdiffs = (df$macl90 - df$rtost95)/rowMeans(cbind(df$macl90,df$rtost95 )),
                      means = rowMeans(cbind(df$macl90,df$rtost95 )))
-# Bland altman of agreement between MMD algorithms
+# Bland altman of agreement between MDM algorithms
 gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
   geom_hline(yintercept = 1.96*sd(df_compare$rdiffs), color = "red", linetype="dashed", size=0.25) +
   geom_hline(yintercept = -1.96*sd(df_compare$rdiffs), color = "red", linetype="dashed", size=0.25) +

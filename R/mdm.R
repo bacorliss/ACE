@@ -1,5 +1,5 @@
 
-# MMD Package: Most Mean Difference
+# MDM Package: most difference in means
 #  Calculates the upper bounds of the mean of the effect size from a single distribution
 # or difference between two distributions.
 
@@ -10,35 +10,35 @@ p_load(docstring)
 
 
 
-rmmd_normal <- function(x,y,...) {
-  #' @description Calculates the relative most mean difference assuming a normal
+rmdm_normal <- function(x,y,...) {
+  #' @description Calculates the relative most difference in means assuming a normal
   #' 
   #' @param x vector of measurements in x
   #' @param y vector of measurements in y
   #'
-  #' @return relative most mean difference
+  #' @return relative most difference in means
   
-  # Calculate mmd
-  mmd <- mmd_normal(x,y,...)
+  # Calculate mdm
+  mdm <- mdm_normal(x,y,...)
   
   # Normalize 
-  rmmd <- mmd/mean(x)
+  rmdm <- mdm/mean(x)
   
-  return(mmd)
+  return(mdm)
 }
 
 
 
-mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
+mdm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
            verbose = FALSE, distribution = NULL) {
-  #' Calculate Most Mean Difference using a normal distribution (z or t)
+  #' Calculate most difference in means using a normal distribution (z or t)
   #'
-  #' @description  Most mean difference is the largest 
+  #' @description  most difference in means is the largest 
   #' difference than could exist between group(s) in the data.
   #' 
-  #' Calculates most mean difference assuming a normal distribution
+  #' Calculates most difference in means assuming a normal distribution
   #' (z or t) by integrating a central normal pdf shifted by sample mean and
-  #' Using a root finding function. Most mean difference is the largest 
+  #' Using a root finding function. most difference in means is the largest 
   #' difference than could exist between group(s) in the data.
   #'
   #' @param x measurements from first group
@@ -50,14 +50,14 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
   #' @param distribution string specifying assumed distribution ('t_dist', 
   #' 'z_dist') (Default: NULL). If not specified, t_dist chosen for cases under 
   #' 30 samples
-  #' @return Returns most mean difference (single value)
-  #' @usage mmd_normal_tdist(x)
-  #' @usage mmd_normal_tdist(x, y)
-  #' @usage mmd_normal_tdist(x, y, conf.level = 0.95)
+  #' @return Returns most difference in means (single value)
+  #' @usage mdm_normal_tdist(x)
+  #' @usage mdm_normal_tdist(x, y)
+  #' @usage mdm_normal_tdist(x, y, conf.level = 0.95)
   #' @examples
   #' x <- rnorm(n=10,mean=0,sd=1); 
   #' y <- rnorm(n=10,mean=0,sd=1); 
-  #' mmd_normal(x,y)
+  #' mdm_normal(x,y)
   # Quick error check 
   if (is.null(x)) errorCondition('input argument x must be specified.')
   
@@ -71,27 +71,27 @@ mmd_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
     distribution <- 't_dist' } else {distribution<-'z_dist'}
   if (verbose) print(sprintf('Distribution: %s', distribution))
   
-  # Calculate MMD with specified distribution
+  # Calculate MDM with specified distribution
   if (distribution=='t_dist'){
-    mmd <- mmd_normal_tdist(x, y, conf.level = conf.level, verbose = verbose,
+    mdm <- mdm_normal_tdist(x, y, conf.level = conf.level, verbose = verbose,
                                      search_pad_percent = 0.1,var.equal = var.equal)
   } else if (distribution =='z_dist') {
-    mmd = mmd_normal_zdist(x,y, conf.level = conf.level, verbose = verbose,
+    mdm = mdm_normal_zdist(x,y, conf.level = conf.level, verbose = verbose,
                                 search_pad_percent = 0.1,var.equal = var.equal)
   } else {
-    mmd=NULL
+    mdm=NULL
     warning("Input argument 'distribution' not supported")
   }
   
-  return(mmd)
+  return(mdm)
 }
 
 
-mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE, 
+mdm_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.01) {
-  #' Calculate Most Mean Difference using t distribution
+  #' Calculate most difference in means using t distribution
   #'
-  #' @description  Calculate most mean difference statistic from integrating a
+  #' @description  Calculate most difference in means statistic from integrating a
   #' central normal t-distribution pdf shifted by -x_bar Using a root finding 
   #' function to integrate over a normal CDF, with area under the curve equal 
   #' to (1-a). Calculate stats of the difference in means distribution for two 
@@ -103,14 +103,14 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
   #' @param verbose function prints out extra input during execution
   #' @param search_pad_percent for calculating statistic, specifies how far 
   #' outside the theoretical search window the root finding can look.
-  #' @return Returns most mean difference (single value)
-  #' @usage mmd_normal_tdist(x)
-  #' @usage mmd_normal_tdist(x, y)
-  #' @usage mmd_normal_tdist(x, y, conf.level = 0.95)
+  #' @return Returns most difference in means (single value)
+  #' @usage mdm_normal_tdist(x)
+  #' @usage mdm_normal_tdist(x, y)
+  #' @usage mdm_normal_tdist(x, y, conf.level = 0.95)
   #' @examples 
   #' x <- rnorm(n=8,mean=0,sd=1); 
   #' y <- rnorm(n=8,mean=0,sd=1); 
-  #' mmd_normal_tdist(x,y)
+  #' mdm_normal_tdist(x,y)
 
   # Calculate basic stats of input samples defined by distribution d, the 
   # difference distribution (or the distirbution of the sampel for 1 sample)
@@ -151,7 +151,7 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
                     upper_bounds + search_pad_percent * bounds_range)
   if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
   
-  # Calculate MMD with root finding optmization
+  # Calculate MDM with root finding optmization
   # Integration of folded t-distribution can be calculate from standard central t-distribution
   t_star_standard <- function(x) {pt(q = (-xbar_dm + x) / sd_dm, df = df_d) - 
                                   pt(q = (-xbar_dm - x) / sd_dm, df = df_d) - conf.level}
@@ -170,19 +170,19 @@ mmd_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
   # The optimized root should fall entirely within the earch bounds 
   check_bounds(t_star, search_bounds, verbose = verbose, range_tol = 1000)
     
-  # MMD is root location added to difference of means
+  # MDM is root location added to difference of means
   if (verbose) print(sprintf("t_star: %.3f", t_star$root))
-  mmd = t_star$root 
+  mdm = t_star$root 
   
-  return(mmd)
+  return(mdm)
 }
 
-mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
+mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.01, 
                              method="nonstandard") {
-  #' Calculate Most Mean DIfference using z distribution
+  #' Calculate most difference in means using z distribution
   #'
-  #' @description Calculate most mean difference statistic from integrating a 
+  #' @description Calculate most difference in means statistic from integrating a 
   #' central normal pdf shifted by -x_bar Using root finding function to 
   #' integrate over a normal CDF with area under the curve equal to (1-a). 
   #' Calculated from the difference in means distribution for two samples, 
@@ -196,13 +196,13 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   #' implemented for TRUE)
   #' @param search_pad_percent for calculating statistic, specifies how outside 
   #' the theoretical search window the root finding can look.
-  #' @return Returns most mean difference (single value)
-  #' @usage mmd_normal_zdist(x)
-  #' @usage mmd_normal_zdist(x, y)
-  #' @usage mmd_normal_zdist(x, y, conf.level = 0.95)
+  #' @return Returns most difference in means (single value)
+  #' @usage mdm_normal_zdist(x)
+  #' @usage mdm_normal_zdist(x, y)
+  #' @usage mdm_normal_zdist(x, y, conf.level = 0.95)
   #' @examples
   #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
-  #' mmd_normal_zdist(x,y)
+  #' mdm_normal_zdist(x,y)
   
   # Calculate basic stats of input samples defined by distribution d, the 
   # difference distribution (or the distirbution of the sampel for 1 sample)
@@ -271,13 +271,13 @@ mmd_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   is_warn = check_bounds(z_star$root, c(lower_bounds, upper_bounds), verbose = FALSE, range_tol= 1000)
   if (is_warn) {browser()}
   
-  # MMD is root of integration
+  # MDM is root of integration
   if (verbose) print(sprintf("z_star: %.4e, lower:%.4e, upper:%.4e", z_star$root,lower_bounds,upper_bounds))
-  mmd = z_star$root
+  mdm = z_star$root
   
   # browser();
   
-  return(mmd)  
+  return(mdm)  
 }
 
 
@@ -286,12 +286,12 @@ check_bounds <- function(x, search_bounds, verbose = FALSE, range_tol=1000) {
   
   is_warn=FALSE;
   if ( x > search_bounds[2] + abs(diff(search_bounds)/range_tol) ) {
-    warning("mmd: equation root equal to upper bounds of search space: 
+    warning("mdm: equation root equal to upper bounds of search space: 
             results unreliable."); is_warn = TRUE;
   }
   
   if (x < search_bounds[1] - abs(diff(search_bounds)/range_tol)   ) {
-    warning("mmd: equation root equal to lower bounds of search space: 
+    warning("mdm: equation root equal to lower bounds of search space: 
             results unreliable."); is_warn = TRUE;
   }
   
@@ -325,7 +325,7 @@ ucl_tdist_mean <- function(x_bar, sx, n_x, dfx, semx = NULL, alpha = 0.05) {
   t_star = optimize(t_star_function, search_bounds, maximum = FALSE)
   
   if (t_star$minimum == search_bounds[2]) {
-    warning("mmd: endpoint minimization equal to upper bounds of search space. Results unreliable.")
+    warning("mdm: endpoint minimization equal to upper bounds of search space. Results unreliable.")
   }
   
   # If SEM is not specified, calculate

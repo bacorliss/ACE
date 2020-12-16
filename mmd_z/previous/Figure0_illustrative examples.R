@@ -27,7 +27,7 @@ p_load(equivalence)
 p_load(TOSTER)
 
 
-source("R/mmd.r")
+source("R/mdm.r")
 
 
 # choose colors for plotting
