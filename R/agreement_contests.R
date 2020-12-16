@@ -698,7 +698,6 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
                                      stat_exclude_list = stat_exclude_list)
   stat_list <- colnames(dfs_1)
   
-  # browser();
   
   dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
   # Means and std of each statistic

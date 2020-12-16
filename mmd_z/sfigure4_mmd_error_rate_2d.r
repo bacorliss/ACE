@@ -56,7 +56,7 @@ mu_ov_sigmas = NULL
 # Run simulations calculating error of mmd with mu and sigma swept
 df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples = n_samples, 
                                     n_obs = n_obs, out_path = paste(fig_path, "/mmd_Error_2D_mu_vs_sigma.rds",sep=""),
-                                overwrite = overwrite, is_parallel_proc = is_parallel_proc)
+                                overwrite = overwrite, is_parallel_proc = TRUE)
 
 
 
@@ -89,13 +89,13 @@ save_plot(paste(fig_path, "\\", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
           base_asp = 3, base_width = 2, dpi = 600) 
 
 
-# 2D visualization of hypothesized coverage error of MMD in mu space
+# xbar hypothesized error rate
 #                                                                              #
 #______________________________________________________________________________#
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_xbar_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_xbar_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_xbar_dm_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_xbar_dm_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))
@@ -122,7 +122,7 @@ save_plot(paste(fig_path,"/", fig_num, "_2b xbar error test 2D.tiff",sep=""),
 # Error rate of MMD < mu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_mmd_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mmd_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_mmd_error_rate, sigmas, mus)
@@ -152,8 +152,8 @@ save_plot(paste(fig_path, "/", fig_num, "_a3 mmd error rate 2D.tiff",sep=""),
 #______________________________________________________________________________#
 # COnvert from matrix to data frame
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_mmd_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_mmd_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_mmd_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))

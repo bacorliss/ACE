@@ -19,12 +19,15 @@ rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1
 # Row standard deviation
 rowSds  <- function(x, ...) sqrt(rowVars(x))
 # Pooled standard deviation of two matrices, 1 sample per row
-rowSdPooled <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
+rowSdCombined <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
 # Weighted pooled standard deviation of two matrices, 1 sample per row
-rowSdPooledWeighted <- 
+rowSdPooled <- 
   function(m1,m2) sqrt( ( (dim(m1)[2] - 1) * rowVars(m1)   + 
                             (dim(m2)[2] - 1) * rowVars(m2) ) /
                           (dim(m1)[2] + dim(m2)[2] - 2    ) )
+
+
+
 
 
 # Effect Size Statistics Functions
@@ -35,11 +38,11 @@ rowSdPooledWeighted <-
 #
 # Cohens D
 #   d = (M2 - M1)/s_pool
-row_cohend <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
+row_cohend <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdCombined(m1,m2)
 
 # Hedges G
 #   d = (M2 - M1)/s_pool
-row_hedgeg <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooledWeighted(m1,m2)
+row_hedgeg <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
 
 # Glass's Delta
 #   d = (M2 - M1)/s_1
@@ -85,6 +88,23 @@ row_ztest_2s <- function(m1, m2) {
 }
 
 
+row_ci_mean_2s_zdist <-function(m1,m2, conf.level=0.95) {
+  #' @description Calculates row by row z distribution confidence interval of 
+  #' the mean
+  #' @param m1 matrix of measurements, with rows as samples and columns as 
+  #' measurements
+  #' @param m2 matrix of measurements, with rows as samples and columns as 
+  #' measurements
+  #' @param conf.level confidence level for confidence interval
+  #' @return 
+
+  xbar_dm <- rowMeans(m2) - rowMeans(m1)
+  z_stat <- qnorm(1-(1-conf.level)/2)
+  x_offset <- z_stat * rowSdPooled(m1,m2) * sqrt( 1/dim(m1)[2] + 1/dim(m2)[2] )
+  
+  ci = tibble(ci_lower = xbar_dm - x_offset, ci_upper = xbar_dm + x_offset)
+  return(ci)
+}
 
 row_mmd_2s_zdist <- function(m1, m2, ...) {
   mmd <- sapply(1:dim(m1)[1], function(i)  mmd_normal_zdist(m1[i,], m2[i,], ...))
@@ -165,7 +185,6 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
   #   t.test(m1[i,], m2[i,], alternative = "less", mu = high_eqbound,
   #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
   # p_tost_slow <- fast_2max( p_lower, p_upper)
-  # p_tost_slow
   
   return(p_tost_fast)
 }
@@ -173,8 +192,8 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 ## Test data
 # 
-m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
-m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
+# m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
+# m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
 # 
 # # Z score and test
 # z = rowzScore(m1, m2)
@@ -286,7 +305,6 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE, stat_exc
   df_hdt$rmmd <- ">"
   df_pretty$rmmd <- "r*delta[M]"
   
-  
   # 11) Least Difference in Means
   df$ldm = row_ldm_2s_zdist(x_a, x_b)
   df_hat$ldm <- "<"
@@ -298,7 +316,6 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE, stat_exc
   df_hat$rldm <- "<"
   df_hdt$rldm <- ">"
   df_pretty$rldm <- "r*delta[L]"
-  
   
   # 13) Random group
   df$rand = rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
@@ -313,7 +330,6 @@ quantify_row_effect_sizes <- function(x_a, x_b, parallelize_bf = FALSE, stat_exc
   df_hat <- df_hat[ , !(names(df_hat) %in% stat_exclude_list)]
   df_hdt <- df_hdt[ , !(names(df_hdt) %in% stat_exclude_list)]
   df_pretty <- df_pretty[ , !(names(df_pretty) %in% stat_exclude_list)]
-
   
   # Store attributes within df
   attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
