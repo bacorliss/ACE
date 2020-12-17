@@ -434,6 +434,7 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     temp_mu_2a     <- df$mu_2a;    temp_sigma_2a  <- df$sigma_2a
     temp_mu_2b     <- df$mu_2b;    temp_sigma_2b  <- df$sigma_2b
     temp_alpha_1 <- df$alpha_1;    temp_alpha_2   <-  df$alpha_2;
+    
     # Determine which simulations to switch parameters for a and b
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
     # Switch specified parameters
@@ -702,9 +703,9 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   # Calculate effect sizes for both experiments
   dfs_1 <- quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
-                                     stat_exclude_list = stat_exclude_list, alpha = df$alpha_1)
+                                     stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_1)
   dfs_2 <- quantify_row_stats(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
-                                     stat_exclude_list = stat_exclude_list, alpha = df$alpha_2)
+                                     stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
   stat_list <- colnames(dfs_1)
   
   

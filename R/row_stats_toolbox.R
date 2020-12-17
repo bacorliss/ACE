@@ -15,6 +15,13 @@ source("R/ldm.R")
 source("R/mdm.R")
 
 ## User defined functions
+
+
+# Find min or max value between two columns: optimized for speed since its a 
+# smaller edge case than the typical rowMin/rowMax application
+rowmin_2col <- function(v1,v2) { v1[v2<v1] <- v2[v2<v1]; return(v1)}
+rowmax_2col <- function(v1,v2) { v1[v2>v1] <- v2[v2>v1]; return(v1)}
+
 # Calculate variance by row: sum of square of deviation from mean over n-1
 rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1)}
 # Row standard deviation
@@ -26,10 +33,6 @@ rowSdPooled <-
   function(m1,m2) sqrt( ( (dim(m1)[2] - 1) * rowVars(m1)   + 
                             (dim(m2)[2] - 1) * rowVars(m2) ) /
                           (dim(m1)[2] + dim(m2)[2] - 2    ) )
-
-
-
-
 
 # Effect Size Statistics Functions
 #
@@ -153,14 +156,7 @@ row_tost_2s_slow <- function (m1,m2) {
 }
 
 
-row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
-  
-  
-  fast_2max <-function(v1,v2) {
-    m = v1
-    m[v2>v1] <- v2[v2>v1]
-    return(m)
-  }
+row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.level = 0.95) {
   
   n1 <- dim(m1)[2]
   n2 <- dim(m2)[2] 
@@ -170,11 +166,11 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
   
   t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_dm 
-  p_low <- 1 - pt(t_lower, df = n1+n2-1)
+  p_low <- rowmin_2col(1 - pt(t_lower, df = n1+n2-1) * 0.05/(1-conf.level),1)
   t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_dm 
-  p_high <- pt(t_upper, df = n1+n2-1)
+  p_high <- rowmin_2col(pt(t_upper, df = n1+n2-1) * 0.05/(1-conf.level),1)
   # Quick max value of two vectors
-  p_tost_fast <- fast_2max(p_low,p_high)
+  p_tost_fast <- rowmax_2col(p_low,p_high)
   p_tost_fast
   
   # # Test that mu[md] is greater than low
@@ -185,7 +181,7 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
   # p_upper <- sapply(1:dim(m1)[1], function(i)
   #   t.test(m1[i,], m2[i,], alternative = "less", mu = high_eqbound,
   #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
-  # p_tost_slow <- fast_2max( p_lower, p_upper)
+  # p_tost_slow <- rowmax_2col( p_lower, p_upper)
   
   return(p_tost_fast)
 }
@@ -211,7 +207,7 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3) {
 
 
 
-quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL, alpha = 0.05) {
+quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL, conf.level = 0.95) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 
@@ -277,13 +273,13 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   
   # 6) NHST P-value: The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
-  df$pvalue = 2*pnorm(-abs(diff_z_score))
+  df$pvalue = rowmin_2col(v1 = 2*pnorm(-abs(diff_z_score))*0.05/(1-conf.level),1)
   df_hat$pvalue <- ">"
   df_hdt$pvalue <- "<"
   df_pretty$pvalue <- "p[NHST]"
   
   # 7) TOST p value (Two tailed equivalence test)
-  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1)
+  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1, conf.level = conf.level)
   df_hat$tostp <- "<"
   df_hdt$tostp <- ">"
   df_pretty$tostp <- "p[TOST]"
@@ -295,7 +291,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$cohend <- "Cd"
   
   # 9) most difference in means
-  df$mdm = row_mdm_2s_zdist(x_a, x_b)
+  df$mdm = row_mdm_2s_zdist(x_a, x_b, conf.level = conf.level)
   df_hat$mdm <- "<"
   df_hdt$mdm <- ">"
   df_pretty$mdm <- "delta[M]"
@@ -307,7 +303,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$rmdm <- "r*delta[M]"
   
   # 11) Least Difference in Means
-  df$ldm = row_ldm_2s_zdist(x_a, x_b)
+  df$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level=conf.level)
   df_hat$ldm <- "<"
   df_hdt$ldm <- ">"
   df_pretty$ldm <- "delta[L]"
@@ -340,7 +336,6 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   attr(df,"varnames_pretty") <- df_pretty
   
   
-  # browser();
   # dfs = list("df" = df, "df_hat" = df_hat)
   return(df)
 }
