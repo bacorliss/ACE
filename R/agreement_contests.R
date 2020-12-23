@@ -55,10 +55,16 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                                     mus_1ao = NA, sigmas_1ao = NA, 
                                     mus_2ao = NA, sigmas_2ao = NA,
                                     alpha_1 = 0.05, alpha_2 = 0.05,
-                                    switch_group_ab = FALSE,
-                                    switch_sign_mean_ab = FALSE,
+                                    
                                     switch_sign_mean_d = FALSE,
-                                    switch_exp_12 = FALSE,
+                                    switch_sign_mean_ab = FALSE,
+                                    switch_group_ab = FALSE,
+                                    switch_mu_ab_12 = FALSE,
+                                    switch_mu_d_12 = FALSE,
+                                    switch_sigma_ab_12 = FALSE,
+                                    switch_alpha_12 = FALSE,
+                                    switch_n_12 = FALSE,
+                                    
                                     fig_name = "test.tiff",
                                     fig_path = "Figure/",
                                     gt_colnames, is_plotted = TRUE) {
@@ -98,7 +104,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
 
   # Expand any singleton pop param arguments replicate to number of simulations
   input_args <- formalArgs(generateExperiment_Data)
-  pargs <-grep("^(mus)|(sigmas)|(n_\\d)", input_args, value=TRUE)
+  pargs <-grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
   # For any pop param not equal in length to n_sims, expand
   for (n in seq_along(pargs)) {
     if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
@@ -129,17 +135,21 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df <- pop_params_switches(df = df_init, switch_sign_mean_d = switch_sign_mean_d, 
                             switch_sign_mean_ab = switch_sign_mean_ab, 
                             switch_group_ab = switch_group_ab,
-                            switch_exp_12 = switch_exp_12)
+                            switch_mu_ab_12 = switch_mu_ab_12, 
+                            switch_mu_d_12 = switch_mu_d_12,
+                            switch_sigma_ab_12 = switch_sigma_ab_12, 
+                            switch_alpha_12 = switch_alpha_12,
+                            switch_n_12 = switch_n_12)
   
   # Dataframes that store direction of inequality for each parameter
   # hat: Exp 1 higher agreement than exp 2
-  df_hat = data.frame(is_mud_1hat2=0)
+  df_hat = data.frame(is_mud_1hat2 = 0)
   # hdt: Exp 2 higher disagreement than exp 2
-  df_hdt = data.frame(is_mud_1hdt2=0)
+  df_hdt = data.frame(is_mud_1hdt2 = 0)
   
   # Mean of the difference
-  df$mu_1d <- df$mu_1b - df$mu_1a
-  df$mu_2d <- df$mu_2b - df$mu_2a
+  # df$mu_1d <- df$mu_1b - df$mu_1a
+  # df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_1hat2 <-  abs(df$mu_1d) < abs(df$mu_2d)
   df_hat$is_mud_1hat2 <- "lt"
@@ -188,12 +198,20 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df_hdt$is_mudm_1hdt2 <- "gt"
   
   # STD of the difference in means
-  df$sigma_1dm <- sqrt(df$sigma_1a^2/n_1a + df$sigma_1b^2/n_1b)
-  df$sigma_2dm <- sqrt(df$sigma_2a^2/n_2a + df$sigma_2b^2/n_2b)
+  df$sigma_1dm <- sqrt(df$sigma_1a^2/df$n_1a + df$sigma_1b^2/df$n_1b)
+  df$sigma_2dm <- sqrt(df$sigma_2a^2/df$n_2a + df$sigma_2b^2/df$n_2b)
   df$is_sigmadm_1hat2 <-  df$sigma_1dm < df$sigma_2dm
   df_hat$is_sigmadm_1hat2 <- "lt"
   df$is_sigmadm_1hdt2 <- df$is_sigmadm_1hat2
   df_hdt$is_sigmadm_1hdt2 <- "lt"
+  
+  # ALPHA: significance level
+  # Higher significance level, higher agreement
+  df$is_alpha_1hat2     <- df$alpha_1 > df$alpha_2
+  df_hat$is_alpha_1hat2 <- "gt"
+  # Higher significance level, higher disagreement
+  df$is_alpha_1hdt2     <- df$alpha_1 > df$alpha_2
+  df_hdt$is_alpha_1hat2 <- "gt" 
   
   # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
   # determines whether results are in null region of critical region of t-test
@@ -241,6 +259,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   attr(df,"df_hat") <- df_hat
   attr(df,"df_hdt") <- df_hdt
   
+  # browser();
   # Plot generated population parameters
   if (is_plotted){
     plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
@@ -365,7 +384,9 @@ pop_params_from_ab <- function( n_samples, n_sims,
 
 
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
-                                switch_group_ab, switch_exp_12) {
+                                switch_group_ab, switch_mu_ab_12, switch_mu_d_12,
+                                switch_sigma_ab_12,
+                                switch_alpha_12, switch_n_12) {
   #' @description Apply various switches/alterations to group assignment of 
   #' pop. param sets at random. These alterations allow the agreement parameters 
   #' to be probed in an independent fashion by averaging out the effects of all 
@@ -384,30 +405,41 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
   #' @return df dataframe of pop param sets with switches applied 
   
   df <- df_init
-  # Randomly switch sign of D for both experiments, recalculate B
-  if (switch_sign_mean_d) { mus_sign = sample(c(-1,1), n_sims, TRUE)
-  df$mu_1d =  mus_sign * df$mu_1d
-  df$mu_2d =  mus_sign * df$mu_2d
   
-  df$mu_1b = df$mu_1a + df$mu_1d
-  df$mu_2b = df$mu_2a + df$mu_2d
+  if (switch_sign_mean_d) { 
+    # Randomly switch sign of D for both experiments, recalculate B
+    mus_sign_1 = sample(c(-1,1), n_sims, TRUE)
+    mus_sign_2 = sample(c(-1,1), n_sims, TRUE)
+    temp_mu_1d <- df$mu_1d;  temp_mu_2d <- df$mu_2d;  
+    
+    df$mu_1d =  mus_sign_1 * temp_mu_1d
+    df$mu_2d =  mus_sign_2 * temp_mu_2d
+    
+    df$mu_1b = df$mu_1a + df$mu_1d
+    df$mu_2b = df$mu_2a + df$mu_2d
   }
   # Randomly switch sign of both group a and b for exp 1 and 2 separately, recalculate d
   if (switch_sign_mean_ab) {
-    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
-    df$mu_1a[switch_boolean] <- -df$mu_1a[switch_boolean]
-    df$mu_2a[switch_boolean] <- -df$mu_2a[switch_boolean]
-    df$mu_1b[switch_boolean] <- -df$mu_1b[switch_boolean]
-    df$mu_2b[switch_boolean] <- -df$mu_2b[switch_boolean]
+  # Randomly switch sign of both mu_a, mu_b, and mu_d
+    switch_boolean <- sample( c(TRUE,FALSE), n_sims, TRUE)
+    temp_mu_1a     <- df$mu_1a; temp_mu_1b     <- df$mu_1b;
+    temp_mu_2a     <- df$mu_2a; temp_mu_2b     <- df$mu_2b
+    df$mu_1a[switch_boolean] <- -temp_mu_1a[switch_boolean]
+    df$mu_2a[switch_boolean] <- -temp_mu_2a[switch_boolean]
+    df$mu_1b[switch_boolean] <- -temp_mu_1b[switch_boolean]
+    df$mu_2b[switch_boolean] <- -temp_mu_2b[switch_boolean]
     
-    # Recalculate D
-    df$mu_1d = df$mu_1b - df$mu_1a; 
-    df$mu_2d = df$mu_2b - df$mu_2a;
+    # Switch mu_d
+    temp_mu_1d <- df$mu_1d;  temp_mu_2d <- df$mu_2d;  
+    df$mu_1d[switch_boolean] = -temp_mu_1d[switch_boolean]; 
+    df$mu_2d[switch_boolean] = -temp_mu_2d[switch_boolean];
   }
-  # Randomly switch assignment for A and B for EACH experiment, recalculate D
+  
   if (switch_group_ab) {
-    # Random switch binary vector
+    # Randomly switch mu_a <-> mu_b, and sigma_a <-> sigma_b for each experiment
+    # mu_d will also switch signs, while sigma_d will remain unchanged
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    
     # Save temp variables for switch
     temp_mu_1a     <- df$mu_1a;    temp_sigma_1a  <- df$sigma_1a
     temp_mu_1b     <- df$mu_1b;    temp_sigma_1b  <- df$sigma_1b
@@ -423,37 +455,81 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     df$sigma_2a[switch_boolean]   <- temp_sigma_2b[switch_boolean]
     df$mu_2b[switch_boolean]      <- temp_mu_2a[switch_boolean]
     df$sigma_2b[switch_boolean]   <- temp_sigma_2a[switch_boolean]
-    # Recalculate D
-    df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
-    df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
-  }
-  if (switch_exp_12) {
-    # Save temp variables for switch
-    temp_mu_1a     <- df$mu_1a;    temp_sigma_1a  <- df$sigma_1a
-    temp_mu_1b     <- df$mu_1b;    temp_sigma_1b  <- df$sigma_1b
-    temp_mu_2a     <- df$mu_2a;    temp_sigma_2a  <- df$sigma_2a
-    temp_mu_2b     <- df$mu_2b;    temp_sigma_2b  <- df$sigma_2b
-    temp_alpha_1 <- df$alpha_1;    temp_alpha_2   <-  df$alpha_2;
     
+    # Switch mu_d by simply negating sign 
+    temp_mu_1d <- df$mu_1d;  temp_mu_2d <- df$mu_2d;  
+    df$mu_1d[switch_boolean] = -temp_mu_1d[switch_boolean]
+    df$mu_2d[switch_boolean] = -temp_mu_2d[switch_boolean]
+    
+  }
+  if (switch_mu_ab_12) {
+    # Switch both mu_a and mu_b and mu_d between experiments
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    
+    # Switch mu_a and mu_b
+    temp_mu_1a <- df$mu_1a;  temp_mu_1b <- df$mu_1b;  
+    temp_mu_2a <- df$mu_2a;  temp_mu_2b <- df$mu_2b;
+    df$mu_1a[switch_boolean]      <- temp_mu_2a[switch_boolean]
+    df$mu_1b[switch_boolean]      <- temp_mu_2b[switch_boolean]
+    df$mu_2a[switch_boolean]      <- temp_mu_1a[switch_boolean]
+    df$mu_2b[switch_boolean]      <- temp_mu_1b[switch_boolean]
+
+    # Switch mu_d
+    temp_mu_1d <- df$mu_1d;  temp_mu_2d <- df$mu_2d;  
+    df$mu_1d[switch_boolean] = temp_mu_2d[switch_boolean]
+    df$mu_2d[switch_boolean] = temp_mu_1d[switch_boolean]
+  } 
+  
+  if (switch_mu_d_12) {
+    # Switch both mu_a and mu_b and mu_d between experiments
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    # Switch mu_d
+    temp_mu_1d <- df$mu_1d;  temp_mu_2d <- df$mu_2d;  
+    df$mu_1d[switch_boolean] = temp_mu_2d[switch_boolean]
+    df$mu_2d[switch_boolean] = temp_mu_1d[switch_boolean]
+    #Recalculate group b mean from d
+    df$mu_1b[switch_boolean] <- df$mu_1a[switch_boolean] + df$mu_1d[switch_boolean]
+    df$mu_2b[switch_boolean] <- df$mu_2a[switch_boolean] + df$mu_2d[switch_boolean]
+  } 
+  
+  if (switch_sigma_ab_12) {
+    # Switch sigma_a, sigma_b, sigma_d between experiments
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    
+    # Switch sigma_a and sigma_b
+    temp_sigma_1a <- df$sigma_1a;   temp_sigma_1b <- df$sigma_1b;
+    temp_sigma_2a <- df$sigma_2a;   temp_sigma_2b <- df$sigma_2b;
+    df$sigma_1a[switch_boolean]    <- temp_sigma_2a[switch_boolean]
+    df$sigma_1b[switch_boolean]    <- temp_sigma_2b[switch_boolean]
+    df$sigma_2a[switch_boolean]    <- temp_sigma_1a[switch_boolean]
+    df$sigma_2b[switch_boolean]    <- temp_sigma_1b[switch_boolean]
+    
+    # Switch sigma_d 
+    temp_sigma_1d <- df$sigma_1d;  temp_sigma_2d <- df$sigma_2d;  
+    df$sigma_1d[switch_boolean] = temp_sigma_2d[switch_boolean]
+    df$sigma_2d[switch_boolean] = temp_sigma_1d[switch_boolean]
+  }
+  if (switch_alpha_12) {
+    # browser();
+    temp_alpha_1 <- df$alpha_1;    temp_alpha_2   <-  df$alpha_2;
     # Determine which simulations to switch parameters for a and b
     switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
-    # Switch specified parameters
-    df$mu_1a[switch_boolean]      <- temp_mu_2a[switch_boolean]
-    df$sigma_1a[switch_boolean]   <- temp_sigma_2a[switch_boolean]
-    df$mu_1b[switch_boolean]      <- temp_mu_2b[switch_boolean]
-    df$sigma_1b[switch_boolean]   <- temp_sigma_2b[switch_boolean]
     df$alpha_1[switch_boolean]    <- temp_alpha_2[switch_boolean]
-    
-    df$mu_2a[switch_boolean]      <- temp_mu_1a[switch_boolean]
-    df$sigma_2a[switch_boolean]   <- temp_sigma_1a[switch_boolean]
-    df$mu_2b[switch_boolean]      <- temp_mu_1b[switch_boolean]
-    df$sigma_2b[switch_boolean]   <- temp_sigma_1b[switch_boolean]
     df$alpha_2[switch_boolean]    <- temp_alpha_1[switch_boolean]
-    
-    # Recalculate D
-    df$mu_1d = df$mu_1b - df$mu_1a; df$sigma_1d = sqrt(df$sigma_1b^2 + df$sigma_1a^2)
-    df$mu_2d = df$mu_2b - df$mu_2a; df$sigma_2d = sqrt(df$sigma_2b^2 + df$sigma_2a^2)
   }
+  if (switch_n_12) {
+    # browser();
+    temp_n_1a <- df$n_1a;   temp_n_1b <- df$n_1b
+    temp_n_2a <- df$n_2a;   temp_n_2b <- df$n_2b
+    # Determine which simulations to switch parameters for a and b
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    df$n_1a[switch_boolean]    <- temp_n_2a[switch_boolean]
+    df$n_1b[switch_boolean]    <- temp_n_2b[switch_boolean]
+    df$n_2a[switch_boolean]    <- temp_n_1a[switch_boolean]
+    df$n_2b[switch_boolean]    <- temp_n_1b[switch_boolean]
+  }
+
+  # browser();
   return(df)
 }
 
@@ -475,12 +551,12 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #' 
   #' @return no return, exports figures to disk
 
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+  save(list = ls(all.names = TRUE), file = "temp/plot_population_params",envir = environment())
+  # load(file = "temp/plot_population_params")
   
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2", #"is_sigmad_1hat2",
-                   "is_rsigmad_1hat2", "is_dfdm_1hat2")
+                   "is_rsigmad_1hat2", "is_dfdm_1hat2", "is_alpha_1hat2")
   # Alt sigmas: is_sigmapool_1hat2,is_rsigmapool_1hat2; is_sigmad_1hat2, is_rsigmad_1hat2
   
   # bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
@@ -490,7 +566,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # Calculate indices of colname
   gt_param_inds <- unname(sapply(gt_colnames,function(x){pmatch(x,param_fields)}))
   gt_param_labels <- c("abs(~mu[DM]*phantom(.))",  "abs(~r*mu[DM]*phantom(.))",
-                       "~sigma[D]*phantom(.)", "r*sigma[D]", "df[D]")
+                       "~sigma[D]*phantom(.)", "r*sigma[D]", "df[D]","alpha")
 
   # Calculate agreement matrix: test if nonrandom agreement between each parameter
   # versus every other.
@@ -519,7 +595,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
                                col.names = TRUE, sep=","))
   
   # Calculate binomial confidence intervals for each success rate for each parameter
-  df_params <- tibble(group = c("mu", "rmu", "sigma", "rsigma", "df"), 
+  df_params <- tibble(group = c("mu", "rmu", "sigma", "rsigma", "df","alpha"), 
                       estimate = rep(0,length(param_fields)), lci = rep(0,length(param_fields)),
                       uci = rep(0,length(param_fields)))
   for (n in seq_along(param_fields)) {
@@ -529,7 +605,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
     df_params$lci[n]       <-binom$conf.int[1]
     df_params$uci[n]       <-binom$conf.int[2]
   }
-  df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df"))
+  df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df","alpha"))
   
   
   # Plot confidence interval of success rate for each parameter and their agreement

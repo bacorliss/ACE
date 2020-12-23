@@ -65,8 +65,14 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs,
                                    
-                                   switch_group_ab = TRUE,
                                    switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = TRUE,
+                                   switch_mu_ab_12 = FALSE,
+                                   switch_mu_d_12 = FALSE,
+                                   switch_sigma_ab_12 = FALSE,
+                                   switch_alpha_12 = FALSE,
+                                   switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)  
 df_unscaled_crit[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
@@ -87,18 +93,24 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    mus_1a  = 1, 
                                    sigmas_1a = 1,
                                    mus_1ao  = 10, 
-                                   sigmas_1ao = runif(n_sims, 5, 20),
+                                   sigmas_1ao = runif(n_sims, 5, 10),
                                    
-                                   mus_2a  = 50, 
+                                   mus_2a  = 100, 
                                    sigmas_2a = 1,
                                    mus_2ao  = 10,
-                                   sigmas_2ao = runif(n_sims, 5, 20),
+                                   sigmas_2ao = runif(n_sims, 10, 20),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
-
-                                   switch_group_ab = TRUE,
+                                   
                                    switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = TRUE,
+                                   switch_mu_ab_12 = FALSE,
+                                   switch_mu_d_12 = FALSE,
+                                   switch_sigma_ab_12 = TRUE,
+                                   switch_alpha_12 = FALSE,
+                                   switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
 df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
@@ -110,8 +122,8 @@ df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 # Contest 7) Lower df_pool
-n1 <- runif(n_sims, 6, 75)
-n2 <- runif(n_sims, 6, 75)
+n1 <- runif(n_sims, 6, 20)
+n2 <- runif(n_sims, 30, 50)
 set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
@@ -128,8 +140,15 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2, 
-                                   switch_group_ab = TRUE,
+
                                    switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = TRUE,
+                                   switch_mu_ab_12 = FALSE,
+                                   switch_mu_d_12 = FALSE,
+                                   switch_sigma_ab_12 = FALSE,
+                                   switch_alpha_12 = FALSE,
+                                   switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
 df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
@@ -140,6 +159,48 @@ df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 
+
+# Contest 4) Lower alpha
+#
+#------------------------------------------------------------------------------
+set.seed(rand.seed)
+gt_colnames = "is_alpha_1hat2"
+fig_name = paste("F", fig_num, "_4_esize_contest_alpha_far_zero", sep = "")
+df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
+                                   mus_1a  = 1, 
+                                   sigmas_1a = 1, 
+                                   mus_1ao  = seq(1, 3, length.out = n_sims), 
+                                   sigmas_1ao = 1,
+                                   
+                                   mus_2a  = 100, 
+                                   sigmas_2a = 1,
+                                   mus_2ao  = seq(1, 3, length.out = n_sims), 
+                                   sigmas_2ao = 1,
+                                   
+                                   n_1a = 50, n_1b = 50,
+                                   n_2a = 50, n_2b = 50,
+                                   alpha_1 = 0.05/1,
+                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   
+                                   switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
+                                   switch_mu_ab_12 = FALSE,
+                                   switch_mu_d_12 = FALSE,
+                                   switch_sigma_ab_12 = FALSE,
+                                   switch_alpha_12 = TRUE,
+                                   switch_n_12 = FALSE,
+                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
+                                   gt_colnames=gt_colnames)  
+df_unscaled_crit[[4]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                                   y_ax_str = "abs(~mu[DM]*phantom(.))",
+                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
+                                                   fig_path = fig_path)
+
+
+
+
 # Contest 7) Quantify Error rate with each metric predicting experiment with
 # Lower STD of difference in means and mean difference in means [Free form]
 # [Near from zero]
@@ -147,43 +208,56 @@ df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-n1 <- runif(n_sims, 6, 75)
-n2 <- runif(n_sims, 6, 75)
-gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2")
+n1 <- round(runif(n_sims, 5, 8))
+n2 <- round(runif(n_sims, 15, 30))
+gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
 fig_name = paste("F", fig_num, "_4_esize_contest_free_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 1, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims, 3, 6), 
-                                   sigmas_1ao = runif(n_sims, 2.5, 7.5),
+                                   mus_1ao  = runif(n_sims, 3.5, 5), 
+                                   sigmas_1ao = runif(n_sims, 1, 1.75),
                                    
                                    mus_2a  = 100,
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims, 3, 6), 
-                                   sigmas_2ao = runif(n_sims, 2.5, 7.5),
+                                   mus_2ao  = runif(n_sims, 4.5, 6), 
+                                   sigmas_2ao = runif(n_sims, 2.25, 3),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
+                                   alpha_1 = 0.05/1,
+                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
-                                   switch_group_ab = TRUE,
                                    switch_sign_mean_d = TRUE,
+                                   switch_sign_mean_ab = FALSE,
+                                   switch_group_ab = FALSE,
+                                   switch_mu_ab_12 = FALSE,
+                                   switch_mu_d_12 = TRUE,
+                                   switch_sigma_ab_12 = TRUE,
+                                   switch_alpha_12 = TRUE,
+                                   switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-df_unscaled_crit[[4]] <- process_esize_simulations(df_init, gt_colname = gt_colnames[1], 
-                                       y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                       include_bf = include_bf, parallel_sims = parallel_sims,
-                                       fig_name = paste(fig_name, "_mu.tiff",sep = ""),
-                                       fig_path = fig_path)
-df_unscaled_crit[[5]] <- process_esize_simulations(df_init, gt_colname = gt_colnames[2], 
-                                          y_ax_str = "sigma[pool]",
-                                          include_bf = include_bf, parallel_sims = parallel_sims,
-                                          fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
-                                          fig_path = fig_path)
-df_unscaled_crit[[6]] <- process_esize_simulations(df_init, gt_colname = gt_colnames[3], 
-                                                  y_ax_str = "df[pool]",
-                                                  include_bf = include_bf, parallel_sims = parallel_sims,
-                                                  fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                                                  fig_path = fig_path)
+df_unscaled_crit[[5]] <- 
+  process_esize_simulations(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
+                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            fig_name = paste(fig_name, "_mu.tiff",sep = ""),
+                            fig_path = fig_path)
+df_unscaled_crit[[6]] <- 
+  process_esize_simulations(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[pool]",
+                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
+                            fig_path = fig_path)
+df_unscaled_crit[[7]] <- 
+  process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[pool]",
+                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            fig_name = paste(fig_name, "_df.tiff",sep = ""),
+                            fig_path = fig_path)
+df_unscaled_null[[8]] <- 
+  process_esize_simulations(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
+                            include_bf = include_bf, parallel_sims = parallel_sims, 
+                            fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
+                            fig_path = fig_path)
 
 
 dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)

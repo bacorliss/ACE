@@ -19,7 +19,10 @@ source("R/mdm.R")
 
 # Find min or max value between two columns: optimized for speed since its a 
 # smaller edge case than the typical rowMin/rowMax application
-rowmin_2col <- function(v1,v2) { v1[v2<v1] <- v2[v2<v1]; return(v1)}
+rowmin_2col <- function(v1,v2) { 
+  if(length(v2)==1) { v1[v2<v1] <- v2
+  } else { v1[v2<v1] <- v2[v2<v1]}
+  return(v1)}
 rowmax_2col <- function(v1,v2) { v1[v2>v1] <- v2[v2>v1]; return(v1)}
 
 # Calculate variance by row: sum of square of deviation from mean over n-1
@@ -166,12 +169,13 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.lev
 
   
   t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_dm 
-  p_low <- rowmin_2col(1 - pt(t_lower, df = n1+n2-1) * 0.05/(1-conf.level),1)
+  p_low <- rowmin_2col((1 - pt(t_lower, df = n1+n2-1)) * 0.05/(1-conf.level),1)
+  
   t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_dm 
   p_high <- rowmin_2col(pt(t_upper, df = n1+n2-1) * 0.05/(1-conf.level),1)
   # Quick max value of two vectors
   p_tost_fast <- rowmax_2col(p_low,p_high)
-  p_tost_fast
+  
   
   # # Test that mu[md] is greater than low
   # p_lower <- sapply(1:dim(m1)[1], function(i)
