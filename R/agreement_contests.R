@@ -61,13 +61,15 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                                     switch_group_ab = FALSE,
                                     switch_mu_ab_12 = FALSE,
                                     switch_mu_d_12 = FALSE,
+                                    switch_rmu_d_12 = FALSE,
                                     switch_sigma_ab_12 = FALSE,
                                     switch_alpha_12 = FALSE,
                                     switch_n_12 = FALSE,
                                     
                                     fig_name = "test.tiff",
                                     fig_path = "Figure/",
-                                    gt_colnames, is_plotted = TRUE) {
+                                    gt_colnames, is_plotted = TRUE,
+                                    tol = 1e-16) {
   #' @description Generate simulated experiment data for two experiments with 
   #' distributions for mu and sigma specified as vectors (across samples)
   #' 
@@ -137,6 +139,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                             switch_group_ab = switch_group_ab,
                             switch_mu_ab_12 = switch_mu_ab_12, 
                             switch_mu_d_12 = switch_mu_d_12,
+                            switch_rmu_d_12 = switch_rmu_d_12,
                             switch_sigma_ab_12 = switch_sigma_ab_12, 
                             switch_alpha_12 = switch_alpha_12,
                             switch_n_12 = switch_n_12)
@@ -221,33 +224,33 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # Statistics of difference of means distribution 
   df$rmu_1dm <- df$mu_1dm / df$mu_1a
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  df$is_rmudm_1hat2 <-  abs(df$rmu_1dm) < abs(df$rmu_2dm)
+  df$is_rmudm_1hat2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
   df_hat$is_rmudm_1hat2 <- "lt"
-  df$is_rmudm_1hdt2 <- !df$is_rmudm_1hat2
+  df$is_rmudm_1hdt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
   df_hdt$is_rmudm_1hdt2 <- "gt"
   
   # Relative sigma of difference
   df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmad_1hat2 <-  df$rsigma_1d < df$rsigma_2d
+  df$is_rsigmad_1hat2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
   df_hat$is_rsigmad_1hat2 <- "lt"
-  df$is_rsigmad_1hdt2 <-  df$is_rsigmad_1hat2
+  df$is_rsigmad_1hdt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
   df_hdt$is_rsigmad_1hdt2 <- "lt"
   
   # Relative Pooled Sigma
   df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmapool_1hat2 <-  df$rsigma_1pool < df$rsigma_2pool
+  df$is_rsigmapool_1hat2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
   df_hat$is_rsigmapool_1hat2 <- "lt"
-  df$is_rsigmapool_1hdt2 <-  df$is_rsigmapool_1hat2
+  df$is_rsigmapool_1hdt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
   df_hdt$is_rsigmapool_1hdt2 <- "lt"
   
   # sigma of the difference of means distribution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
-  df$is_rsigmadm_1hat2 <- df$rsigma_1dm < df$rsigma_2dm
+  df$is_rsigmadm_1hat2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
   df_hat$is_rsigmadm_1hat2 <- "lt"
-  df$is_rsigmadm_1hdt2 <- df$is_rsigmadm_1hat2
+  df$is_rsigmadm_1hdt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
   df_hdt$is_rsigmadm_1hdt2 <- "lt"
   
   # Population parameter differences
@@ -384,8 +387,8 @@ pop_params_from_ab <- function( n_samples, n_sims,
 
 
 pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab, 
-                                switch_group_ab, switch_mu_ab_12, switch_mu_d_12,
-                                switch_sigma_ab_12,
+                                switch_group_ab, switch_mu_ab_12, switch_rmu_d_12,
+                                switch_mu_d_12, switch_sigma_ab_12,
                                 switch_alpha_12, switch_n_12) {
   #' @description Apply various switches/alterations to group assignment of 
   #' pop. param sets at random. These alterations allow the agreement parameters 
@@ -528,7 +531,44 @@ pop_params_switches <- function(df_init, switch_sign_mean_d, switch_sign_mean_ab
     df$n_2a[switch_boolean]    <- temp_n_1a[switch_boolean]
     df$n_2b[switch_boolean]    <- temp_n_1b[switch_boolean]
   }
+  
+  if (switch_rmu_d_12) {
+    # browser();
+    # Calculate mu_d based on switching rmu_d
+    switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+    temp_rmu_1d <- df$mu_1d/df$mu_1a; temp_rmu_2d <- df$mu_2d/df$mu_2a;  
+   
+    df$mu_1d[switch_boolean] = temp_rmu_2d[switch_boolean] * df$mu_1a[switch_boolean]
+    df$mu_2d[switch_boolean] = temp_rmu_1d[switch_boolean] * df$mu_2a[switch_boolean]
+    #Recalculate group b mean from d
+    df$mu_1b[switch_boolean] <- df$mu_1a[switch_boolean] + df$mu_1d[switch_boolean]
+    df$mu_2b[switch_boolean] <- df$mu_2a[switch_boolean] + df$mu_2d[switch_boolean]
+  } 
+  
+  
 
+  # if (switch_rsigma_ab_12) {
+  #   # Switch sigma_a, sigma_b, sigma_d between experiments by switching rsigma_a, rsigma_b
+  #   switch_boolean <- sample(c(TRUE,FALSE), n_sims, TRUE)
+  #   # Switch sigma_a and sigma_b
+  #   temp_sigma_1a <- df$sigma_1a;   temp_sigma_1b <- df$sigma_1b;
+  #   temp_sigma_2a <- df$sigma_2a;   temp_sigma_2b <- df$sigma_2b;
+  #   
+  #   temp_rsigma_1d <- df$sigma_1d/(0.5*(df$sigma_1a + df$sigma_1b));   
+  #   temp_rsigma_1d <- df$sigma_1d/(0.5*(df$sigma_1a + df$sigma_1b)); 
+  #   
+  #   df$sigma_1a[switch_boolean]    <- temp_sigma_2a[switch_boolean]
+  #   df$sigma_1b[switch_boolean]    <- temp_sigma_2b[switch_boolean]
+  #   df$sigma_2a[switch_boolean]    <- temp_sigma_1a[switch_boolean]
+  #   df$sigma_2b[switch_boolean]    <- temp_sigma_1b[switch_boolean]
+  #   
+  #   # Switch sigma_d 
+  #   temp_sigma_1d <- df$sigma_1d;  temp_sigma_2d <- df$sigma_2d;  
+  #   df$sigma_1d[switch_boolean] = temp_sigma_2d[switch_boolean]
+  #   df$sigma_2d[switch_boolean] = temp_sigma_1d[switch_boolean]
+  # }
+  
+  # 
   # browser();
   return(df)
 }
