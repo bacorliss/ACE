@@ -64,8 +64,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = TRUE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -86,7 +86,6 @@ df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
-
 set.seed(rand.seed)
 gt_colnames = "is_sigmad_1hat2" 
 fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
@@ -105,8 +104,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_2a = n_obs, n_2b = n_obs, 
                                    alpha_1 = 0.05, alpha_2 = 0.05,
 
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -116,7 +115,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                    fig_path = fig_path,gt_colnames=gt_colnames)  
 df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "sigma[pool]",
+                                    y_ax_str = "sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
@@ -124,9 +123,8 @@ df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 # Contest 3) Higher df_pool
 # [Near from zero]
-#
-source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
+source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 6, 40))
 n2 <- round(runif(n_sims, 6, 40))
 set.seed(rand.seed)
@@ -147,18 +145,18 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_2a = n2, n_2b = n2, 
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   switch_sign_mean_d = FALSE,
-                                   switch_sign_mean_ab = TRUE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
                                    switch_sigma_ab_12 = FALSE,
-                                   switch_alpha_12 = TRUE,
+                                   switch_alpha_12 = FALSE,
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
 df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "df[pool]",
+                                    y_ax_str = "df[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
@@ -190,8 +188,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
 
-                                   switch_sign_mean_d = FALSE,
-                                   switch_sign_mean_ab = TRUE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -238,8 +236,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_1 = 0.05/1,
                                    alpha_2 = 0.05/runif(n_sims, 5, 20),
                                    
-                                   switch_sign_mean_d = FALSE,
-                                   switch_sign_mean_ab = TRUE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = TRUE,
@@ -254,12 +252,12 @@ df_unscaled_null[[5]] <-
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                             fig_path = fig_path)
 df_unscaled_null[[6]] <- 
-  process_esize_simulations(df_init, gt_colname = gt_colnames[2],  y_ax_str = "sigma[pool]",
+  process_esize_simulations(df_init, gt_colname = gt_colnames[2],  y_ax_str = "sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
                             fig_path = fig_path)
 df_unscaled_null[[7]] <- 
-  process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[pool]",
+  process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path)

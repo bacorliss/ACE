@@ -65,8 +65,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs,
                                    
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -103,8 +103,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
                                    
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -114,7 +114,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
 df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "sigma[pool]",
+                                    y_ax_str = "sigma[DM]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
@@ -141,8 +141,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2, 
 
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -152,7 +152,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
 df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                            y_ax_str = "df[pool]",
+                                            y_ax_str = "df[DM]",
                                             include_bf = include_bf, parallel_sims = parallel_sims,
                                             fig_name = paste(fig_name, ".tiff",sep = ""),
                                             fig_path = fig_path)
@@ -182,8 +182,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_1 = 0.05/1,
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -228,8 +228,8 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_1 = 0.05/1,
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
-                                   switch_sign_mean_d = TRUE,
-                                   switch_sign_mean_ab = FALSE,
+                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = TRUE,
@@ -244,12 +244,12 @@ df_unscaled_crit[[5]] <-
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                             fig_path = fig_path)
 df_unscaled_crit[[6]] <- 
-  process_esize_simulations(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[pool]",
+  process_esize_simulations(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
                             fig_path = fig_path)
 df_unscaled_crit[[7]] <- 
-  process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[pool]",
+  process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path)
