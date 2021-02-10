@@ -9,6 +9,10 @@
 #' DIsplays comparison error rates in a heatmap table, with error rates normalized
 #' to an apriori selected gold standard 
 
+if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+p_load(ggplot2)
+p_load(gplots)
+
 # Figure parameters
 #-------------------------------------------------------------------------------
 fig_num = "2"
@@ -25,8 +29,8 @@ dir.create(data_path, showWarnings = FALSE, recursive = TRUE)
 #------------------------------------------------------------------------
 
 # Remake heatmap with rectangles based on the selection
-my_palette <- colorRampPalette(c(rgb(255, 0, 0,maxColorValue = 255),"white",
-                                 rgb(47, 117, 181,maxColorValue = 255)))(n = 299)
+my_palette <- colorRampPalette(c(rgb(47, 117, 181,maxColorValue = 255),"white",
+                                 rgb(255, 0, 0,maxColorValue = 255)))(n = 299)
 col_breaks = c(seq(-1, -.1, length=100), seq(-.09, 0.09, length=100), 
                seq(0.1, 1.0,length=100))
 # Function for making selection rectangles around selection cells
@@ -60,11 +64,11 @@ if (!file.exists(file.path(data_path, "df_unscaled_crit.RDS"))) {
 # Heatmap of unscaled data
 #-------------------------------------------------------------------------------
 dfs_unscaled <- c(df_unscaled_null,df_unscaled_crit)
-scale_norm_ind = rep(c(1,3,3,1,3,3),2)
+scale_norm_ind = rep(c(1,3,3,7,1,3,3,7),2)
 
 # Extract means for each group and subtract from 0.5 (random)
 scale_means_from_0.5 <- 0.5 - sapply(dfs_unscaled, function(x) x$df_plotted$mean)
-scale_scores <- t(t(scale_means_from_0.5)/
+scale_scores <- -t(t(scale_means_from_0.5)/
                     scale_means_from_0.5[cbind(scale_norm_ind,seq_along(scale_norm_ind))])
 # Export csv
 rownames(scale_scores) <- attr(df_unscaled_null[[1]]$df_es, "varnames")
@@ -74,13 +78,15 @@ scale_score_norm <- sapply(scale_norm_ind, function(ind,len)
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_unscaled_null[[1]]$df_es, "varnames")))
 
 png(paste(sum_fig_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
-    width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
+    width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(scale_scores_sig,1,scale_score_norm,3)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
-          labRow =  sapply(attr(df_unscaled_null[[1]]$df_es, "varnames"), function(x) parse(text=x)),labCol = "",
+          labRow =  sapply(attr(df_unscaled_null[[1]]$df_es, "varnames"),
+                           function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scale_scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scale_scores)[1]),
+          breaks = col_breaks,
           notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))
 dev.off()
 
@@ -108,13 +114,13 @@ fig_num = "2"
 #-------------------------------------------------------------------------------
 # Export summary stats for relative scale data
 dfs_relative <- c(df_relative_null,df_relative_crit)
-relative_norm_ind = rep(c(2,4,4,2,4,4),2)
+relative_norm_ind = rep(c(2,4,4,7,2,4,4,7),2)
 
 # Extract means for each group and subtract from 0.5 (random)
 relative_means_from_0.5 <- 0.5 - sapply(dfs_relative, function(x) x$df_plotted$mean)
 
 # rscale_means_from_0.5 <- 0.5 - sapply(dfs_rscale, function(x) get(x)$df_plotted$mean)
-rscale_scores <- t(t(relative_means_from_0.5)/
+rscale_scores <- -t(t(relative_means_from_0.5)/
                      relative_means_from_0.5[cbind(relative_norm_ind,seq_along(relative_norm_ind))])
 # Export csv
 rownames(rscale_scores) <- attr(df_relative_null[[1]]$df_es,"varnames")
@@ -124,7 +130,7 @@ rscale_score_norm <- sapply(relative_norm_ind, function(ind,len)
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_relative_null[[1]]$df_es,"varnames_pretty")))
 
 png(paste(sum_fig_path,"/F", fig_num, "es_contest relative scale.png",sep=""),    
-    width = 5.5*300, height = 2.75*300, res = 300, pointsize = 8)  
+    width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
@@ -132,6 +138,7 @@ heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
                            function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(rscale_scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(rscale_scores)[1]),
+          breaks = col_breaks,
           notecol="black",notecex=1, lwid=c(0.01,5),lhei=c(0.01,5),margins =c(0,0))
 dev.off()
 

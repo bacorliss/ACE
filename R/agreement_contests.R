@@ -290,14 +290,15 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
     plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames)
   } else {
+    
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-    df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
-                     param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
-                               rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
-                               rep("df[pool]",dim(df)[1])), 
-                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
+    df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),6),
+                     param = c(rep("mu[DM]",dim(df)[1]), rep("sigma[D]",dim(df)[1]),
+                               rep("r*mu[DM]",dim(df)[1]), rep("r*sigma[D]",dim(df)[1]),
+                               rep("df[D]",dim(df)[1]),rep("alpha[DM]",dim(df)[1])), 
+                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d,df$alpha_1)
     )
-    df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]","r*sigma[pool]","df[pool]"))
+    df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "sigma[D]", "r*mu[DM]","r*sigma[D]","df[D]","alpha[DM]"))
 
     gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
@@ -609,10 +610,6 @@ pop_params_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_si
   }
   
   
-  
-
-  
-  
   if (switch_rmu_d_12_hold_rsigma) {
     # browser();
     # Calculate mu_d based on switching rmu_d
@@ -727,8 +724,8 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #' 
   #' @return no return, exports figures to disk
 
-  save(list = ls(all.names = TRUE), file = "temp/plot_population_params",envir = environment())
-  # load(file = "temp/plot_population_params")
+  save(list = ls(all.names = TRUE), file = "temp/plot_population_params.rds",envir = environment())
+  # load(file = "temp/plot_population_params.rds")
   
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2", #"is_sigmad_1hat2",
@@ -876,7 +873,6 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # # load(file = "temp/debug.RData")
 
-  
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
     
@@ -1287,7 +1283,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
 
 
 
-lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
+lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_path,
                                      dir_to_agreement=1, alpha = 0.05) {
   #' @description Plot mean values across samples of candidate statistics versus 
   #' a swept independent variable, and calculates correlation with pearson rho.
@@ -1305,8 +1301,10 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
   #' candidate statistics versus the indepdent variable.
   
   
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")
+  # browser();
+  
   
   # Filter for stats metrics
   col_list <- colnames(df)
@@ -1314,24 +1312,57 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
   exp1_sd_vars   = paste("exp1_sd_", attr(df,"varnames"),sep="")
   
   # Calculate mean value of statistics for each value of indvar
+  df$series <- seq(1, dim(df)[1],1)
   df_means <- df %>% gather("variable", "value", exp1_mean_vars)
   
+  
   df_means <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "mean_value") %>%
-    select(c(all_of(indvar),"variable", "mean_value"))
+    select("series", c(all_of(indvar),"variable", "mean_value"))
   df_sd <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "sd_value")
   # subset(df_means, variable = "exp1_mean_xdbar")
-  df_means$variable <- as.factor(df_means$variable)
+  df_means$variable <- factor(df_means$variable, levels = exp1_mean_vars)
+  df_means$label <-  factor(as.character(attr(df,"varnames_pretty"))[match(df_means$variable,exp1_mean_vars)],
+                            levels = attr(df,"varnames_pretty"))
   
-  # indvar must vary for correlation
+  
+  # Rescale values if any values are outside of specified range
+  apply_log <- function(x) {if ((any(x<1e-5) || any(x>1e5)) && all(x>0)) {x=log10(x)} else{x=x}; return(x)}
+  df_means2 = df_means %>% group_by(variable) %>% mutate(scale_mean_value = apply_log(mean_value))
+  df_means2$is_scaled <- df_means2$mean_value != df_means2$scale_mean_value
+  # Add log[10] to label for that group if scaling is applied
+  df_is_scaled <- df_means2 %>% group_by(label) %>% summarize(is_scaled = all(is_scaled))
+  levels(df_means2$label ) <-  as.character(ifelse(df_is_scaled$is_scaled, 
+                                      paste("log[10](", attr(df,"varnames_pretty"),")",sep=""),
+                                      attr(df,"varnames_pretty")))
+  
+  
+  # Plot facet of how each candidate statistic changes
+  gg <- ggplot(data = df_means2, aes(x = series , y = scale_mean_value)) + 
+    geom_point(size=.25) + facet_wrap(vars(label),labeller = label_parsed, ncol = 6, scales = "free_y") +
+    ylab("Norm. Value") + xlab("Series") +
+    # scale_y_continuous(breaks = NULL)+
+    theme_classic(base_size=8) + 
+    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
+  print(gg)
+  save_plot(paste(fig_path, '/', str_replace(fig_name,'\\..*$','_all_stats.png'), sep = ""), 
+            gg, ncol = 1, nrow = 1, base_height = 1.75,  base_width = 6.25, dpi = 600)
+ 
+
+
+  # Test: indvar must vary for correlation to be applied
   if (length(unique(df_means[[indvar]]))==1) {
     simpleError("Indepedent variable does not change, so cannot perform pearson")
   }
   
   # Calculate pearson rho for the mean of each candidate stat versus independent var
-  df_mean_stat = tibble(variable = exp1_mean_vars, pearson_rho=rep(NA,length(exp1_mean_vars)),
-                        pearson_rho_low=rep(NA,length(exp1_mean_vars)), pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
+  df_mean_stat = tibble(variable = exp1_mean_vars, 
+                        pearson_rho=rep(NA,length(exp1_mean_vars)),
+                        pearson_rho_low=rep(NA,length(exp1_mean_vars)), 
+                        pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
                         slope=rep(NA,length(exp1_mean_vars)), 
-                        slope_low=rep(NA,length(exp1_mean_vars)), slope_high=rep(NA,length(exp1_mean_vars)))
+                        slope_low=rep(NA,length(exp1_mean_vars)),
+                        slope_high=rep(NA,length(exp1_mean_vars)))
+  
   for (n in seq(1,length(exp1_mean_vars),1))  {
     # print(n)
     df_sub = subset(df_means, df_means$variable == exp1_mean_vars[n])
@@ -1359,6 +1390,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
     df_mean_stat$slope_low[n] = df_mean_stat$slope[n] - 1.96*sd_slope
     df_mean_stat$slope_high[n] = df_mean_stat$slope[n] + 1.96*sd_slope
   }
+  # Sort variable names and add pretty column
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
   df_mean_stat$label <- factor(attr(df,"varnames_pretty"), levels = attr(df,"varnames_pretty"))
   df_mean_stat$is_pearson_rho_sig <-  !(0>df_mean_stat$pearson_rho_low & 0<df_mean_stat$pearson_rho_high)
@@ -1398,14 +1430,15 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
   
   
   # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
-  df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),5),
+  df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),6),
                    param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
-                             rep("sigma[pool]",dim(df)[1]), rep("r*sigma[pool]",dim(df)[1]),
-                             rep("df[pool]",dim(df)[1])), 
-                   value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d)
+                             rep("sigma[D]",dim(df)[1]), rep("r*sigma[D]",dim(df)[1]),
+                             rep("df[D]",dim(df)[1]), rep("alpha[DM]",dim(df)[1])), 
+                   value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, 
+                             df$df_1d, df$alpha_1)
   )
-  df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[pool]",
-                                                    "r*sigma[pool]","df[pool]"))
+  df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[D]",
+                                                    "r*sigma[D]","df[D]","alpha[DM]"))
   
   
   # Calculate mean value of each stat at each point in the series
@@ -1415,16 +1448,17 @@ lineplot_indvar_vs_stats <- function(df, indvar, fig_name, fig_path,
   #   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
   
   
-  # Faceted lineplot of each agreement parameter versus indepedent variable
+  # Faceted line plot of each agreement parameter versus independent variable
   gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
     geom_line() +
     facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
     theme_classic(base_size=8) +
-    theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) )) 
+    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) 
   # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
   gg
-  save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
-            base_height = 1.75, base_asp = 4, base_width = 3, dpi = 600)
+  save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), 
+            gg, ncol = 1, nrow = 1, base_height = 1.75, base_asp = 4, 
+            base_width = 3, dpi = 600)
   
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # load(file = "temp/debug.RData")

@@ -122,20 +122,20 @@ df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 # Contest 7) Lower df_pool
-n1 <- runif(n_sims, 6, 20)
-n2 <- runif(n_sims, 30, 50)
+n1 <- runif(n_sims, 6, 30)
+n2 <- runif(n_sims, 20, 50)
 set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 1, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = 10, 
+                                   mus_1ao  = 11, 
                                    sigmas_1ao = 10,
                                    
                                    mus_2a  = 50, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = 10,
+                                   mus_2ao  = 11,
                                    sigmas_2ao = 10,
                                    
                                    n_1a = n1, n_1b = n1,
@@ -183,7 +183,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -229,7 +229,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = TRUE,
@@ -253,7 +253,7 @@ df_unscaled_crit[[7]] <-
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path)
-df_unscaled_null[[8]] <- 
+df_unscaled_crit[[8]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),

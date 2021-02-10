@@ -203,7 +203,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames)  
-df_relative_null[[4]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_relative_crit[[4]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "alpha[DM]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -248,22 +248,22 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
-df_relative_null[[5]] <- 
+df_relative_crit[[5]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                             fig_path = fig_path)
-df_relative_null[[6]] <- 
+df_relative_crit[[6]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[2], y_ax_str = "r*sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
                             fig_path = fig_path)
-df_relative_null[[7]] <- 
+df_relative_crit[[7]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]", 
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path)
-df_relative_null[[8]] <- 
+df_relative_crit[[8]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),

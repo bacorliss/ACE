@@ -11,7 +11,7 @@ p_load(broom)
 p_load(scales)
 p_load(ggplot2)
 p_load(dplyr)
-p_load(plyr)
+# p_load(plyr)
 p_load(grid)
 p_load(gridExtra)
 p_load(colorspace)
@@ -31,6 +31,7 @@ source("R/norm_versus_fnorm.R")
 base_dir = "mdm_z"
 fig_num = "4"
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), showWarnings = FALSE,recursive = TRUE)
+rand.seed=0
 
 # Colors for figure
 # Orange: MDM, [255, 127, 0], #FF7F00
@@ -372,8 +373,8 @@ gg <- ggplot(data = subset(df_coeff,mu<.3),aes(x=mu, y=mean_coeff_mdm_95)) +
   geom_line(size=0.15) +
   geom_ribbon(aes(ymin = mean_coeff_mdm_95-1.96*sd_coeff_mdm_95,
                   ymax=mean_coeff_mdm_95+1.96*sd_coeff_mdm_95), fill = "grey") +
-  xlab(expression(abs(phantom(.)*mu*phantom(.))*phantom(.)/sigma)) +
-  ylab(expression(Coeff.~MDM[95])) +
+  xlab(expression(abs(phantom(.)*mu[DM]*phantom(.))*phantom(.)/sigma[DM])) +
+  ylab(expression(Coeff.~"95%"~delta[M])) +
   theme_classic(base_size=8)
 gg
 save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2C_Coeff_mdm_CLa_CL2a.tiff",sep=""),
@@ -427,8 +428,8 @@ gg <- ggplot(df_compare, aes(x=means,y=diffs)) +
   geom_point(size=0.05) +
   # xlab(expression((MDM[root]+MDM[lut])/2)) + 
   # ylab(expression(MDM[root]-MDM[lut])) +
-  xlab("Mean") + 
-  ylab("Diff.") +
+  xlab(expression( (delta["M, root"]+delta["M, lut"])/2 )) + 
+  ylab(expression(delta["M, root"]-delta["M, lut"])) +
   theme_classic(base_size=8)
 gg
 save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA MDM root vs MDM lut.tiff", 
@@ -463,8 +464,8 @@ gg <- ggplot(data = df_speed,  aes(x=x, y=mdm_root)) +
   geom_boxplot( outlier.size = 1) + theme_classic(base_size = 8) +
   ylab("Sec./1000 Runs") + xlab("Algorithm") +
   scale_x_discrete(limits = rev(levels(df_speed$x)),
-                   labels = c('MDM[root]' = expression(MDM[root]),
-                              'MDM[lut]'   = expression(MDM[lut])))
+                   labels = c('MDM[root]' = expression(delta["M,root"]),
+                              'MDM[lut]'   = expression(delta["M,lut"])))
 gg
 save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_Speed MDM root vs MDM lut.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
@@ -504,13 +505,15 @@ for (n in seq(1,length(mus),1)) {
   ci_diff <- mcl_95 - mcl_90
   coeff_mdm95 <- mdm_diff/ci_diff
   print(mus[n])
-  df_list[[n]] = tibble(n = as.factor(n), 
+  df_list[[n]] = tibble(n = as.factor(n), mu = mus[n],
                         coeff_mdm95 = coeff_mdm95, mdm_95 = mdm_95, 
                         mcl_90 = mcl_90, mcl_95 = mcl_95)
-  df_list[[n]]$mu <-as.factor(mus[n])
+  df_list[[n]]$mu <- as.factor(mus[n])
 }
 
-df <- ldply(df_list, rbind)
+df <- do.call(rbind, df_list)     #ldply(df_list, rbind)
+df$mu <- as.factor(df$mu)
+
 # df$mu <- as.factor(df$mu)
 # Get groups means and CI of mean
 df_plotted <- df %>% group_by(mu) %>% 
@@ -521,7 +524,7 @@ df_plotted <- df %>% group_by(mu) %>%
             # ucl_mu = boot.ci(boot(df$coeff_mdm95, statistic=
             #                         function(data, i) {return(mean(data[i]))}, R=1000), 
             #                  conf=0.95, type="bca")$bca[5])
-df_plotted$mu <- as.factor(df_plotted)
+df_plotted$mu <- as.factor(df_plotted$mu)
 # Pairwise test between groups
 pw_means <- pairwise.t.test(df$coeff_mdm95, df$mu, p.adjust.method = "bonferroni",
                                 paired = TRUE, alternative = "two.sided")
@@ -533,7 +536,7 @@ gg <- ggplot(df, aes(x = mu, y=coeff_mdm95)) +
   geom_point(data=df_plotted, aes(x=mu,y=mean_coeff_mdm95), color ="#FF7F00") +
   geom_hline(aes(yintercept = 0), color = "#377eb8",  size = 1, alpha = 0.2) +
   geom_hline(aes(yintercept = 1), color = "#e41a1c", size = 1, alpha = 0.2) +
-  xlab(expression(mu)) + ylab("Coeff. CL [90, 95]") +
+  xlab(expression(mu)) + ylab(expression("Coeff."~"95%"~delta[M])) +
   geom_text(data = data.frame(), aes(x = as.factor(mus), y = rep(1.03, length(mus)), 
                 label=adj_sig_str),  size=5, position = position_nudge(x = 0.5, y = 0), color="black")+
   coord_cartesian(ylim=c(0,1.05))+

@@ -125,20 +125,20 @@ df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # [Near from zero]
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
-n1 <- round(runif(n_sims, 6, 40))
-n2 <- round(runif(n_sims, 6, 40))
+n1 <- round(runif(n_sims, 6, 25))
+n2 <- round(runif(n_sims, 15, 40))
 set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_", "contest_df_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 1, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = seq(0.1,.8,length.out = n_sims) ,
+                                   mus_1ao  = seq(0.1,.8,length.out = n_sims),
                                    sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = 1, seq(0.1,.8,length.out = n_sims),
+                                   mus_2ao  = seq(0.1,.8,length.out = n_sims),
                                    sigmas_2ao = 1,
                                    
                                    n_1a = n1, n_1b = n1,
