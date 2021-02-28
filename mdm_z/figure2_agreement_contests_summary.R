@@ -36,14 +36,15 @@ col_breaks = c(seq(-1, -.1, length=100), seq(-.09, 0.09, length=100),
 # Function for making selection rectangles around selection cells
 makeRects <- function(cells,lwd){
   coords = expand.grid(dim(cells)[1]:1, 1:dim(cells)[2])[cells,]
-  xl=coords[,2]-0.49; yb=coords[,1]-0.49; xr=coords[,2]+0.49; yt=coords[,1]+0.49
+  xl=coords[,2]-0.485; yb=coords[,1]-0.485; xr=coords[,2]+0.48; yt=coords[,1]+0.48
   rect(xl,yb,xr,yt,border="black",lwd=lwd)
 }
-make2RectGroups <- function(cells1,lwd1, cells2, lwd2){
-  makeRects(cells1,lwd1)
-  makeRects(cells2,lwd2)
-}
 
+add_underline <- function(cells,lwd){
+  coords = expand.grid(dim(cells)[1]:1, 1:dim(cells)[2])[cells,]
+  xl=coords[,2]-0.49; yb=coords[,1]-0.49; xr=coords[,2]+0.49; yt=coords[,1]+0.49
+  segments(xl+.07, yb+.16, xr-.08, yb+.16, col = "black", lty = "solid", lwd = lwd)
+}
 
 
 
@@ -72,15 +73,16 @@ scale_scores <- -t(t(scale_means_from_0.5)/
                     scale_means_from_0.5[cbind(scale_norm_ind,seq_along(scale_norm_ind))])
 # Export csv
 rownames(scale_scores) <- attr(df_unscaled_null[[1]]$df_es, "varnames")
-# Get statistical significance
+# Identity which cells are statistically significant from random
 scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5) 
+# Identity which cells are used for normalization
 scale_score_norm <- sapply(scale_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_unscaled_null[[1]]$df_es, "varnames")))
 
 png(paste(sum_fig_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {make2RectGroups(scale_scores_sig,1,scale_score_norm,3)}, 
+          add.expr = {add_underline(scale_scores_sig,1.5); makeRects(scale_score_norm,1.5)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_unscaled_null[[1]]$df_es, "varnames"),
                            function(x) parse(text=x)),labCol = "",
@@ -132,7 +134,7 @@ rscale_score_norm <- sapply(relative_norm_ind, function(ind,len)
 png(paste(sum_fig_path,"/F", fig_num, "es_contest relative scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {make2RectGroups(rscale_scores_sig,1,rscale_score_norm,3)}, 
+          add.expr = {add_underline(rscale_scores_sig,1.5); makeRects(rscale_score_norm,1.5)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_relative_null[[1]]$df_es,"varnames_pretty"),
                            function(x) parse(text=x)),labCol = "",

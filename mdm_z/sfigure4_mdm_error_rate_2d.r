@@ -28,7 +28,7 @@ p_load(tidyr)
 p_load(docstring)
 # User defined functions
 source("R/mdm.R")
-source("R/coverage_error_utils")
+source("R/coverage_error_toolbox.R")
 
 
 # Figure parameters

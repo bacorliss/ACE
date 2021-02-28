@@ -296,20 +296,20 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
                      param = c(rep("mu[DM]",dim(df)[1]), rep("sigma[D]",dim(df)[1]),
                                rep("r*mu[DM]",dim(df)[1]), rep("r*sigma[D]",dim(df)[1]),
                                rep("df[D]",dim(df)[1]),rep("alpha[DM]",dim(df)[1])), 
-                     Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, df$df_1d,df$alpha_1)
+                     Value = c(df$mu_1dm, df$sigma_1d, df$rmu_1dm, df$rsigma_1d, df$df_1d,df$alpha_1)
     )
     df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "sigma[D]", "r*mu[DM]","r*sigma[D]","df[D]","alpha[DM]"))
 
     gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
-      theme_classic(base_size = 8) +
-      theme(strip.text.x = element_text( margin = margin( b = 0, t = 0) ),
-            panel.spacing = unit(0, "lines"),
-            panel.grid.major = element_blank(),
-            panel.grid.minor = element_blank(),
-            strip.background = element_blank(),
-            panel.border = element_rect(fill = NA,colour = "black")) 
+      theme_classic(base_size = 8) + ylab("Value") +
+      theme(strip.text.x = element_text( margin = margin( b = 0.5, t = 0.5) ),
+            panel.spacing = unit(.25, "lines"),)
+            # panel.grid.major = element_blank(),
+            # panel.grid.minor = element_blank(),
+            # strip.background = element_blank(),
+            # panel.border = element_rect(fill = NA,colour = "black")) 
     print(gg)
     save_plot(paste(fig_path,  '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), gg, ncol = 1, nrow = 1, 
               base_height = 1.8, base_asp = 4, base_width = 3, dpi = 600)
@@ -1325,7 +1325,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
                             levels = attr(df,"varnames_pretty"))
   
   
-  # Rescale values if any values are outside of specified range
+  # Log rescale values if any values are outside of specified range
   apply_log <- function(x) {if ((any(x<1e-5) || any(x>1e5)) && all(x>0)) {x=log10(x)} else{x=x}; return(x)}
   df_means2 = df_means %>% group_by(variable) %>% mutate(scale_mean_value = apply_log(mean_value))
   df_means2$is_scaled <- df_means2$mean_value != df_means2$scale_mean_value
@@ -1339,7 +1339,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   # Plot facet of how each candidate statistic changes
   gg <- ggplot(data = df_means2, aes(x = series , y = scale_mean_value)) + 
     geom_point(size=.25) + facet_wrap(vars(label),labeller = label_parsed, ncol = 6, scales = "free_y") +
-    ylab("Norm. Value") + xlab("Series") +
+    ylab("Mean Value") + xlab("Series") +
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
     theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
@@ -1434,12 +1434,11 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
                    param = c(rep("mu[DM]",dim(df)[1]), rep("r*mu[DM]",dim(df)[1]),
                              rep("sigma[D]",dim(df)[1]), rep("r*sigma[D]",dim(df)[1]),
                              rep("df[D]",dim(df)[1]), rep("alpha[DM]",dim(df)[1])), 
-                   value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, 
+                   Value = c(df$mu_1dm, df$rmu_1dm, df$sigma_1d, df$rsigma_1d, 
                              df$df_1d, df$alpha_1)
   )
   df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[D]",
                                                     "r*sigma[D]","df[D]","alpha[DM]"))
-  
   
   # Calculate mean value of each stat at each point in the series
   # df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
@@ -1448,21 +1447,17 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   #   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
   
   
-  # Faceted line plot of each agreement parameter versus independent variable
-  gg <- ggplot(data = df_runs, aes(x = Series, y = value)) +
-    geom_line() +
-    facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
-    theme_classic(base_size=8) +
-    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) 
-  # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
-  gg
-  save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), 
-            gg, ncol = 1, nrow = 1, base_height = 1.75, base_asp = 4, 
-            base_width = 3, dpi = 600)
-  
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
-  
-  
+  # # Faceted line plot of each agreement parameter versus independent variable
+  # gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
+  #   geom_line() +
+  #   facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
+  #   theme_classic(base_size=8) +
+  #   theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) 
+  # # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
+  # gg
+  # save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), 
+  #           gg, ncol = 1, nrow = 1, base_height = 1.75, base_asp = 4, 
+  #           base_width = 3, dpi = 600)
+
   return(df_mean_stat)
 }

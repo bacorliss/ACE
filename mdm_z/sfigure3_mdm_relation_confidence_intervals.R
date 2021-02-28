@@ -179,7 +179,7 @@ g1B <- g1B +
   geom_point(aes(col="t-test "), shape = 16, size = 0.5, color = "black") +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
-  xlab(expression(bar(x))) + ylab("P-value") +
+  xlab(expression(bar(x)[DM]/s[DM])) + ylab("P-value") +
   # scale_y_continuous(name="p value", limits=c(-.1, 1.1),breaks=seq(0, 1, .5)) +
   # scale_shape_manual("Legend", labels=g1B_labels, values = c(2,2,NA)) +
   # scale_linetype_manual("Legend", labels = g1B_labels, values=c("dotted", "dotted",NA))+
@@ -191,11 +191,10 @@ g1B <- g1B +
   coord_cartesian(ylim=c(0,1))
 g1B
 # Use cowplot to align subplots
-cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.5,.5) )
+cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.45,.55) )
 cg
 save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2AB_MDM_vs_CI95.tiff",sep=""),
-          cg, ncol = 1, nrow = 1, base_height = 1.25,
-          base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
+          cg, ncol = 1, nrow = 1, base_height = 1.4, base_width = 5, dpi = 600) # paper="letter"
 graphics.off()
 
 
@@ -536,7 +535,7 @@ gg <- ggplot(df, aes(x = mu, y=coeff_mdm95)) +
   geom_point(data=df_plotted, aes(x=mu,y=mean_coeff_mdm95), color ="#FF7F00") +
   geom_hline(aes(yintercept = 0), color = "#377eb8",  size = 1, alpha = 0.2) +
   geom_hline(aes(yintercept = 1), color = "#e41a1c", size = 1, alpha = 0.2) +
-  xlab(expression(mu)) + ylab(expression("Coeff."~"95%"~delta[M])) +
+  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression("Coeff."~"95%"~delta[M])) +
   geom_text(data = data.frame(), aes(x = as.factor(mus), y = rep(1.03, length(mus)), 
                 label=adj_sig_str),  size=5, position = position_nudge(x = 0.5, y = 0), color="black")+
   coord_cartesian(ylim=c(0,1.05))+

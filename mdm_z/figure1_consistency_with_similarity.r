@@ -35,7 +35,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
 
-n_samples = 1e4
+n_samples = 1e3
 n_obs = 50
 rand.seed = 1
 gt_colnames = "is_mudm_1hat2"
@@ -52,7 +52,7 @@ include_bf = TRUE
 #------------------------------------------------------------------------------
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
-mus_d_vect = seq(4.1,0.1,-0.2)
+mus_d_vect = seq(4.85,.1,-0.25)
 mus_a_vect = mus_d_vect*2
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect=1
@@ -86,6 +86,7 @@ df_mu_pearson <-
 
 # Unscaled Sigma: Pearson rho of sigma versus abs(mean of each stat)
 #------------------------------------------------------------------------------
+source("R/agreement_contests.R")
 set.seed(rand.seed)
 sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
 mus_a_vect = sigmas_ab_vect
@@ -341,13 +342,18 @@ col_breaks = c(seq(-1, -.1, length=100), seq(-.09, 0.09, length=100),
 # Function for making selection rectangles around selection cells
 makeRects <- function(cells,lwd){
   coords = expand.grid(dim(cells)[1]:1, 1:dim(cells)[1])[cells,]
-  xl=coords[,2]-0.49; yb=coords[,1]-0.49; xr=coords[,2]+0.49; yt=coords[,1]+0.49
+  xl=coords[,2]-0.45; yb=coords[,1]-0.45; xr=coords[,2]+0.45; yt=coords[,1]+0.45
   rect(xl,yb,xr,yt,border="black",lwd=lwd)
 }
 make2RectGroups <- function(cells1,lwd1){
   makeRects(cells1,lwd1)
 }
 
+add_underline <- function(cells,lwd){
+  coords = expand.grid(dim(cells)[1]:1, 1:dim(cells)[2])[cells,]
+  xl=coords[,2]-0.49; yb=coords[,1]-0.49; xr=coords[,2]+0.49; yt=coords[,1]+0.49
+  segments(xl+.05, yb+.16, xr-.05, yb+.16, col = "black", lty = "solid", lwd = lwd)
+}
 
 
 # Unscaled Heatmap Summary
@@ -359,15 +365,13 @@ scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson
 png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {make2RectGroups(scores_sig,2)},
+          add.expr = {add_underline(scores_sig,1.5)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
           labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scores)[1]),
           notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))
 dev.off()
-
-
 
 
 
@@ -381,7 +385,7 @@ scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pears
 png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
 heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {make2RectGroups(scores_sig,2)},
+          add.expr = {add_underline(scores_sig,1.5);},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",
           cellnote=matrix(sapply(scores,function(x) sprintf("%0.2+f",x)),
