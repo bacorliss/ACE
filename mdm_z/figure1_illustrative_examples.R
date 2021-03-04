@@ -187,62 +187,62 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
 
 # Decreased mean offset for experiment 2
 rand_seed <- 0
-na1=5; nb1=5; na2=5; nb2=5;
+na1=15; nb1=15; na2=15; nb2=15;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
 b2 <- rnorm(nb2, mean = 0, sd = 1)
 
 # Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(0.9^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(0.9^2/2) + 10.2
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(0.9^2/2) + 10
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(0.9^2/2) + 10.7
+xa1 <- (a1-mean(a1))/sd(a1)*sqrt(2.3^2/2) + 10
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
+xa2 <- (a2-mean(a2))/sd(a2)*sqrt(2.3^2/2) + 10
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(2.85^2/2) + 11.2
 # Plot experiments and Difference of Means
 plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_mu", 
-                 ylims = c(8,12), dm_ylims = c(-1.5,2.8), dm_ybreaks=seq(-1,2,1))
+                 ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 
 
-# Increased sample size for experiment 2
+# Increased std experiment 2
 #-------------------------------------------------------------------------------
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.9^2/2) + 10
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.9^2/2) + 10.2
+xa2 <- (a2-mean(a2))/sd(a2)*sqrt(4.5^2/2) + 10
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(4.5^2/2) + 10.3
 # Plot experiments and Difference of Means
-plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_std", 
-                 ylims = c(8,12), dm_ylims = c(-1.5,2.8), dm_ybreaks=seq(-1,2,1))
+plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_sigma", 
+                 ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 
 
 # Increased sample size for experiment 2
 #-------------------------------------------------------------------------------
 rand_seed <- 0
-na2=35; nb2=35;
+na2=5; nb2=5;
 a3 <- rnorm(na2, mean = 0, sd = 1)
 b3 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
-xa3 <- (a3-mean(a3))/sd(a3)*sqrt(1^2/2) + 10
-xb3 <- (b3-mean(b3))/sd(b3)*sqrt(1^2/2) + 10.2
+xa3 <- (a3-mean(a3))/sd(a3)*sqrt(2.3^2/2) + 10
+xb3 <- (b3-mean(b3))/sd(b3)*sqrt(2.3^2/2) + 10.3
 # Plot experiments and Difference of Means
 plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name="unsc_df", 
-                 ylims = c(8,12), dm_ylims = c(-1.5,2.8), dm_ybreaks=seq(-1,2,1))
+                 ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 
 
 # Decrease alpha for experiment 2
 #-------------------------------------------------------------------------------
 rand_seed <- 0
-na1=5; nb1=5; na2=5; nb2=5;
+na1=25; nb1=25; na2=25; nb2=25;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
 b2 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(0.9^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(0.9^2/2) + 10.2
-xa2 <- (a1-mean(a1))/sd(a1)*sqrt(0.9^2/2) + 10
-xb2 <- (b1-mean(b1))/sd(b1)*sqrt(0.9^2/2) + 10.2
+xa1 <- (a1-mean(a1))/sd(a1)*sqrt(2.3^2/2) + 10
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
+xa2 <- (a1-mean(a1))/sd(a1)*sqrt(2.3^2/2) + 10
+xb2 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
 # Plot experiments and Difference of Means
 plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_alpha", 
-                 ylims = c(8,12), dm_ylims = c(-1.5,2.8), dm_ybreaks = seq(-1,2,1),
-                 conf.level.2 = 1-0.05/1000)
+                 ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2),
+                 conf.level.2 = 1-0.05/10000)
 
 
 
@@ -271,19 +271,19 @@ dm_ylims = c(-0.2,0.2)
 dm_ybreaks = seq(-0.2, 0.2, 0.1)
 
 
-# relative mu
+# Relative mu
 #-------------------------------------------------------------------------------
 rand_seed <- 1
-na1=5; nb1=5; na2=5; nb2=5;
+na1=15; nb1=15; na2=15; nb2=15;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
 b2 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1^2/2) + 10.2
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(2^2/2)/35 + 0.5
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(2^2/2)/35 + 0.545
+xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2) + 10
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
+xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.40^2/2)/15 + 0.5
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.40^2/2)/15 + 0.54
 # Plot experiments and Difference of Means
 ggplots <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rmu",data_scale = "relative")
@@ -292,11 +292,11 @@ save_plot(paste(fig_path, "/F",fig_num, "_", "rel_rmu","_E1", ".tiff", sep = "")
           gg1, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
 
 
-# relative sigma
+# Relative sigma
 #-------------------------------------------------------------------------------
 # Normalize points
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1^2/2)/0.25e5 + 2.2e-4
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1^2/2)/0.25e5 + 2.244e-4
+xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1^2/2)/0.12e5 + 2.2e-4
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1^2/2)/0.12e5 + 2.233e-4
 # Plot experiments and Difference of Means
 ggplots <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rsigma", data_scale = "relative")
@@ -312,12 +312,12 @@ save_plot(paste(fig_path, "/F", fig_num, "_", "rel_rsigma","_E2", ".tiff", sep =
 # Increased sample size for experiment 2
 #-------------------------------------------------------------------------------
 rand_seed <- 0
-na3=35; nb3=35;
+na3=3; nb3=3;
 a3 <- rnorm(na3, mean = 0, sd = 1)
 b3 <- rnorm(nb3, mean = 0, sd = 1)
 # Normalize points
-xa3 <- (a3-mean(a3))/sd(a3)*sqrt(10.5^2/2) + 100
-xb3 <- (b3-mean(b3))/sd(b3)*sqrt(10.5^2/2) + 102
+xa3 <- (a3-mean(a3))/sd(a3)*sqrt(18^2/2) + 100
+xb3 <- (b3-mean(b3))/sd(b3)*sqrt(18^2/2) + 101.5
 # Plot experiments and Difference of Means
 ggplots <- plot_experiments(xa1, xb1, xa3, xb3, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_df", data_scale = "relative")
@@ -325,16 +325,16 @@ ggplots <- plot_experiments(xa1, xb1, xa3, xb3, fig_num=fig_num, fig_path=fig_pa
 
 # Decrease alpha for experiment 2
 #-------------------------------------------------------------------------------
-na1=5; nb1=5; na2=5; nb2=5;
+na1=15; nb1=15; na2=15; nb2=15;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
 b2 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1^2/2) + 10.2
-xa2 <- (a1-mean(a1))/sd(a1)*sqrt(1^2/2) + 10
-xb2 <- (b1-mean(b1))/sd(b1)*sqrt(1^2/2) + 10.2
+xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2) + 10
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
+xa2 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2)/3 + 10/3
+xb2 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2)/3 + 10.15/3
 plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                             dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
                             conf.level.2 = 1-0.05/1000)
