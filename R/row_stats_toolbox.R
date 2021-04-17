@@ -10,6 +10,8 @@
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(BayesFactor)
 p_load(TOSTER)
+# Second generation p-values
+p_load(sgpv)
 
 source("R/ldm.R")
 source("R/mdm.R")
