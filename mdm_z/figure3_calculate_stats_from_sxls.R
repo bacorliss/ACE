@@ -29,26 +29,35 @@ calc_stats <- function(df, out_path, csv_name) {
   #' Compute stats from data frame, one from each row, based on mean,std, and n 
   #' from each group
   #' #
-  df_stat = data.frame(dm = rep(0,dim(df)[1]), rdm = rep(0,dim(df)[1]), cd = rep(0,dim(df)[1]),
-                       p_nhst = rep(0,dim(df)[1]), p_equiv = rep(0,dim(df)[1]), 
-                       bf = rep(0,dim(df)[1]))
+  df_stat = data.frame(
+                      rdm = rep(0,dim(df)[1]), 
+                      dm = rep(0,dim(df)[1]), 
+                      cd = rep(0,dim(df)[1]),
+                      p_nhst = rep(0,dim(df)[1]), 
+                      p_equiv = rep(0,dim(df)[1]), 
+                      p_2nd = rep(0,dim(df)[1]), 
+                      bf = rep(0,dim(df)[1]))
   
   for (n in seq(1, dim(df)[1]) ) {
     # Simulate data points for input into functions
     # Create normalized data with n1 points, times s1 plus x1
     xa = matrix(norm_points(as.double(df$n1[n])), nrow=1) * 
-      as.double(df$s1[n]) + as.double(df[["x̅1"]][n])
+      as.double(df$s1[n]) + as.double(df[[paste("x","\U00AF","1",sep="")]][n])
     # Create normalized data with n2 points, times s1 plus x2
     xb = matrix(norm_points(as.double(df$n2[n])), nrow=1) * 
-      as.double(df$s2[n]) + as.double(df[["x̅2"]][n])
+      as.double(df$s2[n]) + as.double(df[[paste("x","\U00AF","2",sep="")]][n])
     
     # Input points into each function
     df_stat$bf[n] <- row_bayesf_2s(xa, xb)
-    df_stat$p_nhst[n] <- t.test(xa, xb, conf.level = 1 - parse_fract(df[["αDM"]][n]))$p.value
-    df_stat$dm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 1 - parse_fract(df[["αDM"]][n]))
-    df_stat$rdm[n] <- df_stat$dm[n] / as.double(df[["x̅1"]][n])
-    df_stat$p_equiv[n] <- row_tost_2s(xa, xb, conf.level = 1 - parse_fract(df[["αDM"]][n]))
+    df_stat$p_nhst[n] <- t.test(xa, xb, conf.level = 
+                                  1 - parse_fract(df[[paste("\U03B1","DM",sep="")]][n]))$p.value
+    df_stat$dm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 
+                                        1 - parse_fract(df[[paste("\U03B1","DM",sep="")]][n]))
+    df_stat$rdm[n] <- df_stat$dm[n] / as.double(df[[paste("x","\U00AF","1",sep="")]][n])
+    df_stat$p_equiv[n] <- row_tost_2s(xa, xb, conf.level = 
+                                        1 - parse_fract(df[[paste("\U03B1","DM",sep="")]][n]))
     df_stat$cd[n] <- row_cohend(xa, xb)
+    df_stat$cd[n] <- row_sgpv(xa, xb, -100, 100)
   }
  
   # Export results to disk
@@ -57,6 +66,7 @@ calc_stats <- function(df, out_path, csv_name) {
   return(df_stat)
 }
 
+str = "αDM"
 
 
 

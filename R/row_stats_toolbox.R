@@ -35,8 +35,9 @@ rowSds  <- function(x, ...) sqrt(rowVars(x))
 rowSdCombined <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
 # Weighted pooled standard deviation of two matrices, 1 sample per row
 rowSdPooled <- 
-  function(m1,m2) sqrt( ( (dim(m1)[2] - 1) * rowVars(m1)   + 
-                            (dim(m2)[2] - 1) * rowVars(m2) ) /
+  function(m1,m2) 
+    sqrt( ( (dim(m1)[2] - 1) * rowVars(m1) +  
+            (dim(m2)[2] - 1) * rowVars(m2) ) /
                           (dim(m1)[2] + dim(m2)[2] - 2    ) )
 
 # Effect Size Statistics Functions
@@ -75,6 +76,26 @@ row_zscore_2s <- function(m1, m2) {
   zstat<-  ( rowMeans(m1) - rowMeans(m2)) /
     sqrt( s1^2/n1 + s2^2/n2)
 }
+
+
+row_confint_z  <- function(m1,m2, conf.level = 0.95) {
+  x_bar_1 = rowMeans(m1); x_bar_2 = rowMeans(m2)
+  s_pool = rowSdPooled(m1, m2)
+  x_dm <- x_bar_2 - x_bar_1
+  
+  df_ci <- data.frame(
+    conf.lo = x_dm - qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m1)[2] + 1/dim(m2)[2]),
+    conf.hi = x_dm + qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m1)[2] + 1/dim(m2)[2]) )
+  return(df_ci)
+}
+
+row_confint_t  <- function(m1,m2, conf.level = 0.95) {
+  ci <- sapply(1:dim(m1)[1], function(i)  t.test(x=m2[i,], y=m1[i,])$conf.int)
+  df_ci <- data.frame(conf.lo = ci[1,], conf.hi = ci[2,])
+  return(df_ci)
+}
+
+
 
 row_ttest_2s <- function(m1, m2) {
   n1 <- dim(m1)[2]
@@ -161,6 +182,14 @@ row_tost_2s_slow <- function (m1,m2) {
 }
 
 
+row_sgpv <- function(m1, m2, null.lo, null.hi){
+  df_ci <- row_confint_t(m1, m2)
+  p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo, null.hi)$p.delta
+  return(p_sg)
+}
+
+
+
 row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.level = 0.95) {
   
   n1 <- dim(m1)[2]
@@ -194,9 +223,9 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.lev
 
 
 ## Test data
-# 
-# m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
-# m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
+# # 
+m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
+m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
 # 
 # # Z score and test
 # z = rowzScore(m1, m2)
