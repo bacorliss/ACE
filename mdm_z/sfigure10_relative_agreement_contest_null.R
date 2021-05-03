@@ -133,7 +133,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
 df_relative_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "r*sigma[pool]",
+                                    y_ax_str = "r*sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path)
@@ -178,7 +178,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
 df_relative_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                                   y_ax_str = "df[pool]", 
+                                                   y_ax_str = "df[D]", 
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path)

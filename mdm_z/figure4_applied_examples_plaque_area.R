@@ -12,15 +12,15 @@ fig_path = file.path(getwd(), paste(base_dir, "/figure/F",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 
 
-# 7840808, T4
-best_df = data.frame(group = c("Progression","BMY22089"), mean = c(0.713, 0.617), 
-                     sd = c(0.297/sqrt(8), 0.45/sqrt(8)), n = c(8, 8))
+# 27137489, F1C
+best_df = data.frame(group = c("Saline","LNA-Control"), mean = c(48.9, 51.6), 
+                     sd = c(3.3/sqrt(9), 5.2/sqrt(13)), n = c(9, 13))
 best_df$group <- fct_inorder(best_df$group)
 # levels(best_df$group) <- c("Progression Cotrol","BMY22089")
 gg<- ggplot(best_df, aes(x = group, y = mean)) +
   geom_bar(stat='identity', fill='white', color="black", width = .5)+
   geom_errorbar(aes(ymin = mean-sd, ymax = mean+sd), width=0.2)+
-  ylab(expression(paste("Plaque Area (", mm^2,")"))) + xlab("") +
+  ylab(expression(paste("Plaque Area (%)"))) + xlab("") +
   expand_limits(y = c(0, max(best_df$mean)+1.2*max(best_df$sd))) +
   scale_y_continuous(expand = c(0,0)) +
   geom_text(aes(label=n, y=0.2*max(mean)), size=3) +
@@ -34,14 +34,14 @@ save_plot(paste(fig_path, "/", fig_num, "1_best.tiff",sep=""),
 
 
 
-#11790777, T1
-mid_df = data.frame(group = c("FxrWT","Fxr-/-"), mean = c(23.1, 19.4), 
-                     sd = c(11.3/sqrt(7), 7.2/sqrt(8)), n = c(7, 8))
+#9614153, F2A
+mid_df = data.frame(group = c("LDLR-/--IF","LDLR-/-+IF"), mean = c(360, 295), 
+                     sd = c(94/sqrt(9), 36/sqrt(8)), n = c(9, 8))
 mid_df$group <- fct_inorder(mid_df$group)
 gg<- ggplot(mid_df, aes(x=group, y=mean)) +
   geom_bar(stat='identity', fill='white', color="black", width = .5)+
   geom_errorbar(aes(ymin=mean-sd,ymax=mean+sd), width=0.2)+
-  ylab(expression(paste("Plaque Area (%)"))) + xlab("") +
+  ylab(expression(paste("Plaque Area (", mm^2,")"))) + xlab("") +
   expand_limits(y = c(0, max(mid_df$mean)+1.2*max(mid_df$sd))) +
   scale_y_continuous(expand = c(0,0)) +
   geom_text(aes(label=n, y=0.2*max(mean)), size=3) +

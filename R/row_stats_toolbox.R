@@ -184,7 +184,7 @@ row_tost_2s_slow <- function (m1,m2) {
 
 row_sgpv <- function(m1, m2, null.lo, null.hi){
   df_ci <- row_confint_t(m1, m2)
-  p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo, null.hi)$p.delta
+  p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo = null.lo, null.hi = null.hi)$p.delta
   return(p_sg)
 }
 
@@ -304,20 +304,20 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df$bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
   df_hat$bf <- "<"
   df_hdt$bf <- ">"
-  df_pretty$bf <- "Bf"
+  df_pretty$bf <- "BF"
   
   # 6) NHST P-value: The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
   df$pvalue = rowmin_2col(v1 = 2*pnorm(-abs(diff_z_score))*0.05/(1-conf.level),1)
   df_hat$pvalue <- ">"
   df_hdt$pvalue <- "<"
-  df_pretty$pvalue <- "p[NHST]"
+  df_pretty$pvalue <- "p[N]"
   
   # 7) TOST p value (Two tailed equivalence test)
   df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1, conf.level = conf.level)
   df_hat$tostp <- "<"
   df_hdt$tostp <- ">"
-  df_pretty$tostp <- "p[TOST]"
+  df_pretty$tostp <- "p[E]"
   
   # 8) Cohens D
   df$cohend = row_cohend(x_a, x_b)
