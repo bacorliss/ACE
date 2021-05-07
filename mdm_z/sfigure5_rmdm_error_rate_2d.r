@@ -56,13 +56,14 @@ mu_ov_sigmas = NULL
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
                                     paste(fig_path, "rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                                overwrite=overwrite, mus_a=100, sigmas_a=1)
+                                overwrite=overwrite, mus_a=0.1414214, sigmas_a=1,
+                                is_parallel_proc = TRUE)
 
 
 # Plot 1: 2D error rate of rxbar < rmu in mu space
 #------------------------------------------------------------------------------#
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rxbar_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_rxbar_dm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
 # Plot heatmap
@@ -85,8 +86,8 @@ save_plot(paste(fig_path, "/", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
 #
 # Convert from matrix to data frame
 df_err_test <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_rxbar_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_rxbar_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_rxbar_dm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_rxbar_dm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df_err_test$mu <- as.numeric(df_err_test$mu)
 df_err_test$sigma <- as.numeric(df_err_test$sigma)
 df_err_test$z <- factor(df_err_test$z,levels = c("0","1","2","3"))
@@ -108,7 +109,7 @@ save_plot(paste(fig_path, "/", fig_num, "_1b rxbar error test.tiff",sep=""),
 # Plot 3: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rmdm_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_rmdm_error_rate, sigmas, mus)
 # Plot heatmap
@@ -133,8 +134,8 @@ save_plot(paste(fig_path, "/", fig_num, "_2a rmdm error rate 2D.tiff",sep=""),
 #
 # Convert from matrix to data frame
 df_err_test <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_rmdm_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_rmdm_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df_err_test$mu <- as.numeric(df_err_test$mu)
 df_err_test$sigma <- as.numeric(df_err_test$sigma)
 df_err_test$z <- factor(df_err_test$z,levels = c("0","1","2","3"))
@@ -216,7 +217,7 @@ df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs,
 # Plot 6: Heatmap error rate of rMDM < rmu in mu space
 #_______________________________________________________________________________
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rmdm_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_rmdm_error_rate, sigmas, mus)
 # Plot heatmap
@@ -241,8 +242,8 @@ save_plot(paste(fig_path, "/", fig_num, "_2a rmdm error rate 2D.tiff",sep=""),
 #
 # Convert from matrix to data frame
 df_err_test <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_rmdm_err_eq_zero > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_rmdm_err_eq_alpha > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+  df_results$pval_err_eq_zero_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus)),
+  df_results$pval_err_eq_alpha_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
 df_err_test$mu <- as.numeric(df_err_test$mu)
 df_err_test$sigma <- as.numeric(df_err_test$sigma)
 df_err_test$z <- factor(df_err_test$z,levels = c("0","1","2","3"))
@@ -257,7 +258,7 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "/", fig_num, "_2b mdm error test.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_2b rmdm error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
 
@@ -327,7 +328,7 @@ df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
 
 # Plot 9: Heatmap error rate of rmdm < rmu in mu/sigma space
 #_______________________________________________________________________________
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_rmdm_error_rate)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_rmdm_error_rate, sigmas, mus)
 # Plot heatmap
@@ -349,8 +350,8 @@ save_plot(paste(fig_path, "/", fig_num, "_3a rmdm error rate 2D.tiff",sep=""),
 # Plot 10: Heatmap tested coverage error of rmdm < rmu in mu/sigma space
 #_______________________________________________________________________________
 df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_rmdm_err_eq_zero > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
-  df_results$pval_rmdm_err_eq_alpha > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
+  df_results$pval_err_eq_zero_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
+  df_results$pval_err_eq_alpha_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
   gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
@@ -380,8 +381,10 @@ mus <- NULL
 sigmas <- seq(1.5, 5, by = .1); 
 mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
+source("R/coverage_error_toolbox.R")
+
 df_crit_mu_ov_sigma <- 
-  locate_bidir_binary_thresh(ind_var = "rmdm", mus=NULL, sigmas = sigmas, 
+  locate_bidir_binary_thresh(ind_var = "rmdm", pop_var = "rmu_dm", mus=NULL, sigmas = sigmas, 
                              n_samples = n_samples, n_obs = n_obs, 
                              temp_path = paste(fig_path, "/mdm_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
                              mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed,

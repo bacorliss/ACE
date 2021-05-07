@@ -491,7 +491,7 @@ row_locate_binary_bounds <- function (xb){
 }
 
 
-locate_bidir_binary_thresh <- function(ind_var = "mdm", mus = NULL, sigmas, n_samples, n_obs,
+locate_bidir_binary_thresh <- function(ind_var = "mdm", pop_var = "mu_dm", mus = NULL, sigmas, n_samples, n_obs,
                                        temp_path, mu_ov_sigmas = NULL, rand.seed=0,
                                        overwrite = TRUE,  mus_a = 0, sigmas_a = 0,
                                        is_parallel_proc = TRUE){
@@ -540,6 +540,7 @@ locate_bidir_binary_thresh <- function(ind_var = "mdm", mus = NULL, sigmas, n_sa
 
   }
   
+# browser();
 
   # Run simulations calculating error of mdm with mu and sigma swept
   df_right <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, 
@@ -559,8 +560,9 @@ locate_bidir_binary_thresh <- function(ind_var = "mdm", mus = NULL, sigmas, n_sa
   save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
   
   # pval_err_eq_alpha_abs_mdm_lt_mu_dm
-  ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_mu_dm",sep="")
-  ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_mu_dm",sep="")
+  
+  ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_", pop_var,sep="")
+  ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_", pop_var,sep="")
   
   # Equivalence test versus middle column of same row
   p_threshold = 0.05 /(n_cols*length(sigmas))
