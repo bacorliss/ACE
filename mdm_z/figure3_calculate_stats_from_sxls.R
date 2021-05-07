@@ -30,8 +30,9 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
   #' from each group
   #' #
   df_stat = data.frame(
-                      rdm = rep(0,dim(df)[1]), 
-                      dm = rep(0,dim(df)[1]), 
+                      rmdm = rep(0,dim(df)[1]), 
+                      mdm_ov_xbar = rep(0,dim(df)[1]),
+                      mdm = rep(0,dim(df)[1]), 
                       cd = rep(0,dim(df)[1]),
                       p_nhst = rep(0,dim(df)[1]), 
                       p_equiv = rep(0,dim(df)[1]), 
@@ -48,15 +49,22 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
     # Create normalized data with n2 points, times s1 plus x2
     xb = matrix(norm_points(as.double(df$n2[n])), nrow=1) * 
       as.double(df$s2[n]) + as.double(df[[xbar2_str]][n])
-   
+    # Note: even though each xa,xb is one sample, we still caste them as matrices 
+    # so we can use the row_effect_size functions to compute them (so it's the 
+    # same function call as the rest of the paper)
     
     # Input points into each function
     df_stat$bf[n] <- row_bayesf_2s(xa, xb)
     df_stat$p_nhst[n] <- t.test(xa, xb, conf.level = 
                                   1 - parse_fract(df[[alphadm_str]][n]))$p.value
-    df_stat$dm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 
+    df_stat$mdm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 
                                         1 - parse_fract(df[[alphadm_str]][n]))
-    df_stat$rdm[n] <- df_stat$dm[n] / as.double(df[[xbar1_str]][n])
+    df_stat$rmdm[n] <- 
+      row_rmdm_2s_zdist(m1 = xa, m2 = xb, mdms = df_stat$mdm[n], conf.level.mdm = 1 - 
+                          parse_fract(df[[alphadm_str]][n]), conf.level.rmdm = 0.95)
+  
+    df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbar1_str]][n])
+    
     df_stat$p_equiv[n] <- row_tost_2s(xa, xb, conf.level = 
                                         1 - parse_fract(df[[alphadm_str]][n]))
     df_stat$cd[n] <- row_cohend(xb, xa)

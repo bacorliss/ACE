@@ -141,6 +141,40 @@ row_mdm_2s_zdist <- function(m1, m2, ...) {
 }
 
 
+# source("R/mdm.R")
+# m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+# m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
+row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.level.rmdm = 0.95) {
+  #' @description calculates relative mdm row by row given a matrix of control 
+  #' samples and experiment samples (limitation: samples must have same sample 
+  #' size within groups). M1 and M2 must have same number of rows (samples), but 
+  #' can have different numbers of columns (measurements)
+  #'
+  #' @param m1 control group
+  #' @param m2 experiment group
+  #' 
+  #' @return vector of rmdm values, one for each row of m1 and m2
+  # browser()
+  
+  # Calcualt mdm from data if not supplied
+  if (is.null(mdms)) {
+     mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
+  }
+  # Calculate standard deviation of difference in means
+  # s_dm <- sqrt(rowvars(m1)/dim(m1)[2] + rowvars(m2)/dim(m2)[2])
+  # # Calculate means and standard error of control group
+  # # control
+  # xbar_1 <- rowmeans(m1)
+  # se_1 <- rowsds(m1)/dim(m1)[2]
+  
+  rmdms <- sapply(1:dim(m1)[1], function(i)  
+    rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level.mdm, conf.level.rmdm))
+  
+  return(rmdms)
+}
+
+
+
 row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
   # Ignore diagnostic messages during function call.
   wrap_fun <- function(x1,x2)   {
@@ -224,8 +258,8 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.lev
 
 ## Test data
 # # 
-m1 = matrix(rnorm(1000, mean=0, sd=1), ncol = 50, nrow=20)
-m2 = matrix(rnorm(1000, mean=1, sd=1), ncol = 50, nrow=20)
+m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
 # 
 # # Z score and test
 # z = rowzScore(m1, m2)

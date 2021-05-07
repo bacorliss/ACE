@@ -10,24 +10,6 @@ p_load(docstring)
 
 
 
-rmdm_normal <- function(x,y,...) {
-  #' @description Calculates the relative most difference in means assuming a normal
-  #' 
-  #' @param x vector of measurements in x
-  #' @param y vector of measurements in y
-  #'
-  #' @return relative most difference in means
-  
-  # Calculate mdm
-  mdm <- mdm_normal(x,y,...)
-  
-  # Normalize 
-  rmdm <- mdm/mean(x)
-  
-  return(mdm)
-}
-
-
 
 mdm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
            verbose = FALSE, distribution = NULL) {
@@ -255,7 +237,8 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
 
   # Solve for t star with root finding
   z_star = uniroot(z_star_fcn, search_bounds, check.conv = TRUE,
-                   tol = .Machine$double.eps, maxiter = 1000, trace = 0, extendInt="upX")
+                   tol = .Machine$double.eps, maxiter = 1000, trace = 0, 
+                   extendInt="upX")
   
   if (verbose) {
     z = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)
@@ -366,3 +349,86 @@ max_abs_cl_mean_z_standard <-  function(x_bar, sem_x, alpha) {
 #     qnorm(   alpha/2,  df = length(x)-1) * sd(x)/sqrt(length(x)))
 #   max_abs_cl = max(abs(cl_mean))
 # }
+
+
+
+# Utility functions for ratio normal distribution
+# dnormrat: density function
+# qnormrat: cumul density function
+# qnormrat: quantile function
+
+# Error function
+erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
+
+dnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y) {
+  #' Probability density function of ratio of two normal distirbutions
+  # Based on code from: 
+  # https://rstudio-pubs-static.s3.amazonaws.com/287838_7c982110ffe44d1eb5184739c5724926.html
+  
+  
+  erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
+  
+  beta = mu_x/mu_y
+  rho = sigma_y/sigma_x
+  deltay =  sigma_y/mu_y
+  
+  q <- (1+beta*rho^2*z)/(deltay*sqrt(1+rho^2*z^2))
+  fz <- rho/(pi*(1+rho^2*z^2))*( exp(-(rho^2*beta^2+1)/(2*deltay^2))  + 
+                                    sqrt(pi/2)*q*erf(q/sqrt(2))*exp(-0.5*(rho^2*(z-beta)^2)/(deltay^2*(1+rho^2*z^2))) )
+   return(fz)  
+}
+
+pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y) {
+  #' Cumulative probability density function
+  #' 
+  Fz <- integrate(function(x) dnormrat(x, mu_x, sigma_x,mu_y, sigma_y),-Inf, z, 
+                  rel.tol = .Machine$double.eps^.5, abs.tol=.Machine$double.eps^.5)
+  return(Fz)
+}
+
+qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y) {
+  # For given probability, find position of that percentile from cdf
+  # alpha <- 1-p
+  # qnorm(1-alpha/2)
+  
+ lo.bound = (mu_x - qnorm(p)*sigma_x) / (mu_y + qnorm(p)*sigma_y)
+ hi.bound = (mu_x + qnorm(p)*sigma_x) / (mu_y - qnorm(p)*sigma_y)
+ 
+  # Estimate bounds
+  qroot <- uniroot(function(z) pnormrat(z, mu_x, sigma_x, mu_y, sigma_y)$value - p, 
+          lower = abs(lo.bound), upper = abs(hi.bound), extendInt = "upX")
+  return(qroot$root)
+}
+
+
+
+
+# Relative form of mdm
+  
+rmdm_normal_zdist <- function(x, y = NULL, mdm = NULL, conf.level.mdm = 0.95, conf.level.rmdm = 0.95, 
+                              verbose = FALSE,  var.equal = FALSE)  {
+  #' @description Calculates the relative most difference in means assuming with
+  #' rmdm = mdm/X, X being the control group and Y the experimental
+  #' 
+  #' @param x vector of measurements in control group
+  #' @param y vector of measurements in experimental group
+  #' @param conf.level.mdm significance level for calculating upper mdm
+  #' @param conf.level.rmdm significance level for calculating upper rmdm
+  #' 
+  #' @return relative most difference in means
+  
+  # Calculate mdm
+  if (is.null(mdm)) {
+  mdm <- mdm_normal_zdist(x, y, conf.level.mdm = 0.95, verbose, var.equal,
+                   search_pad_percent, method)
+  }
+  # Standard deviation of the difference in means
+  s_dm <- sqrt(var(x)/length(x) + var(y)/length(y)) 
+    
+  # Calculate the upper bounds for the the relative mdm 
+  # rmdm = N(mdm, s_sm) / N(xbar, s_xbar)
+  rmdm <- qnormrat(conf.level.rmdm, mdm, s_dm, mean(x), sd(x)/sqrt(length(x)))
+  
+  return(rmdm)
+}
+
