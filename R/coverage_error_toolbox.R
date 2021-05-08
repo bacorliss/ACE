@@ -264,6 +264,7 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
   df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
   df_init$rmu_dm = df_init$mu_dm/ rowMeans(x_a)
+
   
   df_list = list()
   # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)
@@ -283,6 +284,8 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
                               gt_name = "mu_dm", use_absolute = TRUE)
   df_list[[6]] <- quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,  
                             gt_name = "rmu_dm", use_absolute = TRUE)
+  
+  df_list[[7]] <- data.frame(rmdm_dm_lt_rmu = sum(df_init$rmdm < abs(df_init$rmu_dm))/n_samples)
   df_err = do.call("cbind", df_list)
 
   return(df_err)

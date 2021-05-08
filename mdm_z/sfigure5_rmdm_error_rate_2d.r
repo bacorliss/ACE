@@ -56,7 +56,7 @@ mu_ov_sigmas = NULL
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
                                     paste(fig_path, "rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                                overwrite=overwrite, mus_a=0.1414214, sigmas_a=1,
+                                overwrite=overwrite, mus_a=100, sigmas_a=1,
                                 is_parallel_proc = TRUE)
 
 
@@ -105,6 +105,8 @@ gg
 save_plot(paste(fig_path, "/", fig_num, "_1b rxbar error test.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2, dpi = 600)
+
+
 
 # Plot 3: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
