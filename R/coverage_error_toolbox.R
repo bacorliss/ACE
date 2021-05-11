@@ -198,7 +198,7 @@ quant_coverage_errors <-
                                        "quant_coverage_error","quant_error_rate"), 
                            .combine = rbind, .packages = c("tidyr")) %dopar% {
                              #calling a function
-                             tempMatrix <- quant_coverage_error(df_lin[n,],n_samples, n_obs) 
+                             tempMatrix <- quant_coverage_error2(df_lin[n,],n_samples, n_obs) 
                              tempMatrix
                            }
         stopCluster(cl)
@@ -234,7 +234,96 @@ quant_coverage_errors <-
   }
 
 
+
+
 quant_coverage_error <-  function(df, n_samples, n_obs) {
+  #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
+  #'
+  #' @param df: a single row dataframe generated from agreement_contest
+  #'  library, returned from generateExperiment_Data()
+  #' @param n_samples: number of samples drawn to evaluate converage error
+  #' @param n_obs: 
+  #' @return null, exports figures to disk
+  
+  
+  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
+  
+  # Control group (For use with two sample cases)
+  x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
+  # Difference group (for simplicity experiment sample not calculated)
+  x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
+  # Each row is a separate sample, columns are observations
+  
+  # Quantify coverage error of the mean (how often abs(x_bar) < abs(mu))
+  abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d)
+  df$mean_abs_diff_xbar_mu  <- mean(abs_diff_xbar_mu)
+  n_errors                       <- sum(abs_diff_xbar_mu < 0)
+  df$mean_xbar_error_rate   <- n_errors / n_samples
+  df$pval_xbar_err_eq_zero  <- binom.test(
+    n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+  df$pval_xbar_err_eq_alpha <- binom.test(
+    n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  # Difference rx_bar to rmu
+  abs_diff_rxbar_mu               <- abs(rowMeans(x_d)/rowMeans(x_a)) -
+    abs(df$mu_d/df$mu_a)
+  df$mean_abs_diff_rxbar_mu  <- mean(abs_diff_rxbar_mu)
+  n_errors                        <- sum(abs_diff_rxbar_mu < 0)
+  df$mean_rxbar_error_rate   <- n_errors / n_samples
+  if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
+    df$pval_rxbar_err_eq_zero  <- binom.test(
+      n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+    df$pval_rxbar_err_eq_alpha <- binom.test(
+      n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  } else {df$pval_rxbar_err_eq_zero= NaN; df$pval_rxbar_err_eq_alpha = NaN}
+  
+  # Calculate the mmd from samples from the difference distribution
+  mmd_d = apply(x_d, 1, function (x) mdm_normal_zdist(x, conf.level = 0.95) )
+  
+  df$mean_mmd            <- mean(mmd_d)
+  
+  # Difference mmd to mu
+  #----------------------------------------------------------------------
+  abs_diff_mmd_mu <- mmd_d - abs(df$mu_d)
+  # Relative difference mmd to mu
+  df$mean_diff_mmd_mu        <- mean(abs_diff_mmd_mu)
+  df$mean_diff_mmd_mu_vmu    <- df$mean_diff_mmd_mu / abs(df$mu_d)
+  df$mean_diff_mmd_mu_vsigma <- df$mean_diff_mmd_mu / df$sigma_d
+  # Error rate mmd_d and mu
+  n_errors                        <- sum(abs_diff_mmd_mu < 0)
+  df$mean_mmd_error_rate     <- n_errors / n_samples
+  # Caluate p-values for test against error rate == 0
+  df$pval_mmd_err_eq_zero <- binom.test(
+    n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+  # Caluate p-values for test against error rate == alpha
+  df$pval_mmd_err_eq_alpha <- binom.test(
+    n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  
+  # Relative MMD: Difference r-mmd (mmd/ sample mean) to rmu
+  #----------------------------------------------------------------------
+  rmmd                         <- mmd_d / abs(rowMeans(x_a))
+  df$mean_rmmd            <- mean(rmmd)
+  # Quality check: no means of group a should be below zero for relative change
+  df$fract_neg_x_bar_a    <- sum(rowMeans(x_a)<0) / n_samples
+  diff_rmmd_rmu                <- rmmd - abs(df$rmu)
+  df$mean_diff_rmmd_rmu   <- mean(diff_rmmd_rmu)
+  # Error rate rmmd > rmu
+  n_errors                     <- sum(diff_rmmd_rmu < 0)
+  df$mean_rmmd_error_rate <- n_errors / n_samples
+  # Calculate p-values for test rmmd error rate == 0
+  if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
+    df$pval_rmmd_err_eq_zero <- binom.test(
+      n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
+    # Calculate p-values for test rmmd error rate == alpha
+    df$pval_rmmd_err_eq_alpha <- binom.test(
+      n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
+  }else {df$pval_rmmd_err_eq_zero= NaN; df$pval_rmmd_err_eq_alpha = NaN}
+  
+  return(df)
+  
+}
+
+
+quant_coverage_error2 <-  function(df, n_samples, n_obs) {
   #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
