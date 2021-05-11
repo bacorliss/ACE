@@ -56,7 +56,7 @@ mu_ov_sigmas = NULL
 df_results <- quant_coverage_errors(mus, sigmas, n_samples, n_obs, 
                                     paste(fig_path, "rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
                                 overwrite=overwrite, mus_a=100, sigmas_a=1,
-                                is_parallel_proc = TRUE)
+                                is_parallel_proc = FALSE)
 
 
 # # Plot 1: 2D error rate of rxbar < rmu in mu space

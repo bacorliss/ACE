@@ -198,7 +198,7 @@ quant_coverage_errors <-
                                        "quant_coverage_error","quant_error_rate"), 
                            .combine = rbind, .packages = c("tidyr")) %dopar% {
                              #calling a function
-                             tempMatrix <- quant_coverage_error2(df_lin[n,],n_samples, n_obs) 
+                             tempMatrix <- quant_coverage_error(df_lin[n,],n_samples, n_obs) 
                              tempMatrix
                            }
         stopCluster(cl)
@@ -207,7 +207,19 @@ quant_coverage_errors <-
         df_list <- list()
         for (n in seq(1,length(sigmas_ao)*length(mus_ao),1)) {
           print(n)
-          df_list[[n]] <- quant_coverage_error(df_lin[n,],n_samples, n_obs) 
+          # Control group (For use with two sample cases)
+          x_a <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_a, df_lin[n,]$sigma_a), ncol = n_obs)
+          # Difference group (for simplicity experiment sample not calculated)
+          x_d <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_d, df_lin[n,]$sigma_d), ncol = n_obs)
+          
+          browser();
+          df_list[[n]] <- quant_coverage_error(df_lin[n,],n_samples, n_obs, 
+                                               x_a = x_a, x_d = x_d) 
+          
+          quant_coverage_error(df_lin[n,],n_samples, n_obs, 
+                               x_a = x_a, x_d = x_d)$mean_mmd
+          quant_coverage_error2(df_lin[n,],n_samples, n_obs, 
+                               x_a = x_a, x_d = x_d)$mean_abs_mdm
         }
         # save(list = ls(all.names = TRUE), file = "temp/quant_coverage_errors.RData",
         #      envir = environment())
@@ -236,7 +248,7 @@ quant_coverage_errors <-
 
 
 
-quant_coverage_error <-  function(df, n_samples, n_obs) {
+quant_coverage_error <-  function(df, n_samples, n_obs, x_a, x_d) {
   #' @description Calculates the coverage error of x_bar, rx_bar, mmd, and rmmd
   #'
   #' @param df: a single row dataframe generated from agreement_contest
@@ -248,11 +260,11 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
   
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   
-  # Control group (For use with two sample cases)
-  x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
-  # Difference group (for simplicity experiment sample not calculated)
-  x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
-  # Each row is a separate sample, columns are observations
+  # # Control group (For use with two sample cases)
+  # x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
+  # # Difference group (for simplicity experiment sample not calculated)
+  # x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
+  # # Each row is a separate sample, columns are observations
   
   # Quantify coverage error of the mean (how often abs(x_bar) < abs(mu))
   abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d)
@@ -323,7 +335,7 @@ quant_coverage_error <-  function(df, n_samples, n_obs) {
 }
 
 
-quant_coverage_error2 <-  function(df, n_samples, n_obs) {
+quant_coverage_error2 <-  function(df, n_samples, n_obs, x_a, x_d) {
   #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
@@ -332,21 +344,25 @@ quant_coverage_error2 <-  function(df, n_samples, n_obs) {
   #' @param n_obs: 
   #' @return null, exports figures to disk
   
-  # save(list = ls(all.names = TRUE), file = "temp/quant_coverage_error.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/quant_coverage_error.RData",envir = environment())
   # load(file = "temp/quant_coverage_error.RData")
  
   # browser();
   
-  # Control group (For use with two sample cases)
-  x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
-  # Difference group (for simplicity experiment sample not calculated)
-  x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
-  # Each row is a separate sample, columns are observations
+  # # Control group (For use with two sample cases)
+  # x_a <- matrix(rnorm(n_samples * n_obs, df$mu_a, df$sigma_a), ncol = n_obs)
+  # # Difference group (for simplicity experiment sample not calculated)
+  # x_d <- matrix(rnorm(n_samples * n_obs, df$mu_d, df$sigma_d), ncol = n_obs)
+  # # Each row is a separate sample, columns are observations
   
   ci_mean = row_ci_mean_2s_zdist(m1 = x_a, m2 = x_a+x_d)
-  df_init = data.frame(xbar_dm = rowMeans(x_d), mdm = row_mdm_2s_zdist(x_a, x_a+x_d), 
-                    ldm = row_ldm_2s_zdist(x_a, x_a+x_d), ci_lower_z = ci_mean$ci_lower, 
-                    ci_upper_z = ci_mean$ci_upper, mu_dm = df$mu_d)
+  df_init = data.frame(xbar_dm = rowMeans(x_d), mu_dm = df$mu_d, 
+                       ci_lower_z = ci_mean$ci_lower, ci_upper_z = ci_mean$ci_upper)
+  
+  df_init$mdm = row_mdm_2s_zdist(x_a, x_a+x_d)
+  df_init$mdm = apply(x_d, 1, function (x) mdm_normal_zdist(x, conf.level = 0.95) )
+  
+  df_init$ldm = row_ldm_2s_zdist(x_a, x_a+x_d)
   df_init$rmdm = df_init$mdm/ rowMeans(x_a)
   df_init$rldm = df_init$ldm/ rowMeans(x_a)
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
@@ -480,6 +496,9 @@ quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name,
     if (use_absolute) {
     diffs_lower <- abs(df_init[[gt_name]]) - abs(df_init[[lower_name]])
     } else {diffs_lower <- df_init[[gt_name]] - df_init[[lower_name]]}
+    
+    df[[paste("mean_", abs_str, lower_name, sep="")]] = mean(df_init[[lower_name]])
+    
     # Calculate difference from stat to parameter (ground truth), and calculate error rate
     df[[paste("mean_", abs_str,"diff_", lower_name,"_to_", gt_name, sep="")]] <- mean(unname(diffs_lower))
     n_errors_lower                       <- sum(diffs_lower>0)
@@ -504,6 +523,8 @@ quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name,
     if (use_absolute) {
       diffs_upper <-   abs(df_init[[upper_name]]) - abs(df_init[[gt_name]]) 
     } else {diffs_upper <- df_init[[upper_name]]} -     df_init[[gt_name]]
+    
+    df[[paste("mean_", abs_str, upper_name, sep="")]] = mean(df_init[[upper_name]])
     
     df[[paste("mean_", abs_str,"diff_", upper_name,"_to_", gt_name, sep="")]] <- mean(unname(diffs_upper))
     n_errors_upper                       <- sum(diffs_upper<0)
