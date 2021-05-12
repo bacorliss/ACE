@@ -143,8 +143,7 @@ mu_vsigmas_dm <- seq(-3, 3, by = .1)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
-# n_samples <- 1e3
-# mu_ov_sigmas = NULL
+n_samples <- 1e3
 
 
 source("R/coverage_error_toolbox.R")

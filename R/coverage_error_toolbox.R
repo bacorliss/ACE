@@ -177,7 +177,6 @@ quant_coverage_errors <-
           mus_b = mus_a + mus_dm
           }
         
-        
         for (c in seq(1, n_mus, by = 1)) {
           df_mat$mu_a[r,c]     <- mus_a[c]
           df_mat$sigma_a[r,c]  <- sigmas_a[r]
@@ -283,6 +282,7 @@ quant_coverage_error <-  function(df) {
   x_b <- matrix(rnorm(df$n_samples * df$n_b, df$mu_b, df$sigma_b), ncol = df$n_b)
   # Each row is a separate sample, columns are observations
   
+  # browser()
   ci_mean = row_ci_mean_2s_zdist(m1 = x_a, m2 = x_b)
   
   df_init = data.frame(xbar_dm = rowMeans(x_b) - rowMeans(x_a), 
@@ -291,18 +291,15 @@ quant_coverage_error <-  function(df) {
                        ci_upper_z = ci_mean$ci_upper)
   
   df_init$mdm = row_mdm_2s_zdist(m1 = x_a, m2 = x_b, conf.level = 1 - df$alpha)
-  
-  
-  # df_init$mdm = apply(x_d, 1, function (x) mdm_normal_zdist(x, conf.level = 0.95) )
-  
   df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
+  
   df_init$rmdm = df_init$mdm/ rowMeans(x_a)
   df_init$rldm = df_init$ldm/ rowMeans(x_a)
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
   df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
-  df_init$rmu_dm = df_init$mu_dm/ rowMeans(x_a)
-
+  df_init$rmu_dm = df_init$mu_dm/ abs(df$mu_a)
+ 
   
   df_list = list()
   # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)
