@@ -48,81 +48,32 @@ is_parallel_proc <- TRUE
 # 2D visualization of mdm difference and error rate over mu and sigma
 #                                                                              #
 #______________________________________________________________________________#
-mus <- seq(-2.5, 2.5, by = .1)
-sigmas <- seq(.1, 5, by = .1)
-n_obs <- 50
+
+# First Row
+# Coverage error simulations for mu space  
+n_obs = 50
+mus_dm <- seq(-2.5, 2.5, by = .1)
+sigmas_dm <- seq(.01, 1, by = .02)
+# Spread sigma_dm across sigma_a and sigma_b equally
+sigmas_a = sigmas_dm/sqrt(2/n_obs)
+sigmas_b = sigmas_a
+n_samples <- 1e3
 mu_ov_sigmas = NULL
 
+source("R/coverage_error_toolbox.R")
+
 # Run simulations calculating error of mdm with mu and sigma swept
-df_results <- quant_coverage_errors(mus_ao = mus, sigmas_ao = sigmas, n_samples = n_samples, 
-                                    n_obs = n_obs, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                                overwrite = overwrite, is_parallel_proc = TRUE)
-
-
-
-
-# Error rate of xbar < mu
-#------------------------------------------------------------------------------
-# Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_xbar_dm_lt_mu_dm)) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df$mu)
-df$sigma <- as.numeric(df$sigma)
-# grid_slopes <- slopes_by_rowcol(df_results$mean_xbar_error_rate, sigmas, mus)
-# Plot heatmap
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
-  theme_classic(base_size=8) +
-  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-                         ticks.colour = "black",  direction = "horizontal")) +
-                       # limits=c(0,.1)) +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-gg
-save_plot(paste(fig_path, "\\", fig_num, "_1a xbar error rate 2D.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
-          base_asp = 3, base_width = 2, dpi = 600) 
-
-
-# xbar hypothesized error rate
-#                                                                              #
-#______________________________________________________________________________#
-# COnvert from matrix to data frame
-df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_xbar_dm_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_err_eq_alpha_abs_xbar_dm_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df$mu)
-df$sigma <- as.numeric(df$sigma)
-df$z <- factor(df$z,levels = c("0","1","2","3"))
-# Plot heat map
-gg<- ggplot(df, aes(mu, sigma, fill= z)) +
-  geom_tile()+
-  scale_x_continuous(expand=c(0,0)) +
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
-  theme_classic(base_size = 8) +
-  scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
-  geom_vline(xintercept=0, color="black", size=0.2) +
-  theme(legend.position="none")
-gg
-save_plot(paste(fig_path,"/", fig_num, "_2b xbar error test 2D.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2,
-          base_asp = 3, base_width = 2, dpi = 600)
-
-
-
-
+df_results <- 
+  quant_coverage_errors(mus_a = 100, sigmas_a = sigmas_a, n_a = n_obs, 
+                        mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_obs, alphas = 0.05,
+                        n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                        overwrite=overwrite, is_parallel_proc = TRUE)
 
 
 # Error rate of MDM < mu
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
@@ -151,9 +102,9 @@ save_plot(paste(fig_path, "/", fig_num, "_a3 mdm error rate 2D.tiff",sep=""),
 #                                                                              #
 #______________________________________________________________________________#
 # COnvert from matrix to data frame
-df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mus)),
-  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mus))))) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(error_test_codes(
+  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas_dm)*length(mus_dm)),
+  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas_dm)*length(mus_dm))))) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 df$z <- factor(df$z,levels = c("0","1","2","3"))
@@ -177,23 +128,41 @@ save_plot(paste(fig_path, "/", fig_num, "_b4 mdm error test.tiff",sep=""),
 
 
 
-# Row 3: error rate of mdm in mu/sigma space
+# Row 2: error rate of mdm in mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
-sigmas <- seq(.1, 5, by = .1)
-mu_ov_sigmas <- seq (-.5, .5, by=0.01)
-mus = NULL
-n_obs <- 50
-set.seed(rand.seed)
+
+
+# First Row
+# Coverage error simulations for mu space  
+n_obs = 50
+sigmas_dm <- seq(.1, 5, by = .1)
+mu_vsigmas_dm <- seq(-3, 3, by = .1)
+
+
+# Spread sigma_dm across sigma_a and sigma_b equally
+sigmas_a = sigmas_dm/sqrt(2/n_obs)
+sigmas_b = sigmas_a
+# n_samples <- 1e3
+# mu_ov_sigmas = NULL
+
+
+source("R/coverage_error_toolbox.R")
 # Run simulations calculating error of mdm with mu and sigma swept
-df_results <- quant_coverage_errors(NULL, sigmas, n_samples, n_obs,
-                           paste(fig_path, "/mdm_Error_2D_mu_over_sigma_vs_sigma.rds",sep=""), mu_ov_sigmas,
-                           overwrite = overwrite)
+df_results <- 
+  quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
+                        mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
+                        mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
+                        n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                        overwrite=overwrite, is_parallel_proc = TRUE)
+
+
+
 
 # Error rate of MDM < mu in mu/sigma space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_mdm_lt_mu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
 # grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
@@ -219,9 +188,9 @@ save_plot(paste(fig_path, "\\", fig_num, "_3a mdm error rate 2D.tiff",sep=""),
 
 # Tested error rate MDM < mu in mu/sigma space
 #-------------------------------------------------------------------------------
-df <- cbind(sigma = sigmas, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas)),
-  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas)*length(mu_ov_sigmas))))) %>% 
+df <- cbind(sigma = sigmas_dm, as_tibble(error_test_codes(
+  df_results$pval_err_eq_zero_abs_mdm_lt_mu_dm > 0.05/(length(sigmas_dm)*length(mu_vsigmas_dm)),
+  df_results$pval_err_eq_alpha_abs_mdm_lt_mu_dm > 0.05/(length(sigmas_dm)*length(mu_vsigmas_dm))))) %>% 
   gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu)
 df$sigma <- as.numeric(df$sigma)
