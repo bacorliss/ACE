@@ -293,13 +293,20 @@ quant_coverage_error <-  function(df) {
   df_init$mdm = row_mdm_2s_zdist(m1 = x_a, m2 = x_b, conf.level = 1 - df$alpha)
   df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
   
-  df_init$rmdm = df_init$mdm/ rowMeans(x_a)
+  # df_init$rmdm = df_init$mdm/ rowMeans(x_a)
+  df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, mdms = df_init$mdm,
+                                   conf.level.mdm = 1 - df$alpha, conf.level.rmdm = 1 - df$alpha)
+  
+  
+  
   df_init$rldm = df_init$ldm/ rowMeans(x_a)
+  
+  
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
   df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
-  df_init$rmu_dm = df_init$mu_dm/ abs(df$mu_a)
- 
+  df_init$rmu_dm = df_init$mu_dm/ df$mu_a
+  
   
   df_list = list()
   # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)

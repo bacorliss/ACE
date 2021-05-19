@@ -155,18 +155,19 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.l
   #' 
   #' @return vector of rmdm values, one for each row of m1 and m2
   # browser()
+
   
   # Calcualt mdm from data if not supplied
-  if (is.null(mdms)) {
-     mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
-  }
+  # if (is.null(mdms)) {
+  #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
+  # }
   # Calculate standard deviation of difference in means
   # s_dm <- sqrt(rowvars(m1)/dim(m1)[2] + rowvars(m2)/dim(m2)[2])
   # # Calculate means and standard error of control group
   # # control
   # xbar_1 <- rowmeans(m1)
   # se_1 <- rowsds(m1)/dim(m1)[2]
-  
+
   rmdms <- sapply(1:dim(m1)[1], function(i)  
     rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level.mdm, conf.level.rmdm))
   
