@@ -160,7 +160,67 @@ mdm_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
 }
 
 
+
 mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
+                             var.equal = FALSE) {
+  #' Calculate most difference in means using z distribution
+  #'
+  #' @description Calculate most difference in means statistic from integrating a 
+  #' central normal pdf shifted by -x_bar Using root finding function to 
+  #' integrate over a normal CDF with area under the curve equal to (1-a). 
+  #' Calculated from the difference in means distribution for two samples, 
+  #' or keeps same distribution for one sample.
+  #'
+  #' @param x measurements from first group
+  #' @param y measurements from second group (optional)
+  #' @param conf.level confidence level for statistics (default 0.95)
+  #' @param verbose function prints out extra input during execution
+  #' @param var.equal boolean assume variance qual between groups (TODO: not 
+  #' implemented for TRUE)
+  #' @param search_pad_percent for calculating statistic, specifies how outside 
+  #' the theoretical search window the root finding can look.
+  #' @return Returns most difference in means (single value)
+  #' @usage mdm_normal_zdist(x)
+  #' @usage mdm_normal_zdist(x, y)
+  #' @usage mdm_normal_zdist(x, y, conf.level = 0.95)
+  #' @examples
+  #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
+  #' mdm_normal_zdist(x,y)
+  
+  # Calculate basic stats of input samples defined by distribution d, the 
+  # difference distribution (or the distirbution of the sampel for 1 sample)
+  n_x <- length(x); n_y <- length(y)
+  sd_x <- sd(x); sd_y <- sd(y)
+  
+  # Pooled mean, degrees of freedom, and standard deviation
+  if (is.null(y)) {
+    # 1-sample stats
+    df_d <- n_x - 1
+    xbar_dm <- mean(x)
+    sd_d <- sd_x
+    sd_dm = sd_x / sqrt(n_x)
+    
+  } else { 
+    # 2-sample stats
+    df_d <- n_x + n_y - 2
+    xbar_dm <- mean(y) - mean(x)
+    sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
+    sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
+    # if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
+  }
+
+  # Calculate folded mean and std of sampling distribution of difference in mea after 
+  transform
+  fn_df <- moments_foldnorm(xbar_dm,sd_dm)
+  
+  # Calculate alpha percentile of folded mean
+  mdm <- qnorm(1 - conf.level, mean = fn_df$mu_f, fn_df$sigma_f)
+  
+  return(mdm)  
+}
+
+
+mdm_normal_zdist_old <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.01, 
                              method="nonstandard") {
   #' Calculate most difference in means using z distribution
@@ -228,7 +288,7 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
     z_star_fcn <- function(x) {pnorm( +x, mean = xbar_dm, sd = sd_dm) - 
         pnorm( -x, mean = xbar_dm, sd = sd_dm) - conf.level}
     
-  }
+  } 
 
   # Add extra padding around search bounds for root finding at boundary
   bounds_range = upper_bounds - lower_bounds
@@ -259,8 +319,7 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   if (verbose) print(sprintf("z_star: %.4e, lower:%.4e, upper:%.4e", z_star$root,lower_bounds,upper_bounds))
   mdm = z_star$root
   
-  # browser();
-  
+
   return(mdm)  
 }
 
