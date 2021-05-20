@@ -286,6 +286,8 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
 
   # Add extra padding around search bounds for root finding at boundary
   bounds_range = upper_bounds - lower_bounds
+  
+  
   search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
                     upper_bounds + search_pad_percent * bounds_range)
   # if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
