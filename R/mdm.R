@@ -161,15 +161,12 @@ mdm_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE,
 
 
 
-mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
-                             var.equal = FALSE) {
-  #' Calculate most difference in means using z distribution
+mdm_normal_zdist_approx <- function(x, y = NULL, conf.level = 0.95) {
+  #' Calculate most difference in means using folded z distribution
   #'
-  #' @description Calculate most difference in means statistic from integrating a 
-  #' central normal pdf shifted by -x_bar Using root finding function to 
-  #' integrate over a normal CDF with area under the curve equal to (1-a). 
-  #' Calculated from the difference in means distribution for two samples, 
-  #' or keeps same distribution for one sample.
+  #' @description Calculate most difference in means statistic from a folded 
+  #' normal z distribution. Uses R built-in qfoldnorm to calculate, but this 
+  #' function is an approximation that has noticeably worse coverage error 
   #'
   #' @param x measurements from first group
   #' @param y measurements from second group (optional)
@@ -209,18 +206,15 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
     # if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
   }
 
-  # Calculate folded mean and std of sampling distribution of difference in mea after 
-  transform
-  fn_df <- moments_foldnorm(xbar_dm,sd_dm)
-  
-  # Calculate alpha percentile of folded mean
-  mdm <- qnorm(1 - conf.level, mean = fn_df$mu_f, fn_df$sigma_f)
-  
+  # Calculate the quantile function for folded normal with built-in qfoldnorm
+  mdm <- qfoldnorm(conf.level, mean = xbar_dm, sd = sd_dm, a1 = 1, a2 = 1,
+            lower.tail = TRUE, log.p = FALSE)
+
   return(mdm)  
 }
 
 
-mdm_normal_zdist_old <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
+mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
                              var.equal = FALSE, search_pad_percent = 0.01, 
                              method="nonstandard") {
   #' Calculate most difference in means using z distribution

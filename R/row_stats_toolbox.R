@@ -137,7 +137,7 @@ row_ci_mean_2s_zdist <-function(m1,m2, conf.level=0.95) {
 }
 
 row_mdm_2s_zdist <- function(m1, m2, ...) {
-  mdm <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], ...))
+  mdm <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist_old(m1[i,], m2[i,], ...))
 }
 
 
