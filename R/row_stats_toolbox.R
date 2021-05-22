@@ -156,7 +156,6 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.l
   #' @return vector of rmdm values, one for each row of m1 and m2
   # browser()
 
-  
   # Calcualt mdm from data if not supplied
   # if (is.null(mdms)) {
   #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
@@ -172,6 +171,59 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.l
     rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level.mdm, conf.level.rmdm))
   
   return(rmdms)
+}
+
+
+row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
+  #' @description calculates relative mdm row by row given a matrix of control 
+  #' samples and experiment samples (limitation: samples must have same sample 
+  #' size within groups). M1 and M2 must have same number of rows (samples), but 
+  #' can have different numbers of columns (measurements)
+  #'
+  #' @param m1 control group
+  #' @param m2 experiment group
+  #' 
+  #' @return vector of rmdm values, one for each row of m1 and m2
+  # browser()
+  
+  # Calcualt mdm from data if not supplied
+  # if (is.null(mdms)) {
+  #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
+  # }
+  # Calculate standard deviation of difference in means
+  # s_dm <- sqrt(rowvars(m1)/dim(m1)[2] + rowvars(m2)/dim(m2)[2])
+  # # Calculate means and standard error of control group
+  # # control
+  # xbar_1 <- rowmeans(m1)
+  # se_1 <- rowsds(m1)/dim(m1)[2]
+  
+ 
+  means_x <- rowMeans(m1)
+  n_x <- dim(m1)[2]
+  sds_x <- rowSds(m1)
+  # sds_x <- rowSds(m1)/sqrt(n_x)
+  
+  
+  means_y <- rowMeans(m2)
+  n_y <- dim(m2)[2]
+  sds_y <- rowSds(m2)
+  # sds_y <- rowSds(m2)/ sqrt(n_y)
+  
+  # browser();
+  
+  # source("R/rationormal_toolbox.R")
+  
+  
+  start_time <- Sys.time()
+  rat_ucl <- sapply(1:dim(m1)[1], function(i)
+    ttestratio(mx = means_x[i], sdx = sds_x[i], nx = n_x,
+               my = means_y[i], sdy = sds_y[i], ny = n_y,
+               alternative = "two.sided", rho = 1, var.equal = FALSE,
+               conf.level = conf.level)$conf.int[2])
+  
+  
+  
+  return(rat_ucl)
 }
 
 

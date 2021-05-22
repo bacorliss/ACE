@@ -9,10 +9,12 @@ source("R/parallel_utils.R")
 source("R/mdm.R")
 source("R/ldm.R")
 source("R/row_stats_toolbox.R")
+source("R/rationormal_toolbox.R")
 
 mdm_functions <- parse_functions_source("R/mdm.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
 row_effect_size_functions <- parse_functions_source("R/row_stats_toolbox.R")
+rationormal_functions <- parse_functions_source("R/rationormal_toolbox.R")
 
 RowVar <- function(x, ...) rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
 # Test if a value is within an interval (inclusive)
@@ -211,8 +213,9 @@ quant_coverage_errors <-
         cl = makeCluster(detectCores()[1]-1)
         registerDoParallel(cl)
         df_lin2 <- foreach(n = seq(1,n_sigmas*n_mus,1),
-                           .export = c(mdm_functions, ldm_functions, row_effect_size_functions, 
-                                       "quant_coverage_error","quant_error_rate"), 
+                           .export = c(mdm_functions, ldm_functions, row_effect_size_functions,
+                                       "quant_coverage_error","quant_error_rate",
+                                       rationormal_functions), 
                            .combine = rbind, .packages = c("tidyr")) %dopar% {
                              #calling a function
                              tempMatrix <- quant_coverage_error(df_lin[n,]) 
@@ -293,9 +296,9 @@ quant_coverage_error <-  function(df) {
   df_init$mdm = row_mdm_2s_zdist(m1 = x_a, m2 = x_b, conf.level = 1 - df$alpha)
   df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
   
-  # df_init$rmdm = df_init$mdm/ rowMeans(x_a)
-  df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, mdms = df_init$mdm,
-                                   conf.level.mdm = 1 - df$alpha, conf.level.rmdm = 1 - df$alpha)
+  df_init$rmdm = df_init$mdm/ rowMeans(x_a)
+  # df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, mdms = df_init$mdm,
+  #                                  conf.level.mdm = 1 - df$alpha, conf.level.rmdm = 1 - df$alpha)
   
   
   
@@ -305,7 +308,13 @@ quant_coverage_error <-  function(df) {
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
   df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
+# browser();
+
+  df_init$rxbar_aob = row_ratio_normal(x_a, x_b, conf.level = 1 - 2*df$alpha)
+  
+  # Ground truth using population values
   df_init$rmu_dm = df_init$mu_dm/ df$mu_a
+  df_init$mu_aob = df$mu_a/df$mu_b
   
   
   df_list = list()
@@ -314,87 +323,31 @@ quant_coverage_error <-  function(df) {
                               gt_name = "mu_dm", use_absolute = TRUE)
   df_list[[2]] <- quant_error_rate(df_init = df_init, lower_name = "rxbar_dm", upper_name = "rxbar_dm" ,  
                               gt_name = "rmu_dm", use_absolute = TRUE)
+  df_list[[3]] <- quant_error_rate(df_init = df_init, lower_name = "rxbar_aob", upper_name = "rxbar_aob" ,  
+                                   gt_name = "mu_aob", use_absolute = TRUE)
   
-  # Confidence intervals of the mean, z distribution
-  df_list[[3]] <- quant_error_rate(df_init = df_init, lower_name = "ci_lower_z", upper_name = "ci_upper_z" ,  
-                          gt_name = "mu_dm", use_absolute = FALSE)
-  df_list[[4]] <- quant_error_rate(df_init = df_init, lower_name = "rci_lower_z", upper_name = "rci_upper_z" ,  
-                              gt_name = "mu_dm", use_absolute = FALSE)
   
-  # Confidence intervals of the mean, z distribution
-  df_list[[5]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mdm" ,  
-                              gt_name = "mu_dm", use_absolute = TRUE)
-  df_list[[6]] <- quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,  
-                            gt_name = "rmu_dm", use_absolute = TRUE)
+  
+  # # Confidence intervals of the mean, z distribution
+  # df_list[[3]] <- quant_error_rate(df_init = df_init, lower_name = "ci_lower_z", upper_name = "ci_upper_z" ,  
+  #                         gt_name = "mu_dm", use_absolute = FALSE)
+  # df_list[[4]] <- quant_error_rate(df_init = df_init, lower_name = "rci_lower_z", upper_name = "rci_upper_z" ,  
+  #                             gt_name = "mu_dm", use_absolute = FALSE)
+  # 
+  # # Confidence intervals of the mean, z distribution
+  # df_list[[5]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mdm" ,  
+  #                             gt_name = "mu_dm", use_absolute = TRUE)
+  # df_list[[6]] <- quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,  
+  #                           gt_name = "rmu_dm", use_absolute = TRUE)
   
   # df_list[[7]] <- data.frame(rmdm_dm_lt_rmu = sum(df_init$rmdm < abs(df_init$rmu_dm))/n_samples)
   df_err = do.call("cbind", df_list)
 
+  
   return(df_err)
   
 }
-# 
-# # Quantify coverage error of the mean (how often abs(x_bar) < abs(mu))
-# abs_diff_xbar_mu               <- abs(rowMeans(x_d)) - abs(df$mu_d)
-# df$mean_abs_diff_xbar_mu  <- mean(abs_diff_xbar_mu)
-# n_errors                       <- sum(abs_diff_xbar_mu < 0)
-# df$mean_xbar_error_rate   <- n_errors / n_samples
-# df$pval_xbar_err_eq_zero  <- binom.test(
-#   n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-# df$pval_xbar_err_eq_alpha <- binom.test(
-#   n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-# # Difference rx_bar to rmu
-# abs_diff_rxbar_mu               <- abs(rowMeans(x_d)/rowMeans(x_a)) -
-#   abs(df$mu_d/df$mu_a)
-# df$mean_abs_diff_rxbar_mu  <- mean(abs_diff_rxbar_mu)
-# n_errors                        <- sum(abs_diff_rxbar_mu < 0)
-# df$mean_rxbar_error_rate   <- n_errors / n_samples
-# if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
-#   df$pval_rxbar_err_eq_zero  <- binom.test(
-#     n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-#   df$pval_rxbar_err_eq_alpha <- binom.test(
-#     n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-# } else {df$pval_rxbar_err_eq_zero= NaN; df$pval_rxbar_err_eq_alpha = NaN}
-# 
-# # Calculate the mdm from samples from the difference distribution
-# mdm_d = apply(x_d, 1, function (x) mdm_normal_zdist(x, conf.level = 0.95) )
-# # Difference mdm to mu
-# #----------------------------------------------------------------------
-# abs_diff_mdm_mu <- mdm_d - abs(df$mu_d)
-# # Relative difference mdm to mu
-# df$mean_diff_mdm_mu        <- mean(abs_diff_mdm_mu)
-# df$mean_diff_mdm_mu_vmu    <- df$mean_diff_mdm_mu / abs(df$mu_d)
-# df$mean_diff_mdm_mu_vsigma <- df$mean_diff_mdm_mu / df$sigma_d
-# # Error rate mdm_d and mu
-# n_errors                        <- sum(abs_diff_mdm_mu < 0)
-# df$mean_mdm_error_rate     <- n_errors / n_samples
-# # Caluate p-values for test against error rate == 0
-# df$pval_mdm_err_eq_zero <- binom.test(
-#   n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-# # Caluate p-values for test against error rate == alpha
-# df$pval_mdm_err_eq_alpha <- binom.test(
-#   n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-# 
-# # Relative MDM: Difference r-mdm (mdm/ sample mean) to rmu
-# #----------------------------------------------------------------------
-# rmdm                         <- mdm_d / abs(rowMeans(x_a))
-# df$mean_rmdm            <- mean(rmdm)
-# # Quality check: no means of group a should be below zero for relative change
-# df$fract_neg_x_bar_a    <- sum(rowMeans(x_a)<0) / n_samples
-# diff_rmdm_rmu                <- rmdm - abs(df$rmu)
-# df$mean_diff_rmdm_rmu   <- mean(diff_rmdm_rmu)
-# # Error rate rmdm > rmu
-# n_errors                     <- sum(diff_rmdm_rmu < 0)
-# df$mean_rmdm_error_rate <- n_errors / n_samples
-# # Calculate p-values for test rmdm error rate == 0
-# if (!is.nan(n_errors) && !is.na(n_errors) && !is.infinite(n_errors)) {
-#   df$pval_rmdm_err_eq_zero <- binom.test(
-#     n_errors, n_samples, p = 0.00, alternative = "two.sided", conf.level = 0.95)$p.value
-#   # Calculate p-values for test rmdm error rate == alpha
-#   df$pval_rmdm_err_eq_alpha <- binom.test(
-#     n_errors, n_samples, p = 0.05, alternative = "two.sided", conf.level = 0.95)$p.value
-# }else {df$pval_rmdm_err_eq_zero= NaN; df$pval_rmdm_err_eq_alpha = NaN}
-# 
+
 
 quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name, 
                             error_rate_alpha = 0.05, binom.conf.level = 0.95,
