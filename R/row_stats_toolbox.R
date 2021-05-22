@@ -208,7 +208,7 @@ row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
   n_y <- dim(m2)[2]
   sds_y <- rowSds(m2)
   # sds_y <- rowSds(m2)/ sqrt(n_y)
-  
+
   # browser();
   
   # source("R/rationormal_toolbox.R")
@@ -216,9 +216,9 @@ row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
   
   start_time <- Sys.time()
   rat_ucl <- sapply(1:dim(m1)[1], function(i)
-    ttestratio(mx = means_x[i], sdx = sds_x[i], nx = n_x,
-               my = means_y[i], sdy = sds_y[i], ny = n_y,
-               alternative = "two.sided", rho = 1, var.equal = FALSE,
+    ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
+               my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
+               alternative = "two.sided", rho = 1, var.equal = TRUE,
                conf.level = conf.level)$conf.int[2])
   
   

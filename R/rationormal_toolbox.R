@@ -1,5 +1,5 @@
 
-ttestratio <- function (mx, sdx, nx, my, sdy, ny, alternative = "two.sided", rho = 1, var.equal = FALSE, conf.level = 0.95, iterativeCI=FALSE, ul=1e10, ll=-1e10, ...) 
+ttestratio <- function (mx, sdx, dfx, my, sdy, dfy, alternative = "two.sided", rho = 1, var.equal = FALSE, conf.level = 0.95, iterativeCI=FALSE, ul=1e10, ll=-1e10, ...) 
 {
   addargs <- list(...)
   alternative <- match.arg(alternative, choices = c("two.sided", 
@@ -15,7 +15,9 @@ ttestratio <- function (mx, sdx, nx, my, sdy, ny, alternative = "two.sided", rho
     stop("Argument 'conf.level' must be a single numeric value between 0.5 and 1")
   }
  
-
+  # dfx <- nx - 1
+  # dfy <- ny - 1
+  
   vx <- sdx^2
   vy <- sdy^2
   est <- mx/my
@@ -31,9 +33,11 @@ ttestratio <- function (mx, sdx, nx, my, sdy, ny, alternative = "two.sided", rho
   if(my<0){mxI<-(-mx); myI<-(-my)}else{mxI<-mx; myI<-my}
   
   if (var.equal == TRUE) {
-    degf <- nx + ny - 2
-    spool <- sqrt((vx * (nx - 1) + vy * (ny - 1))/degf)
-    statistic <- (mxI - myI * rho)/(spool * sqrt(1/nx + (rho^2)/ny))
+    degf <- dfx + dfy
+    # spool <- sqrt((vx * (dfx) + vy * (dfy))/degf)
+    # statistic <- (mxI - myI * rho)/(spool * sqrt(1/nx + (rho^2)/ny))
+    spool <- sqrt((vx * (dfx) + vy * (dfy))/degf)
+    statistic <- (mxI - myI * rho)/(spool * sqrt(1/(dfx+1) + (rho^2)/(dfy+1)))
     if (alternative == "less") {
       p.value <- pt(q = statistic, df = degf, lower.tail = TRUE)
       alpha <- (1 - conf.level)
@@ -48,53 +52,11 @@ ttestratio <- function (mx, sdx, nx, my, sdy, ny, alternative = "two.sided", rho
       alpha <- (1 - conf.level)/2
     }
     method <- "Ratio-t-test for equal variances"
-    vpool <- (vx * (nx - 1) + vy * (ny - 1))/degf
+    vpool <- (vx * (dfx) + vy * (dfy))/degf
     quant <- qt(p = 1 - alpha, df = degf, lower.tail = TRUE)
     tA <- ((vpool * quant^2)/ny) - my^2
     tB <- 2 * mxI * myI
     tC <- ((vpool * quant^2)/nx) - mx^2
-    if (tA >= 0) {
-      warning("Confidence set unbounded.")
-      upper <- NA
-      lower <- NA
-    }
-    else {
-      upper <- tB/(-2 * tA) - sqrt(((tB/2)^2) - tA * tC)/tA
-      lower <- tB/(-2 * tA) + sqrt(((tB/2)^2) - tA * tC)/tA
-    }
-  }
-  
-  if (var.equal == FALSE & iterativeCI == FALSE) {
-    
-    degf <- max(1, ((vx/nx + (rho^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
-                                                            (nx - 1)) + (rho^4) * (vy^2)/((ny^2) * (ny - 1))) )
-    
-    stderr <- sqrt(vx/nx + (rho^2) * vy/ny)
-    statistic <- (mxI - myI * rho)/stderr
-    
-    if (alternative == "less") {
-      p.value <- pt(q = statistic, df = degf, lower.tail = TRUE)
-      alpha <- (1 - conf.level)
-    }
-    if (alternative == "greater") {
-      p.value <- pt(q = statistic, df = degf, lower.tail = FALSE)
-      alpha <- (1 - conf.level)
-    }
-    if (alternative == "two.sided") {
-      p.value <- min(1, 2 * pt(q = abs(statistic), df = degf, 
-                               lower.tail = FALSE))
-      alpha <- (1 - conf.level)/2
-    }
-    method <- "Ratio t-test for unequal variances"
-    
-    degfest <- max(1, ((vx/nx + (est^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
-                                                               (nx - 1)) + (est^4) * (vy^2)/((ny^2) * (ny - 1))) )
-    
-    quant <- qt(p = 1 - alpha, df = degfest, lower.tail = TRUE)
-    
-    tA <- ((vy * quant^2)/ny) - my^2
-    tB <- 2 * mxI * myI
-    tC <- ((vx * quant^2)/nx) - mx^2
     
     if (tA >= 0) {
       warning("Confidence set unbounded.")
@@ -106,35 +68,78 @@ ttestratio <- function (mx, sdx, nx, my, sdy, ny, alternative = "two.sided", rho
       lower <- tB/(-2 * tA) + sqrt(((tB/2)^2) - tA * tC)/tA
     }
   }
-  
-  
-  if (var.equal == FALSE & iterativeCI == TRUE) {
-    
-    degf <- ((vx/nx + (rho^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
-                                                     (nx - 1)) + (rho^4) * (vy^2)/((ny^2) * (ny - 1)))
-    stderr <- sqrt(vx/nx + (rho^2) * vy/ny)
-    statistic <- (mxI - myI * rho)/stderr
-    if (alternative == "less") {
-      p.value <- pt(q = statistic, df = degf, lower.tail = TRUE)
-      alpha <- (1 - conf.level)
-    }
-    if (alternative == "greater") {
-      p.value <- pt(q = statistic, df = degf, lower.tail = FALSE)
-      alpha <- (1 - conf.level)
-    }
-    if (alternative == "two.sided") {
-      p.value <- min(1, 2 * pt(q = abs(statistic), df = degf, 
-                               lower.tail = FALSE))
-      alpha <- (1 - conf.level)/2
-    }
-    
-    method <- "Ratio t-test for unequal variances"
-    
-    conf.int <- CIratioiter(nx=nx, ny=ny, mx=mxI, my=myI, vx=vx, vy=vy, alternative = alternative, conf.level = conf.level, ul=ul, ll=ll) 
-    lower<-conf.int[1]
-    upper<-conf.int[2]
-  }
-  
+  # 
+  # if (var.equal == FALSE & iterativeCI == FALSE) {
+  #   
+  #   degf <- max(1, ((vx/nx + (rho^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
+  #                                                           (nx - 1)) + (rho^4) * (vy^2)/((ny^2) * (ny - 1))) )
+  #   
+  #   stderr <- sqrt(vx/nx + (rho^2) * vy/ny)
+  #   statistic <- (mxI - myI * rho)/stderr
+  #   
+  #   if (alternative == "less") {
+  #     p.value <- pt(q = statistic, df = degf, lower.tail = TRUE)
+  #     alpha <- (1 - conf.level)
+  #   }
+  #   if (alternative == "greater") {
+  #     p.value <- pt(q = statistic, df = degf, lower.tail = FALSE)
+  #     alpha <- (1 - conf.level)
+  #   }
+  #   if (alternative == "two.sided") {
+  #     p.value <- min(1, 2 * pt(q = abs(statistic), df = degf, 
+  #                              lower.tail = FALSE))
+  #     alpha <- (1 - conf.level)/2
+  #   }
+  #   method <- "Ratio t-test for unequal variances"
+  #   
+  #   degfest <- max(1, ((vx/nx + (est^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
+  #                                                              (nx - 1)) + (est^4) * (vy^2)/((ny^2) * (ny - 1))) )
+  #   
+  #   quant <- qt(p = 1 - alpha, df = degfest, lower.tail = TRUE)
+  #   
+  #   tA <- ((vy * quant^2)/ny) - my^2
+  #   tB <- 2 * mxI * myI
+  #   tC <- ((vx * quant^2)/nx) - mx^2
+  #   
+  #   if (tA >= 0) {
+  #     warning("Confidence set unbounded.")
+  #     upper <- NA
+  #     lower <- NA
+  #   }
+  #   else {
+  #     upper <- tB/(-2 * tA) - sqrt(((tB/2)^2) - tA * tC)/tA
+  #     lower <- tB/(-2 * tA) + sqrt(((tB/2)^2) - tA * tC)/tA
+  #   }
+  # }
+  # 
+  # 
+  # if (var.equal == FALSE & iterativeCI == TRUE) {
+  #   
+  #   degf <- ((vx/nx + (rho^2) * vy/ny)^2)/((vx^2)/((nx^2) * 
+  #                                                    (nx - 1)) + (rho^4) * (vy^2)/((ny^2) * (ny - 1)))
+  #   stderr <- sqrt(vx/nx + (rho^2) * vy/ny)
+  #   statistic <- (mxI - myI * rho)/stderr
+  #   if (alternative == "less") {
+  #     p.value <- pt(q = statistic, df = degf, lower.tail = TRUE)
+  #     alpha <- (1 - conf.level)
+  #   }
+  #   if (alternative == "greater") {
+  #     p.value <- pt(q = statistic, df = degf, lower.tail = FALSE)
+  #     alpha <- (1 - conf.level)
+  #   }
+  #   if (alternative == "two.sided") {
+  #     p.value <- min(1, 2 * pt(q = abs(statistic), df = degf, 
+  #                              lower.tail = FALSE))
+  #     alpha <- (1 - conf.level)/2
+  #   }
+  #   
+  #   method <- "Ratio t-test for unequal variances"
+  #   
+  #   conf.int <- CIratioiter(nx=nx, ny=ny, mx=mxI, my=myI, vx=vx, vy=vy, alternative = alternative, conf.level = conf.level, ul=ul, ll=ll) 
+  #   lower<-conf.int[1]
+  #   upper<-conf.int[2]
+  # }
+  # 
   
   if (alternative == "two.sided") {
     conf.int <- c(lower, upper)
