@@ -279,6 +279,7 @@ quant_coverage_error <-  function(df) {
  
   # browser();
   
+  # print(sprintf("A: %f, B: %f", df$mu_a, df$mu_b))
   # Control group (For use with two sample cases)
   x_a <- matrix(rnorm(df$n_samples * df$n_a, df$mu_a, df$sigma_a), ncol = df$n_a)
   # Difference group (for simplicity experiment sample not calculated)
@@ -299,24 +300,28 @@ quant_coverage_error <-  function(df) {
   df_init$rmdm = df_init$mdm/ rowMeans(x_a)
   # df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, mdms = df_init$mdm,
   #                                  conf.level.mdm = 1 - df$alpha, conf.level.rmdm = 1 - df$alpha)
-  
-  
-  
   df_init$rldm = df_init$ldm/ rowMeans(x_a)
   
-  
+  # Relative difference in sample means
   df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
   df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
   df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
-# browser();
 
+  
+  
+  
+  
+  
+  
   df_init$rxbar_aob = row_ratio_normal(x_a, x_b, conf.level = 1 - 2*df$alpha)
+  df_init$mu_aob = df$mu_b/df$mu_a
+  
   
   # Ground truth using population values
   df_init$rmu_dm = df_init$mu_dm/ df$mu_a
-  df_init$mu_aob = df$mu_a/df$mu_b
   
-  
+  #
+  # 
   df_list = list()
   # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)
   df_list[[1]] <- quant_error_rate(df_init = df_init, lower_name = "xbar_dm", upper_name = "xbar_dm" ,  

@@ -197,30 +197,52 @@ row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
   # xbar_1 <- rowmeans(m1)
   # se_1 <- rowsds(m1)/dim(m1)[2]
   
- 
-  means_x <- rowMeans(m1)
-  n_x <- dim(m1)[2]
-  sds_x <- rowSds(m1)
+  # Numerator: experiment sample
+  means_x <- rowMeans(m2)
+  n_x <- dim(m2)[2]
+  sds_x <- rowSds(m2)
+  ses_x <- sds_x/sqrt(n_x)
   # sds_x <- rowSds(m1)/sqrt(n_x)
   
-  
-  means_y <- rowMeans(m2)
-  n_y <- dim(m2)[2]
-  sds_y <- rowSds(m2)
+  # Denominator: control sample
+  means_y <- rowMeans(m1)
+  n_y <- dim(m1)[2]
+  sds_y <- rowSds(m1)
+  ses_y = sds_y/sqrt(n_y)
   # sds_y <- rowSds(m2)/ sqrt(n_y)
 
-  # browser();
+  xbar_dm = means_x - means_y
+  sd_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
+  df_dm = n_x + n_y - 2
+    
+    # rat_ucl <- sapply(1:dim(m1)[1], function(i)
+    #   ttestratio_default(x=m2[i,], y=m1[i,],
+    #                      alternative = "two.sided", rho = 1, var.equal = TRUE,
+    #                      conf.level = conf.level)$conf.int[2])
+
   
-  # source("R/rationormal_toolbox.R")
+  # # # # start_time <- Sys.time()
+  # rat_ucl <- sapply(1:dim(m1)[1], function(i)
+  #   ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
+  #              my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
+  #              alternative = "two.sided", rho = 1, var.equal = TRUE,
+  #              conf.level = conf.level)$conf.int[2])
   
   
-  start_time <- Sys.time()
+  # Works with positive values mu_b/mu_a
   rat_ucl <- sapply(1:dim(m1)[1], function(i)
-    ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
-               my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
-               alternative = "two.sided", rho = 1, var.equal = TRUE,
-               conf.level = conf.level)$conf.int[2])
-  
+    qnormrat(p = 1- 1/2*(1-conf.level), means_x[i], ses_x[i], means_y[i], ses_y[i], VERBOSE=FALSE))
+
+    
+  # browser();
+  # # # # start_time <- Sys.time()
+  # # # # start_time <- Sys.time()
+  # rat_ucl <- sapply(1:dim(m1)[1], function(i)
+  #   ttestratio(mx = xbar_dm[i], sdx = sd_dm[i], dfx = df_dm,
+  #              my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
+  #              alternative = "two.sided", rho = 1, var.equal = TRUE,
+  #              conf.level = conf.level)$conf.int[2])
+
   
   
   return(rat_ucl)

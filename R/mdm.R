@@ -413,63 +413,6 @@ max_abs_cl_mean_z_standard <-  function(x_bar, sem_x, alpha) {
 # qnormrat: cumul density function
 # qnormrat: quantile function
 
-# Error function
-erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
-
-dnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y) {
-  #' Probability density function of ratio of two normal distributions
-  # Based on code from: 
-  # https://rstudio-pubs-static.s3.amazonaws.com/287838_7c982110ffe44d1eb5184739c5724926.html
-  
-  
-  erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
-  
-  beta = mu_x/mu_y
-  rho = sigma_y/sigma_x
-  deltay =  sigma_y/mu_y
-  
-  q <- (1+beta*rho^2*z)/(deltay*sqrt(1+rho^2*z^2))
-  fz <- rho/(pi*(1+rho^2*z^2))*( exp(-(rho^2*beta^2+1)/(2*deltay^2))  + 
-                                    sqrt(pi/2)*q*erf(q/sqrt(2))*exp(-0.5*(rho^2*(z-beta)^2)/(deltay^2*(1+rho^2*z^2))) )
-   return(fz)  
-}
-
-pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y, start = -Inf) {
-  #' Cumulative probability density function
-  #' 
-  Fz <- integrate(function(x) dnormrat(x, mu_x, sigma_x,mu_y, sigma_y), start, z, 
-                  rel.tol = .Machine$double.eps^.5, abs.tol=.Machine$double.eps^.5)
-  
-  return(Fz$value)
-}
-
-qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
-  # For given probability, find position of that percentile from cdf
-
- # Calculate conservative search bounds for finding the 95 percentile area
- lo.bound = (mu_x - qnorm(p)*sigma_x) / (mu_y + qnorm(p)*sigma_y)
- hi.bound = (mu_x + qnorm(p)*sigma_x) / (mu_y - qnorm(p)*sigma_y)
- 
- # To speed up uniroot compuation, we are not going to integrate from -Inf with 
- # every call to pnormrat, instead, we will calculate lower bound area and restrict 
- # our uniroot integration from the area of the lower search bound. So pnormrat 
- # does not have to integrate from -Inf with every function call.
- 
- # Calculate area to lo.bound
- lo.bound.p = pnormrat(lo.bound, mu_x, sigma_x, mu_y, sigma_y)
- 
-  qroot <- uniroot(function(z) 
-    pnormrat(z, mu_x, sigma_x, mu_y, sigma_y, start = lo.bound) + lo.bound.p - p, 
-          lower = abs(lo.bound), upper = abs(hi.bound), extendInt = "no")
-  if (VERBOSE) {
-    sprintf("root:%f [%f %f]",qroot$root, lo.bound, hi.bound)
-  }
-  # 
-  
-  # if (qroot$root<lo.bound || qroot > hi.bound) {print("root outside of search zone")
-  #   browser();}
-  return(qroot$root)
-}
 
 # qnormrat2 <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
 #   # For given probability, find position of that percentile from cdf
