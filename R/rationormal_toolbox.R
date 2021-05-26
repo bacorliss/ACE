@@ -1,16 +1,49 @@
 
 
 
+moments_foldnorm <- function(mu, sigma) {
+  #' @description given the mean and standard deviation of a normal distribution 
+  #' before absolute value transform, calculates the mean, std, and variance 
+  #' after absolute value transform.
+  #' 
+  #' @param mu pre-transform mean
+  #' @param sigma pre-transform standard deviation
+  #' 
+  #' @return df data frame with mu_f, sigma_f, and var_f
+  #' 
+  #'  Equations taken from
+  #'    https://www.randomservices.org/random/special/FoldedNormal.html
+  #' Tested against Special Distribution Simulator
+  #'    https://www.randomservices.org/random/apps/SpecialSimulation.html
+  
+  # Post transform mean and variance
+  mu_f = mu * (1 - 2*pnorm(-mu/sigma)) + sigma*sqrt(2/pi)* exp(-mu^2/(2*sigma^2))
+  var_f = mu^2 + sigma^2  - mu_f^2
+  
+  return(data.frame(mu_f=mu_f,sigma_f = sqrt(var_f), var_f = var_f))
+}
 
 
 
-# Error function
-erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
 
-dnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y) {
-  #' Probability density function of ratio of two normal distributions
-  # Based on code from: 
-  # https://rstudio-pubs-static.s3.amazonaws.com/287838_7c982110ffe44d1eb5184739c5724926.html
+# Utility functions for ratio normal distribution
+# dnormrat: density function
+# qnormrat: cumul density function
+# qnormrat: quantile function
+
+dnormrat <- function(z, mu_x, sigma_x, mu_y, sigma_y) {
+  #' @description Ratio normal probability density function (X/Y)
+  #' 
+  #' @param z quantile position
+  #' @param mu_x mean of X
+  #' @param sigma_x standard deviation of X
+  #' @param mu_y mean of Y
+  #' @param sigma_y standard deviation of Y
+  #'   
+  #' @return fz the probaility at the specified z position
+  #' 
+  #' Equations copied from:    
+  #'  https://rstudio-pubs-static.s3.amazonaws.com/287838_7c982110ffe44d1eb5184739c5724926.html
   
   
   erf <- Vectorize(function(x) 2*pnorm(sqrt(2)*x) - 1)
@@ -25,10 +58,19 @@ dnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y) {
   return(fz)  
 }
 
-pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y, start = -Inf) {
-  #' Cumulative probability density function
+pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y, start_pos = -Inf) {
+  #' @description Ratio normal cumulative probability density function (X/Y)
   #' 
-  Fz <- integrate(function(x) dnormrat(x, mu_x, sigma_x,mu_y, sigma_y), start, z, 
+  #' @param z quantile position
+  #' @param mu_x mean of X
+  #' @param sigma_x standard deviation of X
+  #' @param mu_y mean of Y
+  #' @param sigma_y standard deviation of Y
+  #' @param start_pos start position of integration
+  #'   
+  #' @return Fz the cumulative probability at the specified z position
+  #' 
+  Fz <- integrate(function(x) dnormrat(x, mu_x, sigma_x,mu_y, sigma_y), start_pos, z, 
                   rel.tol = .Machine$double.eps^.5, abs.tol=.Machine$double.eps^.5)
   
   return(Fz$value)
@@ -36,31 +78,54 @@ pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y, start = -Inf) {
 
 
 qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
-  # For given probability, find position of that percentile from cdf
+  #' @description Quantile function of ratio normal distirbution (X/Y)
+  #' For given probability, return position of that percentile from cdf
+  #' 
+  #' @param p probability
+  #' @param mu_x mean of X
+  #' @param sigma_x standard deviation of X
+  #' @param mu_y mean of Y
+  #' @param sigma_y standard deviation of Y
+  #' @param start_pos start position of integration
+  #'   
+  #' @return xroot$root the position where the cdf is equal to p
   
-  # Calculate conservative search bounds for finding the 95 percentile area
-  lo.bound = (mu_x - qnorm(p)*sigma_x) / (mu_y + qnorm(p)*sigma_y)
-  hi.bound = (mu_x + qnorm(p)*sigma_x) / (mu_y - qnorm(p)*sigma_y)
+  # browser();
   
-  # To speed up uniroot compuation, we are not going to integrate from -Inf with 
+  # Estimate bounds to search for root
+  x_lo = (mu_x - qnorm(p)*sigma_x)
+  x_hi = (mu_x + qnorm(p)*sigma_x)
+  y_lo = (mu_y - qnorm(p)*sigma_y)
+  y_hi = (mu_y + qnorm(p)*sigma_y)
+  bounds = c(x_lo/y_lo, x_lo/y_hi,
+             x_hi/y_lo, x_hi/y_hi)
+  lo.bound = min(bounds)
+  hi.bound = max(bounds)
+  
+  
+  # To speed up uniroot computation, we are not going to integrate from -Inf with 
   # every call to pnormrat, instead, we will calculate lower bound area and restrict 
-  # our uniroot integration from the area of the lower search bound. So pnormrat 
+  # our uniroot integration above the area of the lower search bound. So pnormrat 
   # does not have to integrate from -Inf with every function call.
   
   # Calculate area to lo.bound
   lo.bound.p = pnormrat(lo.bound, mu_x, sigma_x, mu_y, sigma_y)
   
-  qroot <- uniroot(function(z) 
+  if ( y_lo > 0) {
+  xroot <- try(uniroot(function(z) 
     pnormrat(z, mu_x, sigma_x, mu_y, sigma_y, start = lo.bound) + lo.bound.p - p, 
-    lower = abs(lo.bound), upper = abs(hi.bound), extendInt = "no")
-  if (VERBOSE) {
-    sprintf("root:%f [%f %f]",qroot$root, lo.bound, hi.bound)
+    lower = abs(lo.bound), upper = abs(hi.bound), extendInt = "no")$root)
+  } else {
+    xroot = NaN
   }
-  # 
+  if (!is.numeric(xroot)) {xroot = NaN}
   
-  # if (qroot$root<lo.bound || qroot > hi.bound) {print("root outside of search zone")
-  #   browser();}
-  return(qroot$root)
+  if (VERBOSE) {
+    sprintf("root:%f [%f %f]",xroot, lo.bound, hi.bound)
+  }
+  
+  # if (xroot<lo.bound || xroot > hi.bound) {print("root outside of search zone")
+  return(xroot)
 }
 
 

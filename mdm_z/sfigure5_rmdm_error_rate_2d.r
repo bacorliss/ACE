@@ -45,9 +45,9 @@ overwrite <- TRUE
 # First Row
 # Coverage error simulations for mu space  
 n_obs = 100
-mus_a = 5
-mus_dm <- seq(-2, 2, by = .1)
-sigmas_dm <- seq(.01, 1, by = .02)
+mus_a = 10
+mus_dm <- seq(5, 10, by = .25)
+sigmas_dm <- seq(.01, .5, by = .025)
 # mus_dm <- seq(1, 5, by = .1)
 # sigmas_dm <- seq(.01, .5, by = .02)
 
@@ -58,21 +58,22 @@ mu_ov_sigmas = NULL
 
 source("R/coverage_error_toolbox.R")
 # Run simulations calculating error of mdm with mu and sigma swept
+time1 <- Sys.time()
 df_results <- 
   quant_coverage_errors(mus_a = mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
                         mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = FALSE)
-
+                        overwrite=overwrite, is_parallel_proc = TRUE)
+time2 <- Sys.time()
+time2 - time1
 
 # Plot 0: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rxbar_aob_gt_mu_aob)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
-# grid_slopes <- slopes_by_rowcol(df_results$mean_rmdm_error_rate, sigmas, mus)
 # Plot heatmap
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+ 
+gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() + 
   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
   xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) + theme_classic(base_size=8) +
   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
@@ -84,6 +85,9 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile()+
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
+
+
+
 save_plot(paste(fig_path, "/", fig_num, "_2a rmdm error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
 

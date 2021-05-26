@@ -6,6 +6,10 @@
 #' measurements as columns as columns. All functions return a vector of length m, 
 #' with an effect size quantified for each sample.
 
+# Test input for functions
+# m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+# m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
+
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(BayesFactor)
@@ -15,6 +19,7 @@ p_load(sgpv)
 
 source("R/ldm.R")
 source("R/mdm.R")
+source("R/rationormal_toolbox.R")
 
 ## User defined functions
 
@@ -141,10 +146,9 @@ row_mdm_2s_zdist <- function(m1, m2, ...) {
 }
 
 
-# source("R/mdm.R")
-# m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
-# m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
-row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.level.rmdm = 0.95) {
+
+
+row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level = 0.95, method = "qnormrat") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). M1 and M2 must have same number of rows (samples), but 
@@ -156,7 +160,7 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.l
   #' @return vector of rmdm values, one for each row of m1 and m2
   # browser()
 
-  # Calcualt mdm from data if not supplied
+  # Calculate mdm from data if not supplied
   # if (is.null(mdms)) {
   #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
   # }
@@ -167,14 +171,83 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level.mdm = 0.95, conf.l
   # xbar_1 <- rowmeans(m1)
   # se_1 <- rowsds(m1)/dim(m1)[2]
 
-  rmdms <- sapply(1:dim(m1)[1], function(i)  
-    rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level.mdm, conf.level.rmdm))
+  if (method =="qnormrat") {
+    # Calculate mean and std of difference in means distribution
+    
+    
+    source("R/rationormal_toolbox.R")
+    rmdms <- sapply(1:dim(m1)[1], function(i)  
+      rmdm_normal_zdist(x = m1[i,], y = m2[i,], mdm = NULL, conf.level, method = "qnormrat"))
+
+   
+  } else if (method =="mdm_normalized") {
+    
+    mdm <- sapply(1:dim(m1)[1], function(i)  
+      mdm_normal_zdist(x=m1[i,], y=m2[i,], conf.level = sqrt(0.05)))
+    rmdms <- sapply(1:dim(m1)[1], function(i)  
+      rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level), method = method)
+    
+  } else {stop('row_rmdm_2s_zdist(): unsupported method')}
+  
+  
+
   
   return(rmdms)
 }
 
 
-row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
+row_rmdm_normal_montecarlo <- function(mc, me, conf.level = 0.95, n_trials=1e6) {
+  
+  
+  n_samples = dim(mc)[1]
+    
+  means_c = rowMeans(mc)
+  n_c = dim(mc)[2]
+  sds_c = rowSds(mc)
+  ses_c = sds_c/sqrt(n_c)
+  
+  means_e = rowMeans(me)
+  n_e = dim(me)[2]
+  sds_e = rowSds(me)
+  ses_e = sds_e/sqrt(n_e)
+  
+  means_dm = means_e - means_c
+  ses_dm = sqrt(sds_c^2/n_c + sds_e^2/n_e)
+  
+  
+  # Generate seed random numbers to save time between rows
+  seed_1 = rnorm(n_trials, mean = 0,  sd = 1)
+  seed_2 = rnorm(n_trials, mean = 0,  sd = 1)
+  
+  
+  # time1 <- Sys.time()
+  # means_c_mat = seed_1 %*% t(sds_c) + rep(means_c, each = n_samples)
+  # means_e_mat = seed_2 %*% t(sds_e) + rep(means_e, each = n_samples)
+  # 
+  # rxbar_mat = abs(means_e_mat - means_c_mat)/means_c_mat
+  # # Compute monte carlo in matrix format to avoid for loop
+  # 
+  # # Calculate quantile for each column
+  # rmdms = apply(rxbar_mat , 2 , quantile, probs = conf.level , na.rm = TRUE )
+  # time2 <- Sys.time()
+  # time2 - time1
+  
+  
+  # time1 <- Sys.time()
+  rmdms <- sapply(1:dim(mc)[1], function(i)  
+    rmdm_normal_montecarlo(means_dm[i], ses_dm[i], means_c[i], ses_c[i], 
+                           abs(seed_1 * ses_e[i] + means_e[i] - seed_2  * ses_c[i] + means_c[i]), 
+                           seed_2  * ses_c[i] + means_c[i],
+                           conf.level = 0.95, n_trials=n_trials))
+  # time2 <- Sys.time()
+  # time2 - time1
+  # 
+  return(rmdms)
+}
+
+
+
+row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "ttestratio") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). M1 and M2 must have same number of rows (samples), but 
@@ -210,42 +283,46 @@ row_ratio_normal <- function(m1, m2, conf.level = 0.95) {
   sds_y <- rowSds(m1)
   ses_y = sds_y/sqrt(n_y)
   # sds_y <- rowSds(m2)/ sqrt(n_y)
-
+  
   xbar_dm = means_x - means_y
   sd_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
   df_dm = n_x + n_y - 2
-    
-    # rat_ucl <- sapply(1:dim(m1)[1], function(i)
-    #   ttestratio_default(x=m2[i,], y=m1[i,],
-    #                      alternative = "two.sided", rho = 1, var.equal = TRUE,
-    #                      conf.level = conf.level)$conf.int[2])
-
-  
-  # # # # start_time <- Sys.time()
-  # rat_ucl <- sapply(1:dim(m1)[1], function(i)
-  #   ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
-  #              my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
-  #              alternative = "two.sided", rho = 1, var.equal = TRUE,
-  #              conf.level = conf.level)$conf.int[2])
-  
-  
-  # Works with positive values mu_b/mu_a
-  rat_ucl <- sapply(1:dim(m1)[1], function(i)
-    qnormrat(p = 1- 1/2*(1-conf.level), means_x[i], ses_x[i], means_y[i], ses_y[i], VERBOSE=FALSE))
-
-    
+   
   # browser();
-  # # # # start_time <- Sys.time()
-  # # # # start_time <- Sys.time()
-  # rat_ucl <- sapply(1:dim(m1)[1], function(i)
-  #   ttestratio(mx = xbar_dm[i], sdx = sd_dm[i], dfx = df_dm,
-  #              my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
-  #              alternative = "two.sided", rho = 1, var.equal = TRUE,
-  #              conf.level = conf.level)$conf.int[2])
+  
+  if (method == 'ttestratio_default') {
+    ratio_cls <- 
+      abs(t(sapply(1:dim(m1)[1], function(i) 
+        ttestratio_default(x=m2[i,], y=m1[i,],alternative = "two.sided", rho = 1, 
+                           var.equal = TRUE, conf.level = 1 - 2*(1-conf.level))$conf.int)))
+    ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
+    
+  } else if (method == 'ttestratio') {
+    ratio_cls <- t(sapply(1:dim(m1)[1], function(i)
+      ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
+                 my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
+                 alternative = "two.sided", rho = 1, var.equal = TRUE,
+                 conf.level =  1 - 2*(1-conf.level))$conf.int))
+    ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
+    
+  } else if (method == 'qnormrat') {
+    
+    # Works with positive values mu_b/mu_a
+    ratio_cl_lo <- sapply(1:dim(m1)[1], function(i)
+      qnormrat(p = 1-conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
+               VERBOSE=FALSE))
+    
+    ratio_cl_hi <- sapply(1:dim(m1)[1], function(i)
+      qnormrat(p = conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
+               VERBOSE=FALSE))
+    
+    ratio_ucl <- rowmax_2col(abs(ratio_cl_lo), abs(ratio_cl_hi))
 
+  } else {stop('row_ratio_normal_coe(): unsupported method')}
   
   
-  return(rat_ucl)
+  
+  return(ratio_ucl)
 }
 
 

@@ -58,16 +58,15 @@ sigmas_dm <- seq(.01, 1, by = .02)
 sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
 n_samples <- 1e3
-mu_ov_sigmas = NULL
+mu_vsigmas_dm = NULL
 
-source("R/coverage_error_toolbox.R")
 
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- 
   quant_coverage_errors(mus_a = 100, sigmas_a = sigmas_a, n_a = n_obs, 
                         mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = TRUE)
+                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 
 
 # Error rate of MDM < mu
@@ -145,17 +144,13 @@ sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
 n_samples <- 1e3
 
-
-source("R/coverage_error_toolbox.R")
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- 
   quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
                         mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
                         mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = TRUE)
-
-
+                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 
 
 # Error rate of MDM < mu in mu/sigma space
@@ -214,25 +209,28 @@ save_plot(paste(fig_path, "\\", fig_num, "_3b mdm error test mu_over_sigma.tiff"
 
 
 
-
-
-
-
-
-
-
-
 # Identify location of coverage error boundaries with mu space
 #                                                                              #
 #______________________________________________________________________________#
-n_obs <- 50
-sigmas <- seq(.1, 5, by = .1); 
-mus <- seq (.1/5, 2, by=0.02)
-mu_ov_sigmas = NULL
 
-df_crit_mu <- locate_bidir_binary_thresh(mus = mus, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs, 
-                                         temp_path = paste(fig_path, "/mdm_Error_mu_vs_sigma.rds",sep=""),
-                                         mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
+# First Row
+# Coverage error simulations for mu space  
+n_a = 50
+n_b = 50
+mus_dm <- seq (.02, 2, by=0.02)
+sigmas_dm <- seq(.1, 1, by = .025)
+# Spread sigma_dm across sigma_a and sigma_b equally
+sigmas_a = sigmas_dm/sqrt(2/n_a)
+sigmas_b = sigmas_a
+n_samples <- 1e3
+
+
+df_crit_mu <-
+  locate_bidir_binary_thresh(mus_a = 100, sigmas_a = sigmas_a, n_a = n_a, 
+                             mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_b,
+                             mu_vsigmas_dm = NA, alphas = 0.05,
+                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                             overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 
 # Plot of each boundary separate
@@ -264,17 +262,32 @@ capture.output(summary_mu, file = paste(fig_path, "\\", fig_num,
                                         "_c mdm transition over mu.txt", sep=""))
 
 
+
+
 # Identify location of coverage error boundaries with mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
-n_obs <- 50
-mus <- NULL
-sigmas <- seq(.1, 5, by = .1); 
-mu_ov_sigmas <- seq (0.10, 0.40, by=0.001)
 
-df_crit_mu_ov_sigma <- locate_bidir_binary_thresh(mus=NULL, sigmas = sigmas, n_samples = n_samples, n_obs = n_obs,
-                                      temp_path = paste(fig_path, "/mdm_Error_mu_over_sigma_vs_sigma.rds",sep=""), 
-                                      mu_ov_sigmas = mu_ov_sigmas, rand.seed = rand.seed)
+
+# First Row
+# Coverage error simulations for mu space  
+n_a = 50
+n_b = 50
+mus_dm <- seq (.02, 2, by=0.02)
+mu_vsigmas_dm <- seq (1.5, 2.5, by=0.05)
+sigmas_dm <- seq(.1, 1, by = .025)
+
+# Spread sigma_dm across sigma_a and sigma_b equally
+sigmas_a = sigmas_dm/sqrt(2/n_a)
+sigmas_b = sigmas_a
+n_samples <- 1e3
+
+df_crit_mu_ov_sigma <- 
+  locate_bidir_binary_thresh(mus_a = 100, sigmas_a = sigmas_a, n_a = n_a, 
+                             mus_b = NA, sigmas_b = sigmas_b, n_b = n_b,
+                             mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
+                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                             overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 
 # Plot of each boundary separate
@@ -296,21 +309,6 @@ gg
 save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu_sigma.tiff", 
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
-
-# # Box and Whiskers of Coverage Error Transition Region
-# p <- ggplot(df_crit_mu_ov_sigma, aes(x=er, color = side,#group = interaction(er, side),
-#                          y = abs(critical_mu_over_sigma))) +
-#   #geom_violin( position = position_dodge( width = 0.9)) +
-#   geom_boxplot( width = 0.2,position = position_dodge( width = 0.9), outlier.shape = NA) +
-#   theme_classic(base_size = 8) + theme(legend.position="none",
-#                                        axis.title.x = element_blank()) +
-#   xlab("Error Rate Null Hypothesis") +
-#   ylab(expression(abs(~mu*phantom(.))*phantom(.)/sigma))+
-# scale_color_manual(values = c("#66c2a5", "#fc8d62"))
-# p
-# save_plot(paste(fig_path, "\\", fig_num, "_c mdm transition over mu sigma.tiff",
-#                 sep = ""), p, ncol = 1, nrow = 1, base_height = 1.5,
-#           base_asp = 3, base_width = 2, dpi = 600)
 
 res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
 summary_mu_ov_sigma <- summary(res.aov2)
