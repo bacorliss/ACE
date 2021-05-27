@@ -24,7 +24,7 @@ within_ci <- function(ci, x) x >= ci[1] & x <= ci[2]
 quant_coverage_errors <-
   function(mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, out_path, 
            mu_vsigmas_dm = NA, overwrite = FALSE, rand.seed=0,
-            is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE) {
+           is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE) {
     #' Perform parameter sweep with specified mus and sigmas
     #' 
     #' @description QUantifies stats of a series of simulations of normal random 
@@ -58,14 +58,14 @@ quant_coverage_errors <-
     if (length(sigmas_a)==1) {sigmas_a = rep(sigmas_a, n_sigmas)}
     if (length(sigmas_b)==1) {sigmas_b = rep(sigmas_b, n_sigmas)}
     if (length(mu_vsigmas_dm)==1) {mu_vsigmas_dm = rep(mu_vsigmas_dm, n_mus)}
-
+    
     mus_dm = mus_b - mus_a
     sigmas_dm = sqrt(sigmas_a^2/n_a + sigmas_b^2/n_b) 
-      
+    
     # Store results to disk since calculations are significant
     set.seed(rand.seed)
     if (!file.exists(out_path) || overwrite) {
-
+      
       # Matrix diff and error of mdm
       if (all(is.na(mu_vsigmas_dm))) {dimnames = list(sigmas_dm,mus_dm)
       } else {dimnames = list(sigmas_dm, mu_vsigmas_dm)}
@@ -74,7 +74,7 @@ quant_coverage_errors <-
       # Initialize matrix in data form
       param_col_list <- c("mu_a", "sigma_a","n_a", "mu_b","sigma_b", "n_b", 
                           "alpha", "mu_dm", "sigma_dm", "mu_vsigma_dm",
-                          "rmu","fract_neg_x_bar_a", "n_samples", "alpha")
+                          "rmu_dm", "n_samples", "alpha")
       
       init_mat <- matrix(NA, nrow = n_sigmas, ncol = n_mus, dimnames = dimnames)
       df_mat <- tibble(mu_a = init_mat);
@@ -85,7 +85,7 @@ quant_coverage_errors <-
         if (!all(is.na(mu_vsigmas_dm))) {
           mus_dm = mu_vsigmas_dm * sigmas_dm[r]
           mus_b = mus_a + mus_dm
-          }
+        }
         
         for (c in seq(1, n_mus, by = 1)) {
           df_mat$mu_a[r,c]     <- mus_a[c]
@@ -102,7 +102,7 @@ quant_coverage_errors <-
           df_mat$alpha[r,c]  <- alphas
           
           df_mat$mu_vsigma_dm[r,c] <- df_mat$mu_dm[r,c]/df_mat$sigma_dm[r,c]
-          df_mat$rmu[r,c] <- df_mat$mu_dm[r,c] / df_mat$mu_a[r,c]
+          df_mat$rmu_dm[r,c] <- df_mat$mu_dm[r,c] / df_mat$mu_a[r,c]
           df_mat$n_samples[r,c] = n_samples
           
         }
@@ -113,7 +113,6 @@ quant_coverage_errors <-
       for (n in seq_along(param_col_list)) { df_lin[[param_col_list[n]]] <- 
         as.vector(df_mat[[param_col_list[n]]]) }
       
-      # browser();
       
       # Process parallel or serially
       if (is_parallel_proc) { 
@@ -121,15 +120,18 @@ quant_coverage_errors <-
         # browser()
         cl = makeCluster(detectCores()[1]-1)
         registerDoParallel(cl)
-        df_lin2 <- foreach(n = seq(1,n_sigmas*n_mus,1),
-                           .export = c(mdm_functions, ldm_functions, row_effect_size_functions,
-                                       "quant_coverage_error","quant_error_rate",
-                                       rationormal_functions), 
-                           .combine = rbind, .packages = c("tidyr")) %dopar% {
-                             #calling a function
-                             tempMatrix <- quant_coverage_error(df_lin[n,], raw_error, rel_error) 
-                             tempMatrix
-                           }
+        df_lin2 <- 
+          foreach(n = seq(1,n_sigmas*n_mus,1),
+                  .export = c(mdm_functions, ldm_functions, row_effect_size_functions,
+                              "quant_coverage_error","quant_error_rate",
+                              rationormal_functions), 
+                  .combine = rbind, .packages = c("tidyr")) %dopar% {
+                    #calling a function
+                    tempMatrix <- quant_coverage_error(df = df_lin[n,], 
+                                                       raw_error = raw_error,
+                                                       rel_error = rel_error) 
+                    tempMatrix
+                  }
         stopCluster(cl)
       } else {            # Process effect sizes serially
         # browser();
@@ -141,12 +143,10 @@ quant_coverage_errors <-
           # # Difference group (for simplicity experiment sample not calculated)
           # x_d <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_d, df_lin[n,]$sigma_d), ncol = n_obs)
           
-          df_list[[n]] <- quant_coverage_error(df_lin[n,]) 
+          df_list[[n]] <- quant_coverage_error(df_lin[n,], 
+                                               raw_error = raw_error,
+                                               rel_error = rel_error) 
           
-          # quant_coverage_error(df_lin[n,],n_samples, n_obs, 
-          #                      x_a = x_a, x_d = x_d)$mean_mmd
-          # quant_coverage_error2(df_lin[n,],n_samples, n_obs, 
-          #                      x_a = x_a, x_d = x_d)$mean_abs_mdm
         }
         # save(list = ls(all.names = TRUE), file = "temp/quant_coverage_errors.RData",
         #      envir = environment())
@@ -185,10 +185,10 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   
   save(list = ls(all.names = TRUE), file = "temp/quant_coverage_error.RData",envir = environment())
   # load(file = "temp/quant_coverage_error.RData")
- 
+  
   # browser();
   if (verbose) {print(sprintf("A: %f, B: %f", df$mu_a, df$mu_b))}
-
+  
   # Control group (For use with two sample cases)
   x_a <- matrix(rnorm(df$n_samples * df$n_a, df$mu_a, df$sigma_a), ncol = df$n_a)
   # Difference group (for simplicity experiment sample not calculated)
@@ -196,41 +196,42 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   # Each row is a separate sample, columns are observations
   
   # browser()
-  ci_mean = row_ci_mean_2s_zdist(m1 = x_a, m2 = x_b)
+  ci_mean = row_ci_mean_2s_zdist(m_c = x_a, m_e = x_b)
   
   df_init = data.frame(xbar_dm = rowMeans(x_b) - rowMeans(x_a), 
                        ci_lower_z = ci_mean$ci_lower, 
                        ci_upper_z = ci_mean$ci_upper)
-
+  
   # Initialize list of comparison error each element has results with different 
   # metrics and groundtruths  
   df_list = list()
- 
+  
   
   # Raw error
   if (raw_error) {
-  # Raw mdm and ldm
-  df_init$mdm = row_mdm_2s_zdist(m1 = x_a, m2 = x_b, conf.level = 1 - df$alpha)
-  df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
-  
-  # Groundtruth
-  df_init$mu_dm = df$mu_dm
-  
-  
-  # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)
-  df_list[[1]] <- quant_error_rate(df_init = df_init, lower_name = "xbar_dm", upper_name = "xbar_dm" ,  
-                                   gt_name = "mu_dm", use_absolute = TRUE)
-  df_list[[2]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mdm" ,
-                              gt_name = "mu_dm", use_absolute = TRUE)
-  # # Confidence intervals of the mean, z distribution
-  df_list[[3]] <- quant_error_rate(df_init = df_init, lower_name = "ci_lower_z", upper_name = "ci_upper_z" ,
-                          gt_name = "mu_dm", use_absolute = FALSE)
+    # Raw mdm and ldm
+    df_init$mdm = row_mdm_2s_zdist(m_c = x_a, m_e = x_b, conf.level = 1 - df$alpha)
+    df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
+    
+    # Groundtruth
+    df_init$mu_dm = df$mu_dm
+    
+    
+    # Sample mean and relative mean (errors computed for reference since statistic is uncontrolled)
+    df_list[[1]] <- quant_error_rate(df_init = df_init, lower_name = "xbar_dm", upper_name = "xbar_dm" ,  
+                                     gt_name = "mu_dm", use_absolute = TRUE)
+    df_list[[2]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = "mdm" ,
+                                     gt_name = "mu_dm", use_absolute = TRUE)
+    # # Confidence intervals of the mean, z distribution
+    df_list[[3]] <- quant_error_rate(df_init = df_init, lower_name = "ci_lower_z", upper_name = "ci_upper_z" ,
+                                     gt_name = "mu_dm", use_absolute = FALSE)
   }
   
   
   
   if (rel_error) {
     
+    browser();
     # Relative rmdm and rldm
     df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, conf.level = 0.95, mdms = df_init$mdm)
     if (any(is.nan(df_init$rmdm))) { browser() }
@@ -241,35 +242,45 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
     df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
     df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
     
+    # Record ground truth (population values)
+    df_init$rmu_dm = df$rmu_dm
+    # Calculate tru rmu_dm 95, the value the rmdm is meant to approximate
+    df_init$rmu_dm_ucl <- max(abs(c(
+      qnormrat(p = df$alpha, df$mu_dm, df$sigma_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)),
+      qnormrat(p = 1 - df$alpha, df$mu_dm, df$sigma_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)))))
+    # See if this value has predicted error rate with samples
     
     # Simple Test case
-    df_init$rxbar_coe = row_ratio_normal_coe(x_a, x_b, conf.level = 1 - df$alpha)
-    df_init$mu_aob = df$mu_b/df$mu_a
+    df_init$rxbar_eoc = row_ratio_normal_eoc(x_a, x_b, conf.level = 1 - df$alpha)
+    df_init$rmu_eoc = df$mu_b/df$mu_a
+    # Calculate true mu_eoc_ucl, the value that rmu_eoc is meant to estimate
+    df_init$rmu_eoc_ucl <- max(abs(c(
+      qnormrat(p =     df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)),
+      qnormrat(p = 1 - df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)))))
     
+    # See if this value has predicted error rate with samples
     
-    # Ground truth using population values
-    df_init$rmu_dm = df_init$mu_dm/ df$mu_a
     
     df_list_len = length(df_list)
     df_list[[df_list_len + 1]] <- 
       quant_error_rate(df_init = df_init, lower_name = "rxbar_dm", upper_name = "rxbar_dm" ,  
-                                     gt_name = "rmu_dm", use_absolute = TRUE)
+                       gt_name = "rmu_dm", use_absolute = TRUE)
     df_list[[df_list_len + 2]] <- 
       quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "rxbar_coe" ,
-                                     gt_name = "mu_aob", use_absolute = TRUE)
+                       gt_name = "mu_aob", use_absolute = TRUE)
     df_list[[df_list_len + 3]] <- 
       quant_error_rate(df_init = df_init, lower_name = "rci_lower_z", upper_name = "rci_upper_z" ,
-                                gt_name = "mu_dm", use_absolute = FALSE)
+                       gt_name = "mu_dm", use_absolute = FALSE)
     df_list[[df_list_len + 4]] <- 
       quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,
-                                     gt_name = "rmu_dm", use_absolute = TRUE)
+                       gt_name = "rmu_dm", use_absolute = TRUE)
     
   }
   
- 
+  
   
   df_err = do.call("cbind", df_list)
-
+  
   
   return(df_err)
   
@@ -293,15 +304,15 @@ quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name,
   #' @param use_absolute flag to compare magnitude of bounds and parameter
   #' @return dataframe of error rates, with column names tailored to the name of 
   #' the statistic and parameter used for the analysis
-
+  
   # Number of samples (trials) for calculating candidate statistics, total for error rate
   n_samples = dim(df_init)[1]
-   # Initialize 
+  # Initialize 
   df = data.frame(0); colnames(df) <- paste("mean_abs_diff_", lower_name,"_to_", gt_name, sep="")
   if_binom_false <- function(x) {if(!x) {xp=2.2e-16} else {xp=x}}
   
   if (use_absolute) {abs_str = "abs_"}else{abs_str=""}
-    
+  
   # save(list = ls(all.names = TRUE), file = "temp/quant_error_rate.RData",envir = environment())
   # load(file = "temp/quant_error_rate.RData")
   
@@ -311,7 +322,7 @@ quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name,
     
     # Compare magnitude of stat to parameter, or not
     if (use_absolute) {
-    diffs_lower <- abs(df_init[[gt_name]]) - abs(df_init[[lower_name]])
+      diffs_lower <- abs(df_init[[gt_name]]) - abs(df_init[[lower_name]])
     } else {diffs_lower <- df_init[[gt_name]] - df_init[[lower_name]]}
     
     df[[paste("mean_", abs_str, lower_name, sep="")]] = mean(df_init[[lower_name]])
@@ -403,114 +414,114 @@ locate_bidir_binary_thresh <-
     # is_parallel_proc = TRUE
     
   {
-  #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
-  #'
-  #' @param ind_var statistic evaluted for coeverage error
-  #' @param mus vector of range of population mu values to be quantified
-  #' @param sigmas vector of range of population sigma values to be quantified
-  #' @param n_samples number of samples drawn or each combination of mu and sigma
-  #' @param n_obs number of observations drawn for each simulation
-  #' @param temp_path path to store temp data
-  #' @param mu_vsigmas_dm vector of range of mu/sigma values to be quantified, 
-  #' @param rand.seed seed for random number generation
-  #' @param overwrite flag to overwrite temp data (if not, load temp if exist)
-  #' @param mus_a vector of means for the control group (for quantifying coverage
-  #'  error of relative x_bar and mdm, the mean of of the control group must be
-  #'  specified.
-  #' @param sigmas_a vector of stds for the control group (for quantifying coverage
-  #'  error of relative x_bar and mdm, the std of the control group must be
-  #'  specified.
-  #' @param is_parallel_proc flag whether simulations are run in parallel across cores
-  #' 
-  #' @return df_crit dataframe that identifies the boundary between error regions
-
-  # Create temp directory and set random seet
-  dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
-  set.seed(rand.seed)
-  
-  save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
-  # load(file = "temp/locate_bidir_binary_thresh.RData")
-  # Create temp dir if it does not exist
-
-  # Difference in means
-  mus_dm = mus_b - mus_a
-  sigmas_dm = sqrt(sigmas_a^2/n_a + sigmas_b^2/n_b) 
-
-  
-  #' Locate all 4 error transition boundaries
-  #' Positive and negative direction, 0 and alpha error
-  
-  n_cols <- max(c(length(mus_dm), length(mu_vsigmas_dm)))
-  if (!is.na(mus_dm) & !is.null(mus_dm)) {
-    col_values = mus_dm; 
-    varname <- "critical_mu"; 
-    neg_mu_vsigmas_dm = -mu_vsigmas_dm;
-  } else {
-    col_values = mu_vsigmas_dm; 
-    varname <- "critical_mu_over_sigma"; 
-    neg_mu_vsigmas_dm=-mu_vsigmas_dm
-
+    #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
+    #'
+    #' @param ind_var statistic evaluted for coeverage error
+    #' @param mus vector of range of population mu values to be quantified
+    #' @param sigmas vector of range of population sigma values to be quantified
+    #' @param n_samples number of samples drawn or each combination of mu and sigma
+    #' @param n_obs number of observations drawn for each simulation
+    #' @param temp_path path to store temp data
+    #' @param mu_vsigmas_dm vector of range of mu/sigma values to be quantified, 
+    #' @param rand.seed seed for random number generation
+    #' @param overwrite flag to overwrite temp data (if not, load temp if exist)
+    #' @param mus_a vector of means for the control group (for quantifying coverage
+    #'  error of relative x_bar and mdm, the mean of of the control group must be
+    #'  specified.
+    #' @param sigmas_a vector of stds for the control group (for quantifying coverage
+    #'  error of relative x_bar and mdm, the std of the control group must be
+    #'  specified.
+    #' @param is_parallel_proc flag whether simulations are run in parallel across cores
+    #' 
+    #' @return df_crit dataframe that identifies the boundary between error regions
+    
+    # Create temp directory and set random seet
+    dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
+    set.seed(rand.seed)
+    
+    save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
+    # load(file = "temp/locate_bidir_binary_thresh.RData")
+    # Create temp dir if it does not exist
+    
+    # Difference in means
+    mus_dm = mus_b - mus_a
+    sigmas_dm = sqrt(sigmas_a^2/n_a + sigmas_b^2/n_b) 
+    
+    
+    #' Locate all 4 error transition boundaries
+    #' Positive and negative direction, 0 and alpha error
+    
+    n_cols <- max(c(length(mus_dm), length(mu_vsigmas_dm)))
+    if (!is.na(mus_dm) & !is.null(mus_dm)) {
+      col_values = mus_dm; 
+      varname <- "critical_mu"; 
+      neg_mu_vsigmas_dm = -mu_vsigmas_dm;
+    } else {
+      col_values = mu_vsigmas_dm; 
+      varname <- "critical_mu_over_sigma"; 
+      neg_mu_vsigmas_dm=-mu_vsigmas_dm
+      
+    }
+    
+    
+    # Run simulations calculating error of mdm with mu and sigma swept
+    df_right <- quant_coverage_errors( mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, temp_path, 
+                                       mu_vsigmas_dm = mu_vsigmas_dm, overwrite = overwrite, rand.seed=0,
+                                       is_parallel_proc = is_parallel_proc, 
+                                       raw_error = raw_error, rel_error = rel_error) 
+    df_right$side <- as.factor("Right")
+    
+    # Run simulations calculating error of mdm with mu and sigma swept
+    df_left <- quant_coverage_errors( mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, temp_path, 
+                                      mu_vsigmas_dm = neg_mu_vsigmas_dm, overwrite = overwrite, rand.seed=0,
+                                      is_parallel_proc = is_parallel_proc, 
+                                      raw_error = raw_error, rel_error = rel_error) 
+    df_left$side <- as.factor("Left")
+    
+    save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
+    
+    
+    ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_", pop_var,sep="")
+    ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_", pop_var,sep="")
+    
+    # Equivalence test versus middle column of same row
+    p_threshold = 0.05 /(n_cols*length(sigmas_dm))
+    df_zero <- rbind(
+      tibble(er = "0", side = "right", sigma = sigmas_dm, 
+             critical_val_ind = row_locate_binary_bounds(
+               df_right[[ind_var_zero]]  < p_threshold)),
+      tibble(er = "alpha", side = "right", sigma = sigmas_dm, 
+             critical_val_ind = row_locate_binary_bounds(
+               df_right[[ind_var_alpha]]   < p_threshold)))
+    # Convert index of error rate transition to mu/sigma value
+    df_zero[[varname]] <- 
+      approx(x=1:n_cols,y = abs(col_values),
+             xout = df_zero$critical_val_ind, 
+             n = length(n_cols)*2L-1L)$y
+    
+    df_alpha <- rbind(
+      tibble(er = "0", side = "left", sigma = sigmas_dm, 
+             critical_val_ind = row_locate_binary_bounds(
+               df_left[[ind_var_zero]]    < p_threshold)),
+      tibble(er = "alpha", side = "left", sigma = sigmas_dm, 
+             critical_val_ind = row_locate_binary_bounds(
+               df_left[[ind_var_alpha]]   < p_threshold)))
+    # Convert index of error rate transition to mu/sigma value
+    df_alpha[[varname]] <- 
+      approx(x=1:n_cols,y = abs(col_values),
+             xout = df_alpha$critical_val_ind, 
+             n = length(n_cols)*2L-1L)$y
+    
+    # Concatenate right and left dataframes of results
+    df_crit <- rbind(df_zero,df_alpha)
+    
+    df_crit[[varname]][df_crit$side=="left"] = -
+      abs(df_crit[[varname]][df_crit$side=="left"])
+    # * abs() added just in case we are running the code multiple times when debugging
+    
+    return(df_crit)
+    
   }
-  
-  
-  # Run simulations calculating error of mdm with mu and sigma swept
-  df_right <- quant_coverage_errors( mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, temp_path, 
-                                     mu_vsigmas_dm = mu_vsigmas_dm, overwrite = overwrite, rand.seed=0,
-                                     is_parallel_proc = is_parallel_proc, 
-                                     raw_error = raw_error, rel_error = rel_error) 
-  df_right$side <- as.factor("Right")
-  
-  # Run simulations calculating error of mdm with mu and sigma swept
-  df_left <- quant_coverage_errors( mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, temp_path, 
-                                    mu_vsigmas_dm = neg_mu_vsigmas_dm, overwrite = overwrite, rand.seed=0,
-                                    is_parallel_proc = is_parallel_proc, 
-                                    raw_error = raw_error, rel_error = rel_error) 
-  df_left$side <- as.factor("Left")
-  
-  save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
-  
-  
-  ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_", pop_var,sep="")
-  ind_var_alpha <- paste("pval_err_eq_alpha_abs_",ind_var,"_lt_", pop_var,sep="")
-  
-  # Equivalence test versus middle column of same row
-  p_threshold = 0.05 /(n_cols*length(sigmas_dm))
-  df_zero <- rbind(
-    tibble(er = "0", side = "right", sigma = sigmas_dm, 
-           critical_val_ind = row_locate_binary_bounds(
-             df_right[[ind_var_zero]]  < p_threshold)),
-    tibble(er = "alpha", side = "right", sigma = sigmas_dm, 
-           critical_val_ind = row_locate_binary_bounds(
-             df_right[[ind_var_alpha]]   < p_threshold)))
-  # Convert index of error rate transition to mu/sigma value
-  df_zero[[varname]] <- 
-    approx(x=1:n_cols,y = abs(col_values),
-           xout = df_zero$critical_val_ind, 
-           n = length(n_cols)*2L-1L)$y
-  
-  df_alpha <- rbind(
-    tibble(er = "0", side = "left", sigma = sigmas_dm, 
-           critical_val_ind = row_locate_binary_bounds(
-             df_left[[ind_var_zero]]    < p_threshold)),
-    tibble(er = "alpha", side = "left", sigma = sigmas_dm, 
-           critical_val_ind = row_locate_binary_bounds(
-             df_left[[ind_var_alpha]]   < p_threshold)))
-  # Convert index of error rate transition to mu/sigma value
-  df_alpha[[varname]] <- 
-    approx(x=1:n_cols,y = abs(col_values),
-           xout = df_alpha$critical_val_ind, 
-           n = length(n_cols)*2L-1L)$y
-  
-  # Concatenate right and left dataframes of results
-  df_crit <- rbind(df_zero,df_alpha)
-  
-  df_crit[[varname]][df_crit$side=="left"] = -
-    abs(df_crit[[varname]][df_crit$side=="left"])
-  # * abs() added just in case we are running the code multiple times when debugging
-
-  return(df_crit)
-  
-}
 
 
 

@@ -7,8 +7,8 @@
 #' with an effect size quantified for each sample.
 
 # Test input for functions
-# m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
-# m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
+# m_c = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+# m_e = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
 
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
@@ -37,152 +37,152 @@ rowVars <- function(x, ...) {rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2]-1
 # Row standard deviation
 rowSds  <- function(x, ...) sqrt(rowVars(x))
 # Pooled standard deviation of two matrices, 1 sample per row
-rowSdCombined <- function(m1,m2) sqrt( (rowSds(m1)^2 + rowSds(m2)^2 )/2 )
+rowSdCombined <- function(m_c,m_e) sqrt( (rowSds(m_c)^2 + rowSds(m_e)^2 )/2 )
 # Weighted pooled standard deviation of two matrices, 1 sample per row
 rowSdPooled <- 
-  function(m1,m2) 
-    sqrt( ( (dim(m1)[2] - 1) * rowVars(m1) +  
-            (dim(m2)[2] - 1) * rowVars(m2) ) /
-                          (dim(m1)[2] + dim(m2)[2] - 2    ) )
+  function(m_c,m_e) 
+    sqrt( ( (dim(m_c)[2] - 1) * rowVars(m_c) +  
+            (dim(m_e)[2] - 1) * rowVars(m_e) ) /
+                          (dim(m_c)[2] + dim(m_e)[2] - 2    ) )
 
 
 # Delta Family Statistics
 #
 # Cohens D
-#   d = (M2 - M1)/s_pool
-row_cohend <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdCombined(m1,m2)
+#   d = (m_e - m_c)/s_pool
+row_cohend <- function (m_c,m_e) ( rowMeans(m_c) - rowMeans(m_e)) / rowSdCombined(m_c,m_e)
 
 # Hedges G
-#   d = (M2 - M1)/s_pool
-row_hedgeg <- function (m1,m2) ( rowMeans(m1) - rowMeans(m2)) / rowSdPooled(m1,m2)
+#   d = (m_e - m_c)/s_pool
+row_hedgeg <- function (m_c,m_e) ( rowMeans(m_c) - rowMeans(m_e)) / rowSdPooled(m_c,m_e)
 
 # Glass's Delta
-#   d = (M2 - M1)/s_1
-row_glassdelta <- function (m1,m2) ( rowMeans(m2) - rowMeans(m1)) / rowSds(m1) 
+#   d = (m_e - m_c)/s_1
+row_glassdelta <- function (m_c,m_e) ( rowMeans(m_e) - rowMeans(m_c)) / rowSds(m_c) 
 
 
-row_tscore_2s <- function(m1, m2) {
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
-  s1 <- rowSds(m1)
-  s2 <- rowSds(m2)
+row_tscore_2s <- function(m_c, m_e) {
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
+  s1 <- rowSds(m_c)
+  s2 <- rowSds(m_e)
   sm_pooled <-sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) *     (1/n1 + 1/n2) ) 
-  tstat<-  ( rowMeans(m1) - rowMeans(m2)) / sm_pooled
+  tstat<-  ( rowMeans(m_c) - rowMeans(m_e)) / sm_pooled
 }
 
-row_zscore_2s <- function(m1, m2) {
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
-  s1 <- rowSds(m1)
-  s2 <- rowSds(m2)
-  zstat<-  ( rowMeans(m1) - rowMeans(m2)) /
+row_zscore_2s <- function(m_c, m_e) {
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
+  s1 <- rowSds(m_c)
+  s2 <- rowSds(m_e)
+  zstat<-  ( rowMeans(m_c) - rowMeans(m_e)) /
     sqrt( s1^2/n1 + s2^2/n2)
 }
 
 
-row_confint_z  <- function(m1,m2, conf.level = 0.95) {
-  x_bar_1 = rowMeans(m1); x_bar_2 = rowMeans(m2)
-  s_pool = rowSdPooled(m1, m2)
+row_confint_z  <- function(m_c,m_e, conf.level = 0.95) {
+  x_bar_1 = rowMeans(m_c); x_bar_2 = rowMeans(m_e)
+  s_pool = rowSdPooled(m_c, m_e)
   x_dm <- x_bar_2 - x_bar_1
   
   df_ci <- data.frame(
-    conf.lo = x_dm - qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m1)[2] + 1/dim(m2)[2]),
-    conf.hi = x_dm + qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m1)[2] + 1/dim(m2)[2]) )
+    conf.lo = x_dm - qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m_c)[2] + 1/dim(m_e)[2]),
+    conf.hi = x_dm + qnorm(1 - (1-conf.level)/2) * s_pool * sqrt(1/dim(m_c)[2] + 1/dim(m_e)[2]) )
   return(df_ci)
 }
 
-row_confint_t  <- function(m1,m2, conf.level = 0.95) {
-  ci <- sapply(1:dim(m1)[1], function(i)  t.test(x=m2[i,], y=m1[i,])$conf.int)
+row_confint_t  <- function(m_c,m_e, conf.level = 0.95) {
+  ci <- sapply(1:dim(m_c)[1], function(i)  t.test(x=m_e[i,], y=m_c[i,])$conf.int)
   df_ci <- data.frame(conf.lo = ci[1,], conf.hi = ci[2,])
   return(df_ci)
 }
 
 
 
-row_ttest_2s <- function(m1, m2) {
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
-  s1 <- rowSds(m1)
-  s2 <- rowSds(m2)
+row_ttest_2s <- function(m_c, m_e) {
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
+  s1 <- rowSds(m_c)
+  s2 <- rowSds(m_e)
   sm_pooled <-sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) *     (1/n1 + 1/n2) ) 
-  tstat<-  ( rowMeans(m1) - rowMeans(m2)) / sm_pooled
+  tstat<-  ( rowMeans(m_c) - rowMeans(m_e)) / sm_pooled
   p <- 2*pnorm(-abs(tstat))
 }
 
-row_ztest_2s <- function(m1, m2) {
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
-  s1 <- rowSds(m1)
-  s2 <- rowSds(m2)
-  zstat<-  ( rowMeans(m1) - rowMeans(m2)) /
+row_ztest_2s <- function(m_c, m_e) {
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
+  s1 <- rowSds(m_c)
+  s2 <- rowSds(m_e)
+  zstat<-  ( rowMeans(m_c) - rowMeans(m_e)) /
     sqrt( s1^2/n1 + s2^2/n2)
   p  <- 2*pnorm(-abs(zstat))
 }
 
 
-row_ci_mean_2s_zdist <-function(m1,m2, conf.level=0.95) {
+row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
   #' @description Calculates row by row z distribution confidence interval of 
   #' the mean
-  #' @param m1 matrix of measurements, with rows as samples and columns as 
+  #' @param m_c matrix of measurements, with rows as samples and columns as 
   #' measurements
-  #' @param m2 matrix of measurements, with rows as samples and columns as 
+  #' @param m_e matrix of measurements, with rows as samples and columns as 
   #' measurements
   #' @param conf.level confidence level for confidence interval
   #' @return 
 
-  xbar_dm <- rowMeans(m2) - rowMeans(m1)
+  xbar_dm <- rowMeans(m_e) - rowMeans(m_c)
   z_stat <- qnorm(1-(1-conf.level)/2)
-  x_offset <- z_stat * rowSdPooled(m1,m2) * sqrt( 1/dim(m1)[2] + 1/dim(m2)[2] )
+  x_offset <- z_stat * rowSdPooled(m_c,m_e) * sqrt( 1/dim(m_c)[2] + 1/dim(m_e)[2] )
   
   ci = tibble(ci_lower = xbar_dm - x_offset, ci_upper = xbar_dm + x_offset)
   return(ci)
 }
 
-row_mdm_2s_zdist <- function(m1, m2, ...) {
-  mdm <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], ...))
+row_mdm_2s_zdist <- function(m_c, m_e, ...) {
+  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], ...))
 }
 
 
 
 
-row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level = 0.95, method = "qnormrat") {
+row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "qnormrat") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
-  #' size within groups). M1 and M2 must have same number of rows (samples), but 
+  #' size within groups). m_c and m_e must have same number of rows (samples), but 
   #' can have different numbers of columns (measurements)
   #'
-  #' @param m1 control group
-  #' @param m2 experiment group
+  #' @param m_c control group
+  #' @param m_e experiment group
   #' 
-  #' @return vector of rmdm values, one for each row of m1 and m2
+  #' @return vector of rmdm values, one for each row of m_c and m_e
   # browser()
 
   # Calculate mdm from data if not supplied
   # if (is.null(mdms)) {
-  #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
+  #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
   # }
   # Calculate standard deviation of difference in means
-  # s_dm <- sqrt(rowvars(m1)/dim(m1)[2] + rowvars(m2)/dim(m2)[2])
+  # s_dm <- sqrt(rowvars(m_c)/dim(m_c)[2] + rowvars(m_e)/dim(m_e)[2])
   # # Calculate means and standard error of control group
   # # control
-  # xbar_1 <- rowmeans(m1)
-  # se_1 <- rowsds(m1)/dim(m1)[2]
+  # xbar_1 <- rowmeans(m_c)
+  # se_1 <- rowsds(m_c)/dim(m_c)[2]
 
   if (method =="qnormrat") {
     # Calculate mean and std of difference in means distribution
     
     
     source("R/rationormal_toolbox.R")
-    rmdms <- sapply(1:dim(m1)[1], function(i)  
-      rmdm_normal_zdist(x = m1[i,], y = m2[i,], mdm = NULL, conf.level, method = "qnormrat"))
+    rmdms <- sapply(1:dim(m_c)[1], function(i)  
+      rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], mdm = NULL, conf.level, method = "qnormrat"))
 
    
   } else if (method =="mdm_normalized") {
     
-    mdm <- sapply(1:dim(m1)[1], function(i)  
-      mdm_normal_zdist(x=m1[i,], y=m2[i,], conf.level = sqrt(0.05)))
-    rmdms <- sapply(1:dim(m1)[1], function(i)  
-      rmdm_normal_zdist(x=m1[i,], y=m2[i,], mdm = mdms[i], conf.level), method = method)
+    mdm <- sapply(1:dim(m_c)[1], function(i)  
+      mdm_normal_zdist(x=m_c[i,], y=m_e[i,], conf.level = sqrt(0.05)))
+    rmdms <- sapply(1:dim(m_c)[1], function(i)  
+      rmdm_normal_zdist(x=m_c[i,], y=m_e[i,], mdm = mdms[i], conf.level), method = method)
     
   } else {stop('row_rmdm_2s_zdist(): unsupported method')}
   
@@ -193,19 +193,19 @@ row_rmdm_2s_zdist <- function(m1, m2, mdms = NULL, conf.level = 0.95, method = "
 }
 
 
-row_rmdm_normal_montecarlo <- function(mc, me, conf.level = 0.95, n_trials=1e6) {
+row_rmdm_normal_montecarlo <- function(m_c, m_e, conf.level = 0.95, n_trials=1e6) {
   
   
-  n_samples = dim(mc)[1]
+  n_samples = dim(m_c)[1]
     
-  means_c = rowMeans(mc)
-  n_c = dim(mc)[2]
-  sds_c = rowSds(mc)
+  means_c = rowMeans(m_c)
+  n_c = dim(m_c)[2]
+  sds_c = rowSds(m_c)
   ses_c = sds_c/sqrt(n_c)
   
-  means_e = rowMeans(me)
-  n_e = dim(me)[2]
-  sds_e = rowSds(me)
+  means_e = rowMeans(m_e)
+  n_e = dim(m_e)[2]
+  sds_e = rowSds(m_e)
   ses_e = sds_e/sqrt(n_e)
   
   means_dm = means_e - means_c
@@ -231,7 +231,7 @@ row_rmdm_normal_montecarlo <- function(mc, me, conf.level = 0.95, n_trials=1e6) 
   
   
   # time1 <- Sys.time()
-  rmdms <- sapply(1:dim(mc)[1], function(i)  
+  rmdms <- sapply(1:dim(m_c)[1], function(i)  
     rmdm_normal_montecarlo(means_dm[i], ses_dm[i], means_c[i], ses_c[i], 
                            abs(seed_1 * ses_e[i] + means_e[i] - seed_2  * ses_c[i] + means_c[i]), 
                            seed_2  * ses_c[i] + means_c[i],
@@ -244,42 +244,42 @@ row_rmdm_normal_montecarlo <- function(mc, me, conf.level = 0.95, n_trials=1e6) 
 
 
 
-row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "qnormrat") {
+row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "qnormrat") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
-  #' size within groups). M1 and M2 must have same number of rows (samples), but 
+  #' size within groups). m_c and m_e must have same number of rows (samples), but 
   #' can have different numbers of columns (measurements)
   #'
-  #' @param m1 control group
-  #' @param m2 experiment group
+  #' @param m_c control group
+  #' @param m_e experiment group
   #' 
-  #' @return vector of rmdm values, one for each row of m1 and m2
+  #' @return vector of rmdm values, one for each row of m_c and m_e
   # browser()
   
   # Calcualt mdm from data if not supplied
   # if (is.null(mdms)) {
-  #    mdms <- sapply(1:dim(m1)[1], function(i)  mdm_normal_zdist(m1[i,], m2[i,], conf.level = conf.level.mdm))
+  #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
   # }
   # Calculate standard deviation of difference in means
-  # s_dm <- sqrt(rowvars(m1)/dim(m1)[2] + rowvars(m2)/dim(m2)[2])
+  # s_dm <- sqrt(rowvars(m_c)/dim(m_c)[2] + rowvars(m_e)/dim(m_e)[2])
   # # Calculate means and standard error of control group
   # # control
-  # xbar_1 <- rowmeans(m1)
-  # se_1 <- rowsds(m1)/dim(m1)[2]
+  # xbar_1 <- rowmeans(m_c)
+  # se_1 <- rowsds(m_c)/dim(m_c)[2]
   
   # Numerator: experiment sample
-  means_x <- rowMeans(m2)
-  n_x <- dim(m2)[2]
-  sds_x <- rowSds(m2)
+  means_x <- rowMeans(m_e)
+  n_x <- dim(m_e)[2]
+  sds_x <- rowSds(m_e)
   ses_x <- sds_x/sqrt(n_x)
-  # sds_x <- rowSds(m1)/sqrt(n_x)
+  # sds_x <- rowSds(m_c)/sqrt(n_x)
   
   # Denominator: control sample
-  means_y <- rowMeans(m1)
-  n_y <- dim(m1)[2]
-  sds_y <- rowSds(m1)
+  means_y <- rowMeans(m_c)
+  n_y <- dim(m_c)[2]
+  sds_y <- rowSds(m_c)
   ses_y = sds_y/sqrt(n_y)
-  # sds_y <- rowSds(m2)/ sqrt(n_y)
+  # sds_y <- rowSds(m_e)/ sqrt(n_y)
   
   xbar_dm = means_x - means_y
   sd_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
@@ -289,13 +289,13 @@ row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "qnormrat")
   
   if (method == 'ttestratio_default') {
     ratio_cls <- 
-      abs(t(sapply(1:dim(m1)[1], function(i) 
-        ttestratio_default(x=m2[i,], y=m1[i,],alternative = "two.sided", rho = 1, 
+      abs(t(sapply(1:dim(m_c)[1], function(i) 
+        ttestratio_default(x=m_e[i,], y=m_c[i,],alternative = "two.sided", rho = 1, 
                            var.equal = TRUE, conf.level = 1 - 2*(1-conf.level))$conf.int)))
     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
     
   } else if (method == 'ttestratio') {
-    ratio_cls <- t(sapply(1:dim(m1)[1], function(i)
+    ratio_cls <- t(sapply(1:dim(m_c)[1], function(i)
       ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
                  my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
                  alternative = "two.sided", rho = 1, var.equal = TRUE,
@@ -304,14 +304,14 @@ row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "qnormrat")
     
   } else if (method == 'qnormrat') {
     
-    browser();
+    # browser();
     
     # Works with positive values mu_b/mu_a
-    ratio_cl_lo <- sapply(1:dim(m1)[1], function(i)
+    ratio_cl_lo <- sapply(1:dim(m_c)[1], function(i)
       qnormrat(p = 1-conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
                VERBOSE=FALSE))
     
-    ratio_cl_hi <- sapply(1:dim(m1)[1], function(i)
+    ratio_cl_hi <- sapply(1:dim(m_c)[1], function(i)
       qnormrat(p = conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
                VERBOSE=FALSE))
     
@@ -326,15 +326,15 @@ row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "qnormrat")
 
 
 
-row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
+row_bayesf_2s <- function(m_c, m_e, parallelize = FALSE, paired = FALSE) {
   # Ignore diagnostic messages during function call.
   wrap_fun <- function(x1,x2)   {
     suppressMessages(extractBF(ttestBF(x = x1,  y = x2, onlybf = TRUE))$bf)
   }
   # if (parallelize) {
-  #   bf <- future_sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+  #   bf <- future_sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
   # } else {
-    bfx <- sapply(1:dim(m1)[1], function(i) wrap_fun(m1[i,], m2[i,]))
+    bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
   # }
   # browser();
   return(bfx)
@@ -343,15 +343,15 @@ row_bayesf_2s <- function(m1, m2, parallelize = FALSE, paired = FALSE) {
 
 
 
-row_ldm_2s_zdist <- function(m1, m2,...) {
-  ldm <- sapply(1:dim(m1)[1], function(i)  ldm_normal_zdist(x=m1[i,], y=m2[i,], ...))
+row_ldm_2s_zdist <- function(m_c, m_e,...) {
+  ldm <- sapply(1:dim(m_c)[1], function(i)  ldm_normal_zdist(x=m_c[i,], y=m_e[i,], ...))
   return(ldm)
 }
 
-row_tost_2s_slow <- function (m1,m2) {
+row_tost_2s_slow <- function (m_c,m_e) {
   
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
   
   tost_fun <- function(x1,x2) 
     as.data.frame(dataTOSTtwo(
@@ -362,44 +362,44 @@ row_tost_2s_slow <- function (m1,m2) {
       high_eqbound = 1e6, eqbound_type = "d", alpha = 0.05,
       desc = FALSE, plots = FALSE)$tost)$'p[0]'
   
-  tost_p <- sapply(1:dim(m1)[1], function(i)   tost_fun(m1[i,], m2[i,]))
+  tost_p <- sapply(1:dim(m_c)[1], function(i)   tost_fun(m_c[i,], m_e[i,]))
  
 }
 
 
-row_sgpv <- function(m1, m2, null.lo, null.hi){
-  df_ci <- row_confint_t(m1, m2)
+row_sgpv <- function(m_c, m_e, null.lo, null.hi){
+  df_ci <- row_confint_t(m_c, m_e)
   p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo = null.lo, null.hi = null.hi)$p.delta
   return(p_sg)
 }
 
 
 
-row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.level = 0.95) {
+row_tost_2s <- function (m_c,m_e,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.level = 0.95) {
   
-  n1 <- dim(m1)[2]
-  n2 <- dim(m2)[2] 
-  s1 <- rowSds(m1)
-  s2 <- rowSds(m2)
+  n1 <- dim(m_c)[2]
+  n2 <- dim(m_e)[2] 
+  s1 <- rowSds(m_c)
+  s2 <- rowSds(m_e)
   s_dm <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
 
   
-  t_lower  <-  ( rowMeans(m1) - rowMeans(m2) -low_eqbound)  / s_dm 
+  t_lower  <-  ( rowMeans(m_c) - rowMeans(m_e) -low_eqbound)  / s_dm 
   p_low <- rowmin_2col((1 - pt(t_lower, df = n1+n2-1)) * 0.05/(1-conf.level),1)
   
-  t_upper <-  ( rowMeans(m1) - rowMeans(m2) - high_eqbound)  / s_dm 
+  t_upper <-  ( rowMeans(m_c) - rowMeans(m_e) - high_eqbound)  / s_dm 
   p_high <- rowmin_2col(pt(t_upper, df = n1+n2-1) * 0.05/(1-conf.level),1)
   # Quick max value of two vectors
   p_tost_fast <- rowmax_2col(p_low,p_high)
   
   
   # # Test that mu[md] is greater than low
-  # p_lower <- sapply(1:dim(m1)[1], function(i)
-  #   t.test(m1[i,], m2[i,], alternative = "greater", mu = low_eqbound,
+  # p_lower <- sapply(1:dim(m_c)[1], function(i)
+  #   t.test(m_c[i,], m_e[i,], alternative = "greater", mu = low_eqbound,
   #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
   # # Test that mu[md] lower than high
-  # p_upper <- sapply(1:dim(m1)[1], function(i)
-  #   t.test(m1[i,], m2[i,], alternative = "less", mu = high_eqbound,
+  # p_upper <- sapply(1:dim(m_c)[1], function(i)
+  #   t.test(m_c[i,], m_e[i,], alternative = "less", mu = high_eqbound,
   #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
   # p_tost_slow <- rowmax_2col( p_lower, p_upper)
   
@@ -409,20 +409,20 @@ row_tost_2s <- function (m1,m2,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.lev
 
 ## Test data
 # # 
-m1 = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
-m2 = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
+m_c = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+m_e = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
 # 
 # # Z score and test
-# z = rowzScore(m1, m2)
+# z = rowzScore(m_c, m_e)
 # p_row_ztest = 2*pnorm(-abs(z))
-# p_actual_ztest = sapply(1:nrow(m1),function(x) t.test(m1[x,],m2[x,])$p.value)
+# p_actual_ztest = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$p.value)
 # 
 # # t score and test
-# t = rowtScore(m1, m2)
+# t = rowtScore(m_c, m_e)
 # p_a = 2*pt(-abs(t), df = 98)
 # 
-# t_formal = sapply(1:nrow(m1),function(x) t.test(m1[x,],m2[x,])$stat)
-# p_formal = sapply(1:nrow(m1),function(x) t.test(m1[x,],m2[x,])$p.value)
+# t_formal = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$stat)
+# p_formal = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$p.value)
 
 
 
