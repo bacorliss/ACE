@@ -392,59 +392,6 @@ quant_error_rate <-function(df_init, lower_name=NULL, upper_name=NULL, gt_name,
 
 
 
-row_locate_binary_bounds <- function (xb){
-  #' Given a logical matrix, locates the border between true and false with a simple algroithm
-  #' TODO|: replace algorithm, this one is not effective
-  
-  # Helper function to flip matrix left to right
-  fliplr <- function(x) x[,ncol(x):1]
-  
-  # Code assumes that TRUE is on the left portion of matrix, if FALSE is there 
-  # instead then invert
-  if (sum(xb[,1]) < dim(xb)[1]) {
-    xb = !xb
-  }
-  
-  
-  x <- matrix(as.numeric(xb),ncol = ncol(xb), nrow = nrow(xb))
-  a<-t(apply(x,1,cumsum))
-  b<-fliplr(t(apply(fliplr(!x),1,cumsum)))
-  
-  
-  c <- b+a
-  
-  
-  row_max_inds <- apply(c,1, function(x) mean(which(x == max(x))))
-  # browser()
-  return(row_max_inds)
-  
-}
-
-
-
-error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
-  #' @description Assign codes for error rate whether null hypothesis is rejected
-  #' for use in a heatmap of hypothesis outcomes. Test if proportion of mdms that
-  #' are above mu (error rate) are equal to 0.05 and 0.00, return code do delineate
-  #' combinations of both results:
-  #'  (0) E = neither,  (1) E == 0.00
-  #'  (2) E == 0.05,  (3) E == both
-  assign_code <- function(z,a) { if (z & a) {value=3} else if(z & !a) {value = 2}
-    else if(!z & a) {value = 1} else {value = 0}; return(value)
-  }
-  error_rate_codes <- matrix(mapply(assign_code, is_error_rate_zero, 
-                                    is_error_rate_alpha, SIMPLIFY = TRUE,
-                                    USE.NAMES = FALSE), nrow = dim(is_error_rate_zero)[1], 
-                             ncol = dim(is_error_rate_zero)[2])
-  colnames(error_rate_codes) <- colnames(is_error_rate_zero)
-  rownames(error_rate_codes) <- rownames(is_error_rate_zero)
-  return(error_rate_codes)
-}
-
-
-
-
-
 locate_bidir_binary_thresh <- 
   function(ind_var = "mdm", pop_var = "mu_dm", mus_a, sigmas_a, n_a, 
            mus_b, sigmas_b, n_b, mu_vsigmas_dm = NA, alphas = 0.05, n_samples, 
@@ -485,11 +432,10 @@ locate_bidir_binary_thresh <-
   # load(file = "temp/locate_bidir_binary_thresh.RData")
   # Create temp dir if it does not exist
 
-
+  # Difference in means
   mus_dm = mus_b - mus_a
   sigmas_dm = sqrt(sigmas_a^2/n_a + sigmas_b^2/n_b) 
-  
-  
+
   
   #' Locate all 4 error transition boundaries
   #' Positive and negative direction, 0 and alpha error
@@ -505,10 +451,6 @@ locate_bidir_binary_thresh <-
     neg_mu_vsigmas_dm=-mu_vsigmas_dm
 
   }
-  
-  # browser();
-
- 
   
   
   # Run simulations calculating error of mdm with mu and sigma swept
@@ -569,6 +511,60 @@ locate_bidir_binary_thresh <-
   return(df_crit)
   
 }
+
+
+
+
+
+row_locate_binary_bounds <- function (xb){
+  #' Given a logical matrix, locates the border between true and false with a simple algroithm
+  #' TODO|: replace algorithm, this one is not effective
+  
+  # Helper function to flip matrix left to right
+  fliplr <- function(x) x[,ncol(x):1]
+  
+  # Code assumes that TRUE is on the left portion of matrix, if FALSE is there 
+  # instead then invert
+  if (sum(xb[,1]) < dim(xb)[1]) {
+    xb = !xb
+  }
+  
+  
+  x <- matrix(as.numeric(xb),ncol = ncol(xb), nrow = nrow(xb))
+  a<-t(apply(x,1,cumsum))
+  b<-fliplr(t(apply(fliplr(!x),1,cumsum)))
+  
+  
+  c <- b+a
+  
+  
+  row_max_inds <- apply(c,1, function(x) mean(which(x == max(x))))
+  # browser()
+  return(row_max_inds)
+  
+}
+
+
+
+error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
+  #' @description Assign codes for error rate whether null hypothesis is rejected
+  #' for use in a heatmap of hypothesis outcomes. Test if proportion of mdms that
+  #' are above mu (error rate) are equal to 0.05 and 0.00, return code do delineate
+  #' combinations of both results:
+  #'  (0) E = neither,  (1) E == 0.00
+  #'  (2) E == 0.05,  (3) E == both
+  assign_code <- function(z,a) { if (z & a) {value=3} else if(z & !a) {value = 2}
+    else if(!z & a) {value = 1} else {value = 0}; return(value)
+  }
+  error_rate_codes <- matrix(mapply(assign_code, is_error_rate_zero, 
+                                    is_error_rate_alpha, SIMPLIFY = TRUE,
+                                    USE.NAMES = FALSE), nrow = dim(is_error_rate_zero)[1], 
+                             ncol = dim(is_error_rate_zero)[2])
+  colnames(error_rate_codes) <- colnames(is_error_rate_zero)
+  rownames(error_rate_codes) <- rownames(is_error_rate_zero)
+  return(error_rate_codes)
+}
+
 
 
 

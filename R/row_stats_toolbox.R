@@ -45,9 +45,6 @@ rowSdPooled <-
             (dim(m2)[2] - 1) * rowVars(m2) ) /
                           (dim(m1)[2] + dim(m2)[2] - 2    ) )
 
-# Effect Size Statistics Functions
-#
-#------------------------------------------------------------------------------
 
 # Delta Family Statistics
 #
@@ -247,7 +244,7 @@ row_rmdm_normal_montecarlo <- function(mc, me, conf.level = 0.95, n_trials=1e6) 
 
 
 
-row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "ttestratio") {
+row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "qnormrat") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). M1 and M2 must have same number of rows (samples), but 
@@ -306,6 +303,8 @@ row_ratio_normal_coe <- function(m1, m2, conf.level = 0.95, method = "ttestratio
     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
     
   } else if (method == 'qnormrat') {
+    
+    browser();
     
     # Works with positive values mu_b/mu_a
     ratio_cl_lo <- sapply(1:dim(m1)[1], function(i)

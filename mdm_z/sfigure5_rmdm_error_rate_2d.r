@@ -70,7 +70,8 @@ time2 - time1
 # Plot 0: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
+# df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rxbar_coe_lt_mu_aob)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() + 
@@ -90,6 +91,38 @@ gg
 
 save_plot(paste(fig_path, "/", fig_num, "_2a rmdm error rate 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 2, dpi = 600) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
