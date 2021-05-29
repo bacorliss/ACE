@@ -23,7 +23,7 @@ within_ci <- function(ci, x) x >= ci[1] & x <= ci[2]
 
 quant_coverage_errors <-
   function(mus_a, sigmas_a, n_a, mus_b, sigmas_b, n_b, alphas, n_samples, out_path, 
-           mu_vsigmas_dm = NA, overwrite = FALSE, rand.seed=0,
+           mu_vsigmas_dm = NA, overwrite = FALSE, rand.seed = 0,
            is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE) {
     #' Perform parameter sweep with specified mus and sigmas
     #' 
@@ -129,7 +129,8 @@ quant_coverage_errors <-
                     #calling a function
                     tempMatrix <- quant_coverage_error(df = df_lin[n,], 
                                                        raw_error = raw_error,
-                                                       rel_error = rel_error) 
+                                                       rel_error = rel_error,
+                                                       rand.seed = rand.seed) 
                     tempMatrix
                   }
         stopCluster(cl)
@@ -139,13 +140,14 @@ quant_coverage_errors <-
         for (n in seq(1,n_sigmas*n_mus,1)) {
           print(n)
           # # Control group (For use with two sample cases)
-          # x_a <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_a, df_lin[n,]$sigma_a), ncol = n_obs)
+          # x_ctrl <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_a, df_lin[n,]$sigma_a), ncol = n_obs)
           # # Difference group (for simplicity experiment sample not calculated)
           # x_d <- matrix(rnorm(n_samples * n_obs, df_lin[n,]$mu_d, df_lin[n,]$sigma_d), ncol = n_obs)
           
           df_list[[n]] <- quant_coverage_error(df_lin[n,], 
                                                raw_error = raw_error,
-                                               rel_error = rel_error) 
+                                               rel_error = rel_error,
+                                               rand.seed = rand.seed) 
           
         }
         # save(list = ls(all.names = TRUE), file = "temp/quant_coverage_errors.RData",
@@ -174,8 +176,9 @@ quant_coverage_errors <-
 
 
 
-quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbose = FALSE) {
-  #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
+quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbose = FALSE, 
+                                  rand.seed = 0) {
+  #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
   #'  library, returned from generateExperiment_Data()
@@ -190,15 +193,17 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   if (verbose) {print(sprintf("A: %f, B: %f", df$mu_a, df$mu_b))}
   
   # Control group (For use with two sample cases)
-  x_a <- matrix(rnorm(df$n_samples * df$n_a, df$mu_a, df$sigma_a), ncol = df$n_a)
+  set.seed(rand.seed+1)
+  x_ctrl <- matrix(rnorm(df$n_samples * df$n_a, df$mu_a, df$sigma_a), ncol = df$n_a)
   # Difference group (for simplicity experiment sample not calculated)
-  x_b <- matrix(rnorm(df$n_samples * df$n_b, df$mu_b, df$sigma_b), ncol = df$n_b)
+  set.seed(rand.seed+2)
+  x_exp <- matrix(rnorm(df$n_samples * df$n_b, df$mu_b, df$sigma_b), ncol = df$n_b)
   # Each row is a separate sample, columns are observations
   
   # browser()
-  ci_mean = row_ci_mean_2s_zdist(m_c = x_a, m_e = x_b)
+  ci_mean = row_ci_mean_2s_zdist(m_c = x_ctrl, m_e = x_exp)
   
-  df_init = data.frame(xbar_dm = rowMeans(x_b) - rowMeans(x_a), 
+  df_init = data.frame(xbar_dm = rowMeans(x_exp) - rowMeans(x_ctrl), 
                        ci_lower_z = ci_mean$ci_lower, 
                        ci_upper_z = ci_mean$ci_upper)
   
@@ -210,8 +215,8 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   # Raw error
   if (raw_error) {
     # Raw mdm and ldm
-    df_init$mdm = row_mdm_2s_zdist(m_c = x_a, m_e = x_b, conf.level = 1 - df$alpha)
-    df_init$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level = 1 - df$alpha)
+    df_init$mdm = row_mdm_2s_zdist(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
+    df_init$ldm = row_ldm_2s_zdist(x_ctrl, x_exp, conf.level = 1 - df$alpha)
     
     # Groundtruth
     df_init$mu_dm = df$mu_dm
@@ -230,57 +235,63 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   
   
   if (rel_error) {
+    # browser();
     
-    browser();
     # Relative rmdm and rldm
-    df_init$rmdm = row_rmdm_2s_zdist(x_a, x_b, conf.level = 0.95, mdms = df_init$mdm)
+    df_init$rmdm = row_rmdm_2s_zdist(x_ctrl, x_exp, conf.level = 1-df$alpha, mdms = df_init$mdm)
     if (any(is.nan(df_init$rmdm))) { browser() }
-    df_init$rldm = df_init$ldm/ rowMeans(x_a)
+    df_init$rldm = df_init$ldm/ rowMeans(x_ctrl)
     
     # Relative difference in sample means
-    df_init$rxbar_dm = df_init$xbar_dm/ rowMeans(x_a)
-    df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_a)
-    df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_a)
+    df_init$rxbar_dm = (rowMeans(x_exp) - rowMeans(x_ctrl))/ rowMeans(x_ctrl)
+    df_init$rci_lower_z = df_init$ci_lower_z/ rowMeans(x_ctrl)
+    df_init$rci_upper_z = df_init$ci_upper_z/ rowMeans(x_ctrl)
     
     # Record ground truth (population values)
     df_init$rmu_dm = df$rmu_dm
+    
+    
+
+    # spool_mu_dm =  sqrt(poolVar(c(df$sigma_a, df$sigma_b)^2, n=c(100,100))$var)
+    
+    # spool_mu_dm = sqrt( ((df$n_a-1)*df$sigma_a^2 + (df$n_b-1)*df$sigma_b^2)/(df$n_a + df$n_b -2)) * sqrt(1/df$n_a + 1/df$n_b)
     # Calculate tru rmu_dm 95, the value the rmdm is meant to approximate
-    df_init$rmu_dm_ucl <- max(abs(c(
-      qnormrat(p = df$alpha, df$mu_dm, df$sigma_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)),
-      qnormrat(p = 1 - df$alpha, df$mu_dm, df$sigma_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)))))
+    # df_init$rmu_dm_ucl <- max(abs(c(
+    #   qnormrat(p =     1/2*df$alpha, df$mu_dm, spool_mu_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)),
+    #   qnormrat(p = 1 - 1/2*df$alpha, df$mu_dm, spool_mu_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)) )))
     # See if this value has predicted error rate with samples
     
-    # Simple Test case
-    df_init$rxbar_eoc = row_ratio_normal_eoc(x_a, x_b, conf.level = 1 - df$alpha)
-    df_init$rmu_eoc = df$mu_b/df$mu_a
-    # Calculate true mu_eoc_ucl, the value that rmu_eoc is meant to estimate
-    df_init$rmu_eoc_ucl <- max(abs(c(
-      qnormrat(p =     df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)),
-      qnormrat(p = 1 - df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)))))
+    # # Simple Test case
+    # df_init$rxbar_eoc = row_ratio_normal_eoc(x_ctrl, x_exp, conf.level = 1 - df$alpha)
+    # df_init$rmu_eoc = df$mu_b/df$mu_a
+    # # Calculate true mu_eoc_ucl, the value that rmu_eoc is meant to estimate
+    # df_init$rmu_eoc_ucl <- max(abs(c(
+    #   qnormrat(p =     df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)),
+    #   qnormrat(p = 1 - df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)))))
     
     # See if this value has predicted error rate with samples
     
     
     df_list_len = length(df_list)
-    df_list[[df_list_len + 1]] <- 
-      quant_error_rate(df_init = df_init, lower_name = "rxbar_dm", upper_name = "rxbar_dm" ,  
-                       gt_name = "rmu_dm", use_absolute = TRUE)
-    df_list[[df_list_len + 2]] <- 
-      quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "rxbar_coe" ,
-                       gt_name = "mu_aob", use_absolute = TRUE)
-    df_list[[df_list_len + 3]] <- 
-      quant_error_rate(df_init = df_init, lower_name = "rci_lower_z", upper_name = "rci_upper_z" ,
-                       gt_name = "mu_dm", use_absolute = FALSE)
-    df_list[[df_list_len + 4]] <- 
+    # df_list[[df_list_len + 1]] <- 
+    #   quant_error_rate(df_init = df_init, lower_name = "rxbar_dm", upper_name = "rxbar_dm" ,  
+    #                    gt_name = "rmu_dm", use_absolute = TRUE)
+    # df_list[[df_list_len + 1]] <- 
+    #   quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "rxbar_coe" ,
+    #                    gt_name = "mu_aob", use_absolute = TRUE)
+    # df_list[[df_list_len + 2]] <- 
+    #   # quant_error_rate(df_init = df_init, lower_name = "rci_lower_z", upper_name = "rci_upper_z" ,
+    #   #                  gt_name = "mu_dm", use_absolute = FALSE)
+    df_list[[df_list_len + 1]] <-
       quant_error_rate(df_init = df_init, lower_name = "rldm", upper_name = "rmdm" ,
                        gt_name = "rmu_dm", use_absolute = TRUE)
-    
+    # df_list[[df_list_len + 1]] <- 
+    #   quant_error_rate(df_init = df_init, lower_name = "rxbar_dm", upper_name = NULL,
+    #                    gt_name = "rmu_dm_ucl", use_absolute = TRUE)
   }
-  
-  
-  
   df_err = do.call("cbind", df_list)
   
+  # browser(); 
   
   return(df_err)
   
@@ -414,7 +425,7 @@ locate_bidir_binary_thresh <-
     # is_parallel_proc = TRUE
     
   {
-    #' @description Calculates the coverage error of x_bar, rx_bar, mdm, and rmdm
+    #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
     #'
     #' @param ind_var statistic evaluted for coeverage error
     #' @param mus vector of range of population mu values to be quantified
@@ -426,10 +437,10 @@ locate_bidir_binary_thresh <-
     #' @param rand.seed seed for random number generation
     #' @param overwrite flag to overwrite temp data (if not, load temp if exist)
     #' @param mus_a vector of means for the control group (for quantifying coverage
-    #'  error of relative x_bar and mdm, the mean of of the control group must be
+    #'  error of relative x_expar and mdm, the mean of of the control group must be
     #'  specified.
     #' @param sigmas_a vector of stds for the control group (for quantifying coverage
-    #'  error of relative x_bar and mdm, the std of the control group must be
+    #'  error of relative x_expar and mdm, the std of the control group must be
     #'  specified.
     #' @param is_parallel_proc flag whether simulations are run in parallel across cores
     #' 

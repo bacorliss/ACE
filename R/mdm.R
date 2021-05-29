@@ -10,6 +10,9 @@ p_load(docstring)
 source("R/rationormal_toolbox.R")
 
 
+# Note: when pooled variance unequal variance
+# http://web.mit.edu/~r/current/arch/i386_linux26/lib/R/library/limma/html/poolvar.html
+
 
 mdm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
            verbose = FALSE, distribution = NULL) {
@@ -415,8 +418,8 @@ max_abs_cl_mean_z_standard <-  function(x_bar, sem_x, alpha) {
 
 # Relative form of mdm
   
-rmdm_normal_zdist <- function(x, y, mdm = NULL, conf.level = 0.95, 
-                              verbose = FALSE,  var.equal = FALSE, method = "qnormrat")  {
+rmdm_normal_zdist <- function(x_ctrl, y_exp, mdm = NULL, conf.level = 0.95, 
+                              verbose = FALSE,  var.equal = FALSE, method = "mdm_normalized")  {
   #' @description Calculates the relative most difference in means assuming with
   #' rmdm = mdm/X, X being the control group and Y the experimental
   #' 
@@ -427,35 +430,47 @@ rmdm_normal_zdist <- function(x, y, mdm = NULL, conf.level = 0.95,
   #' 
   #' @return relative most difference in means
   
+  # Equation for pooled variance taken from:
+  # https://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_confidence_intervals/bs704_confidence_intervals5.html
 
-  mean_x = mean(x)
-  sd_x = sd(x)
-  n_x = length(x)
-  se_x = sd_x/sqrt(sd_x)
+  # browser()
   
-  mean_y = mean(y)
-  sd_y = sd(y)
-  n_y = length(y)
-  se_y = sd_x/sqrt(sd_y)
+  mean_ctrl = mean(x_ctrl)
+  sd_ctrl = sd(x_ctrl)
+  n_ctrl = length(x_ctrl)
+  se_ctrl = sd_ctrl/sqrt(n_ctrl)
   
-  mean_dm = mean_y - mean_x
-  sd_dm = sqrt(sd_x^2/n_x + sd_y^2/n_y)
+  mean_exp = mean(y_exp)
+  sd_exp = sd(y_exp)
+  n_exp = length(y_exp)
+  se_exp = sd_exp/sqrt(n_exp)
   
   
+  mean_dm = mean_exp - mean_ctrl
+  # sd_dm is equivalent to se_d (standard error of difference)
+  if (var.equal) {
+    sd_dm = sqrt(  ( (n_ctrl - 1)*sd_ctrl^2 + (n_exp - 1)*sd_exp^2 ) / (n_ctrl + n_exp - 2)  ) * sqrt(1/n_exp + 1/n_exp)
+  } else {
+    sd_dm = sqrt(sd_ctrl^2/n_ctrl + sd_exp^2/n_exp)
+  }
+
+  # browser()
   
   if (method =="qnormrat") {
     # Calculate mean and std of difference in means distribution
      
     # browser();
-    
+    source("R/rationormal_toolbox.R")
     # Calculate upper percentile specified by 
-    rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, mean_x, se_x)
+    rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, mean_ctrl, se_ctrl)
     
   } else if (method =="mdm_normalized") {
 
+    mdm <- mdm_normal_zdist(x_ctrl, y_exp, conf.level = 1-sqrt(1-conf.level)) 
    
+    rmdm <- qnormrat(1-sqrt(1-conf.level), mdm, sd_dm, mean_ctrl, se_ctrl)
     
-  } else {stop('row_ratio_normal_coe(): unsupported method')}
+  } else {stop('rmdm_normal_zdist(): unsupported method')}
   
   
   

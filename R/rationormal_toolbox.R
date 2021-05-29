@@ -78,7 +78,7 @@ pnormrat <- function(z, mu_x, sigma_x,mu_y, sigma_y, start_pos = -Inf) {
 
 
 qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
-  #' @description Quantile function of ratio normal distirbution (X/Y)
+  #' @description Quantile function of ratio normal distribution (X/Y)
   #' For given probability, return position of that percentile from cdf
   #' 
   #' @param p probability
@@ -89,7 +89,7 @@ qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
   #' @param start_pos start position of integration
   #'   
   #' @return xroot$root the position where the cdf is equal to p
-  
+
   # browser();
   
   # Estimate bounds to search for root
@@ -109,12 +109,13 @@ qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
   # does not have to integrate from -Inf with every function call.
   
   # Calculate area to lo.bound
-  lo.bound.p = pnormrat(lo.bound, mu_x, sigma_x, mu_y, sigma_y)
+  lo.bound.p = pnormrat(lo.bound, mu_x, sigma_x, mu_y, sigma_y, start = -Inf)
+  # hi.bound.p = pnormrat(hi.bound, mu_x, sigma_x, mu_y, sigma_y, start = -Inf)
   
   if ( y_lo > 0) {
   xroot <- try(uniroot(function(z) 
     pnormrat(z, mu_x, sigma_x, mu_y, sigma_y, start = lo.bound) + lo.bound.p - p, 
-    lower = abs(lo.bound), upper = abs(hi.bound), extendInt = "no")$root)
+    lower = lo.bound, upper = hi.bound, extendInt = "no")$root)
   } else {
     xroot = NaN
   }

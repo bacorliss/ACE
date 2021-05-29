@@ -46,7 +46,7 @@ overwrite <- TRUE
 # Coverage error simulations for mu space  
 n_obs = 100
 mus_a = 10
-mus_dm <- seq(5, 10, by = .5)
+mus_dm <- seq(-10, 10, by = 1)
 sigmas_dm <- seq(.01, .5, by = .05)
 # mus_dm <- seq(1, 5, by = .1)
 # sigmas_dm <- seq(.01, .5, by = .02)
@@ -63,15 +63,16 @@ df_results <-
   quant_coverage_errors(mus_a = mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
                         mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = FALSE, raw_error = TRUE, rel_error = TRUE)
+                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
+                        rand.seed = rand.seed)
 time2 <- Sys.time()
 time2 - time1
 
 # Plot 0: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
 # Convert from matrix to dataframe
-# df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rxbar_coe_lt_mu_aob)) %>% gather(mu, z, -sigma)
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
+# df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rxbar_coe_lt_mu_aob)) %>% gather(mu, z, -sigma)
 df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
 # Plot heatmap
 gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() + 

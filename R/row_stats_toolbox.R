@@ -172,7 +172,6 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
     # Calculate mean and std of difference in means distribution
     
     
-    source("R/rationormal_toolbox.R")
     rmdms <- sapply(1:dim(m_c)[1], function(i)  
       rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], mdm = NULL, conf.level, method = "qnormrat"))
 
