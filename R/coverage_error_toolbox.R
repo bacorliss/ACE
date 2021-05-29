@@ -129,8 +129,7 @@ quant_coverage_errors <-
                     #calling a function
                     tempMatrix <- quant_coverage_error(df = df_lin[n,], 
                                                        raw_error = raw_error,
-                                                       rel_error = rel_error,
-                                                       rand.seed = rand.seed) 
+                                                       rel_error = rel_error) 
                     tempMatrix
                   }
         stopCluster(cl)
@@ -146,8 +145,7 @@ quant_coverage_errors <-
           
           df_list[[n]] <- quant_coverage_error(df_lin[n,], 
                                                raw_error = raw_error,
-                                               rel_error = rel_error,
-                                               rand.seed = rand.seed) 
+                                               rel_error = rel_error) 
           
         }
         # save(list = ls(all.names = TRUE), file = "temp/quant_coverage_errors.RData",
@@ -176,8 +174,7 @@ quant_coverage_errors <-
 
 
 
-quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbose = FALSE, 
-                                  rand.seed = 0) {
+quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbose = FALSE) {
   #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
@@ -193,10 +190,8 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   if (verbose) {print(sprintf("A: %f, B: %f", df$mu_a, df$mu_b))}
   
   # Control group (For use with two sample cases)
-  set.seed(rand.seed+1)
   x_ctrl <- matrix(rnorm(df$n_samples * df$n_a, df$mu_a, df$sigma_a), ncol = df$n_a)
   # Difference group (for simplicity experiment sample not calculated)
-  set.seed(rand.seed+2)
   x_exp <- matrix(rnorm(df$n_samples * df$n_b, df$mu_b, df$sigma_b), ncol = df$n_b)
   # Each row is a separate sample, columns are observations
   
