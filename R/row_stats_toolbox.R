@@ -156,18 +156,27 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
   #' 
   #' @return vector of rmdm values, one for each row of m_c and m_e
   # browser()
-
-  # Calculate mdm from data if not supplied
-  # if (is.null(mdms)) {
-  #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
-  # }
-  # Calculate standard deviation of difference in means
-  # s_dm <- sqrt(rowvars(m_c)/dim(m_c)[2] + rowvars(m_e)/dim(m_e)[2])
-  # # Calculate means and standard error of control group
-  # # control
-  # xbar_1 <- rowmeans(m_c)
-  # se_1 <- rowsds(m_c)/dim(m_c)[2]
-
+  
+  # Numerator: experiment sample
+  xbar_x <- rowMeans(m_e)
+  n_x <- dim(m_e)[2]
+  sds_x <- rowSds(m_e)
+  ses_x <- sds_x/sqrt(n_x)
+  # sds_x <- rowSds(m_c)/sqrt(n_x)
+  # Denominator: control sample
+  xbar_y <- rowMeans(m_c)
+  n_y <- dim(m_c)[2]
+  sds_y <- rowSds(m_c)
+  ses_y = sds_y/sqrt(n_y)
+  # sds_y <- rowSds(m_e)/ sqrt(n_y)
+  
+  xbar_dm = xbar_x - xbar_y
+  sds_dm = sqrt(sds_x^2 + sds_y^2)
+  ses_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
+  df_dm = n_x + n_y - 2
+  
+   # browser();
+   
   if (method =="qnormrat") {
     # Calculate mean and std of difference in means distribution
     
@@ -176,7 +185,35 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
       rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], mdm = NULL, conf.level, method = "qnormrat"))
 
    
-  } else if (method =="mdm_normalized") {
+    
+  } else if (method =="ttestratio") {
+    
+    
+    ratio_cls <- t(sapply(1:dim(m_c)[1], function(i)
+      ttestratio(mx = abs(xbar_dm[i]), sdx = sds_dm[i], dfx = n_x-1,
+                 my = xbar_y[i], sdy = sds_y[i], dfy = n_y-1,
+                 alternative = "two.sided", rho = 1, var.equal = TRUE,
+                 conf.level =  1 - 2*(1-conf.level))$conf.int))
+    rmdms <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
+    
+  }  else if (method =="ttestratio_default_pretend") {
+    # Generate false pseudo points to model difference in means as numerator input for 
+    # ttestratio_default. Does not work.
+    
+    
+    # browser()
+    # s_dm = rowSdPooled(m_c, m_e) * sqrt(1/dim(m_c)[2] + 1/dim(m_e)[2])
+    s_dm = sqrt(rowSds(m_c)/dim(m_c)[2] + rowSds(m_e)/dim(m_e)[2])
+    xbar_dm = rowMeans(m_e) -rowMeans(m_c)
+    
+    
+    x = rnorm(dim(m_c)[2] + dim(m_c)[2] -1, mean = 0, sd = 1)
+    x = (x - mean(x)) / sd(x)
+    
+    rmdms <- sapply(1:dim(m_c)[1], function(i)  
+      ttestratio_default(x = x *s_dm[i] + abs(xbar_dm[i]), y = m_e[i,], conf.level = conf.level)$conf.int[2])
+    
+  }  else if (method =="mdm_normalized") {
     
     mdm <- sapply(1:dim(m_c)[1], function(i)  
       mdm_normal_zdist(x=m_c[i,], y=m_e[i,], conf.level = sqrt(0.05)))
@@ -243,7 +280,7 @@ row_rmdm_normal_montecarlo <- function(m_c, m_e, conf.level = 0.95, n_trials=1e6
 
 
 
-row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "qnormrat") {
+row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "ttestratio_default") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). m_c and m_e must have same number of rows (samples), but 
@@ -267,36 +304,36 @@ row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "qnormrat
   # se_1 <- rowsds(m_c)/dim(m_c)[2]
   
   # Numerator: experiment sample
-  means_x <- rowMeans(m_e)
+  xbar_x <- rowMeans(m_e)
   n_x <- dim(m_e)[2]
   sds_x <- rowSds(m_e)
   ses_x <- sds_x/sqrt(n_x)
   # sds_x <- rowSds(m_c)/sqrt(n_x)
-  
   # Denominator: control sample
-  means_y <- rowMeans(m_c)
+  xbar_y <- rowMeans(m_c)
   n_y <- dim(m_c)[2]
   sds_y <- rowSds(m_c)
   ses_y = sds_y/sqrt(n_y)
   # sds_y <- rowSds(m_e)/ sqrt(n_y)
   
-  xbar_dm = means_x - means_y
+  xbar_dm = xbar_x - xbar_y
   sd_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
   df_dm = n_x + n_y - 2
    
   # browser();
   
   if (method == 'ttestratio_default') {
+    # browser()
     ratio_cls <- 
       abs(t(sapply(1:dim(m_c)[1], function(i) 
-        ttestratio_default(x=m_e[i,], y=m_c[i,],alternative = "two.sided", rho = 1, 
+        ttestratio_default(x=m_e[i,]*sign(mean(m_e[i,])), y=m_c[i,],alternative = "two.sided", rho = 1, 
                            var.equal = TRUE, conf.level = 1 - 2*(1-conf.level))$conf.int)))
     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
     
   } else if (method == 'ttestratio') {
     ratio_cls <- t(sapply(1:dim(m_c)[1], function(i)
-      ttestratio(mx = means_x[i], sdx = sds_x[i], dfx = n_x-1,
-                 my = means_y[i], sdy = sds_y[i], dfy = n_y-1,
+      ttestratio(mx = abs(xbar_x[i]), sdx = sds_x[i], dfx = n_x-1,
+                 my = xbar_y[i], sdy = sds_y[i], dfy = n_y-1,
                  alternative = "two.sided", rho = 1, var.equal = TRUE,
                  conf.level =  1 - 2*(1-conf.level))$conf.int))
     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
@@ -307,11 +344,11 @@ row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "qnormrat
     
     # Works with positive values mu_b/mu_a
     ratio_cl_lo <- sapply(1:dim(m_c)[1], function(i)
-      qnormrat(p = 1-conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
+      qnormrat(p = 1-conf.level, xbar_x[i], ses_x[i], xbar_y[i], ses_y[i],
                VERBOSE=FALSE))
     
     ratio_cl_hi <- sapply(1:dim(m_c)[1], function(i)
-      qnormrat(p = conf.level, means_x[i], ses_x[i], means_y[i], ses_y[i],
+      qnormrat(p = conf.level, xbar_x[i], ses_x[i], xbar_y[i], ses_y[i],
                VERBOSE=FALSE))
     
     ratio_ucl <- rowmax_2col(abs(ratio_cl_lo), abs(ratio_cl_hi))

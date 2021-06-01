@@ -18,4 +18,10 @@ sum(df_init$rmu_eoc_ucl  < (rowMeans(x_b) / rowMeans(x_a)) )/df$n_samples
     
 sum(df_init$rmu_dm_ucl  < (rowMeans(x_b) - rowMeans(x_a))/rowMeans(x_a) ) / df$n_samples 
     
+
+
+
+
+
+# Positive negative conundrum
     

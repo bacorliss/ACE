@@ -115,7 +115,7 @@ qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
   if ( y_lo > 0) {
   xroot <- try(uniroot(function(z) 
     pnormrat(z, mu_x, sigma_x, mu_y, sigma_y, start = lo.bound) + lo.bound.p - p, 
-    lower = lo.bound, upper = hi.bound, extendInt = "no")$root)
+    lower = lo.bound, upper = hi.bound, extendInt = "no", tol = .Machine$double.eps^.5)$root)
   } else {
     xroot = NaN
   }
@@ -124,6 +124,7 @@ qnormrat <- function(p, mu_x, sigma_x, mu_y, sigma_y, VERBOSE=FALSE) {
   if (VERBOSE) {
     sprintf("root:%f [%f %f]",xroot, lo.bound, hi.bound)
   }
+  # browser();
   
   # if (xroot<lo.bound || xroot > hi.bound) {print("root outside of search zone")
   return(xroot)
