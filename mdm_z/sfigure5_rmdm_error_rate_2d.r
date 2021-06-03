@@ -43,7 +43,7 @@ overwrite <- TRUE
 
 
 
-
+source("R/coverage_error_toolbox.R")
 # Investigation 1: Initial coverage error of rmdm in mu space
 #
 #_______________________________________________________________________________
@@ -62,7 +62,7 @@ df_results <-
                         mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/I1_rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
-                        rand.seed = rand.seed)
+                        rand.seed = rand.seed, included_stats = c("rmdm"))
 
 # Plot 1A: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------#
@@ -110,23 +110,22 @@ save_plot(paste(fig_path, "/", fig_num, "_1b rmdm 2D coverage error test, mu spa
           base_asp = 3, base_width = 2, dpi = 600)
 
 
-# Plot 11: Line plot of location of error boundaries or rmdm with mu/sigma space
+# Plot 1C: Line plot of location of error boundaries or rmdm with mu/sigma space
 #                                                                              #
 source("R/coverage_error_toolbox.R")
 # Coverage error simulations for mu space  
 n_obs = 100
 mus_a = 10
-mus_dm <- seq(-2, 2, by = .1)
+mus_dm <- seq(.1, 2, by = .1)
 sigmas_dm <- seq(.01, .5, by = .025)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_ab = sigmas_dm/sqrt(2/n_obs)
 n_samples <- 1e3
-mu_ov_sigmas = NULL
 df_crit_mu_ov_sigma <- 
   locate_bidir_binary_thresh(ind_var = "rmdm", pop_var = "rmu_dm", mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
                              mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, mu_vsigmas_dm = NA, alphas = 0.05, n_samples, 
                              temp_path = paste(fig_path, "/I1_mdm_Error_sigma vs sigma.rds",sep=""), 
-                             overwrite = FALSE, is_parallel_proc = TRUE, raw_error = FALSE, rel_error = TRUE)
+                             overwrite = overwrite, is_parallel_proc = FALSE, raw_error = FALSE, rel_error = TRUE)
 
 
 # Plot of each boundary separate
@@ -172,7 +171,8 @@ df_results <-
                         mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
                         mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/I1_mdm_Error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE)
+                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
+                        included_stats = c("rmdm"))
 
 # Plot 2A: error rate of rMDM < rmu in mu/sigma space
 #------------------------------------------------------------------------------#
@@ -248,7 +248,8 @@ df_results <-
                         mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/I3_rmdm_Error_2D_mu_vs_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
-                        rand.seed = rand.seed)
+                        rand.seed = rand.seed,
+                        included_stats = c("rmdm"))
 
 # Plot 3: 2D error rate of rMDM < rmu in mu space
 #------------------------------------------------------------------------------
