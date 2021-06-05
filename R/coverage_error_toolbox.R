@@ -477,7 +477,7 @@ locate_bidir_binary_thresh <-
     dir.create(temp_path, showWarnings = FALSE, recursive = TRUE)
     set.seed(rand.seed)
     
-    save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
+    # save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
     # load(file = "temp/locate_bidir_binary_thresh.RData")
     # Create temp dir if it does not exist
     
@@ -523,6 +523,8 @@ locate_bidir_binary_thresh <-
     df_left$side <- as.factor("Left")
     
     save(list = ls(all.names = TRUE), file = "temp/locate_bidir_binary_thresh.RData",envir = environment())
+    # load(file = "temp/locate_bidir_binary_thresh.RData")
+    # browser();
     
     
     ind_var_zero <-  paste("pval_err_eq_zero_abs_",ind_var,"_lt_", pop_var,sep="")
@@ -533,10 +535,10 @@ locate_bidir_binary_thresh <-
     df_zero <- rbind(
       tibble(er = "0", side = "right", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_right[[ind_var_zero]]  < p_threshold)),
+               df_right[[ind_var_zero]]  < p_threshold), true_side = "right"),
       tibble(er = "alpha", side = "right", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_right[[ind_var_alpha]]   < p_threshold)))
+               df_right[[ind_var_alpha]]   < p_threshold), true_side = "left"))
     # Convert index of error rate transition to mu/sigma value
     df_zero[[varname]] <- 
       approx(x=1:n_cols,y = abs(col_values),
@@ -546,10 +548,10 @@ locate_bidir_binary_thresh <-
     df_alpha <- rbind(
       tibble(er = "0", side = "left", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_left[[ind_var_zero]]    < p_threshold)),
+               df_left[[ind_var_zero]]    < p_threshold), true_side = "right"),
       tibble(er = "alpha", side = "left", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_left[[ind_var_alpha]]   < p_threshold)))
+               df_left[[ind_var_alpha]]   < p_threshold), true_side = "left"))
     # Convert index of error rate transition to mu/sigma value
     df_alpha[[varname]] <- 
       approx(x=1:n_cols,y = abs(col_values),
@@ -563,6 +565,8 @@ locate_bidir_binary_thresh <-
       abs(df_crit[[varname]][df_crit$side=="left"])
     # * abs() added just in case we are running the code multiple times when debugging
     
+    browser()
+    
     return(df_crit)
     
   }
@@ -571,33 +575,63 @@ locate_bidir_binary_thresh <-
 
 
 
-row_locate_binary_bounds <- function (xb){
+row_locate_binary_bounds <- function (xb, true_side = "left") {
   #' Given a logical matrix, locates the border between true and false with a simple algroithm
   #' TODO|: replace algorithm, this one is not effective
   
-  browser()
   
   
-  # Helper function to flip matrix left to right
-  fliplr <- function(x) x[,ncol(x):1]
+  save(list = ls(all.names = TRUE), file = "temp/row_locate_binary_bounds.RData",envir = environment())
+  # load(file = "temp/row_locate_binary_bounds.RData")
   
-  # Code assumes that TRUE is on the left portion of matrix, if FALSE is there 
-  # instead then invert
-  if (sum(xb[,1]) < dim(xb)[1]) {
-    xb = !xb
+  
+  # Assumptions location of TRUE and false regions known and oriented correctly
+  # TRUE: from left to right
+  # FALSE: from right to left
+  # Boundary location is between the point index (0.5, 1.5, 2.5 etc.)
+  
+  
+  if ((true_side != "left") & (true_side != "right")) 
+    {stop('row_locate_binary_bounds: uknown orientation option, see help')}
+  
+  if (true_side == "right") {fliplr}
+  
+  row_max_inds = rep(0, dim(xb)[1])
+  
+  for (i in seq(1, dim(xb)[1])) {
+    
+    x = unname(xb[i,])
+    # Make vectors of TP, FP, TN, FN
+    TP =  c(0,cumsum(x))
+    FP = c(rev(cumsum(rev(x))),0)
+    
+    TN = c(rev(cumsum(rev(!x))),0)
+    FN = c(0, cumsum(!x))
+    # rbind(TP, FP, TN, FN)
+    
+    TPR = TP / (TP + FN) # Sensitivity, Recall
+    FPR = FP / (FP + TN)
+    TNR = TN / (FP + TN) # Specificity
+    
+    PREC = TP / (TP + FP)
+    REC = TP / (TP + FN)
+    F1_SCORE = 2 * (PREC * REC) / (PREC + REC)
+    
+    # Adjust index to between datapoints in F1_score
+    thresh = which.max(F1_SCORE) - .5
+    
+    # 
+    if (length(thresh)!=0) {row_max_inds[i] = thresh
+    } else if (all(!x)) { row_max_inds[i] = 0         +  0.5 
+    } else if (all( x)) { row_max_inds[i] = length(x) +  0.5 
+    }
+    
   }
   
-  
-  x <- matrix(as.numeric(xb),ncol = ncol(xb), nrow = nrow(xb))
-  a<-t(apply(x,1,cumsum))
-  b<-fliplr(t(apply(fliplr(!x),1,cumsum)))
-  
-  
-  c <- b+a
-  
-  
-  row_max_inds <- apply(c,1, function(x) mean(which(x == max(x))))
-  # browser()
+  if (true_side == "right") {
+    row_max_inds = length(x) - row_max_inds + 1 
+  }
+    
   return(row_max_inds)
   
 }

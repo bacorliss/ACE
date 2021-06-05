@@ -125,7 +125,7 @@ df_crit_mu_ov_sigma <-
   locate_bidir_binary_thresh(ind_var = "rmdm", pop_var = "rmu_dm", mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
                              mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, mu_vsigmas_dm = NA, alphas = 0.05, n_samples, 
                              temp_path = paste(fig_path, "/I1_mdm_Error_sigma vs sigma.rds",sep=""), 
-                             overwrite = overwrite, is_parallel_proc = FALSE, raw_error = FALSE, rel_error = TRUE)
+                             overwrite = FALSE, is_parallel_proc = FALSE, raw_error = FALSE, rel_error = TRUE)
 
 
 # Plot of each boundary separate
