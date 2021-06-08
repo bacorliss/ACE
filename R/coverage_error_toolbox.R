@@ -4,6 +4,7 @@ if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(foreach)
 p_load(doParallel)
 p_load(tidyr)
+p_load(stringr)
 
 source("R/parallel_utils.R")
 source("R/mdm.R")
@@ -445,12 +446,6 @@ locate_bidir_binary_thresh <-
   function(ind_var = "mdm", pop_var = "mu_dm", mus_a, sigmas_a, n_a, 
            mus_b, sigmas_b, n_b, mu_vsigmas_dm = NA, alphas = 0.05, n_samples, 
            temp_path, overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
-    
-    # # mus = NULL, sigmas, n_samples, n_obs,
-    # temp_path, , rand.seed=0,
-    # overwrite = TRUE,
-    # is_parallel_proc = TRUE
-    
   {
     #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
     #'
@@ -532,40 +527,40 @@ locate_bidir_binary_thresh <-
     
     # Equivalence test versus middle column of same row
     p_threshold = 0.05 /(n_cols*length(sigmas_dm))
-    df_zero <- rbind(
+    df_right_border <- rbind(
       tibble(er = "0", side = "right", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_right[[ind_var_zero]]  < p_threshold), true_side = "right"),
+               df_right[[ind_var_zero]]  < p_threshold,  true_side = "right")),
       tibble(er = "alpha", side = "right", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_right[[ind_var_alpha]]   < p_threshold), true_side = "left"))
+               df_right[[ind_var_alpha]]   < p_threshold, true_side = "left")))
     # Convert index of error rate transition to mu/sigma value
-    df_zero[[varname]] <- 
+    df_right_border[[varname]] <- 
       approx(x=1:n_cols,y = abs(col_values),
-             xout = df_zero$critical_val_ind, 
-             n = length(n_cols)*2L-1L)$y
+             xout = df_right_border$critical_val_ind, 
+             n = length(n_cols)*2L-1L, rule = 2)$y
     
-    df_alpha <- rbind(
+    df_left_border <- rbind(
       tibble(er = "0", side = "left", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_left[[ind_var_zero]]    < p_threshold), true_side = "right"),
+               df_left[[ind_var_zero]]    < p_threshold, true_side = "right")),
       tibble(er = "alpha", side = "left", sigma = sigmas_dm, 
              critical_val_ind = row_locate_binary_bounds(
-               df_left[[ind_var_alpha]]   < p_threshold), true_side = "left"))
+               df_left[[ind_var_alpha]]   < p_threshold, true_side = "left")))
     # Convert index of error rate transition to mu/sigma value
-    df_alpha[[varname]] <- 
+    df_left_border[[varname]] <- 
       approx(x=1:n_cols,y = abs(col_values),
-             xout = df_alpha$critical_val_ind, 
-             n = length(n_cols)*2L-1L)$y
+             xout = df_left_border$critical_val_ind, 
+             n = length(n_cols)*2L-1L, rule = 2)$y
     
     # Concatenate right and left dataframes of results
-    df_crit <- rbind(df_zero,df_alpha)
+    df_crit <- rbind(df_right_border,df_left_border)
     
     df_crit[[varname]][df_crit$side=="left"] = -
       abs(df_crit[[varname]][df_crit$side=="left"])
     # * abs() added just in case we are running the code multiple times when debugging
     
-    browser()
+    # browser()
     
     return(df_crit)
     
@@ -575,15 +570,14 @@ locate_bidir_binary_thresh <-
 
 
 
-row_locate_binary_bounds <- function (xb, true_side = "left") {
+row_locate_binary_bounds <- function (xa, true_side = "left") {
   #' Given a logical matrix, locates the border between true and false with a simple algroithm
   #' TODO|: replace algorithm, this one is not effective
   
-  
-  
+
   save(list = ls(all.names = TRUE), file = "temp/row_locate_binary_bounds.RData",envir = environment())
   # load(file = "temp/row_locate_binary_bounds.RData")
-  
+  # browser()
   
   # Assumptions location of TRUE and false regions known and oriented correctly
   # TRUE: from left to right
@@ -594,7 +588,7 @@ row_locate_binary_bounds <- function (xb, true_side = "left") {
   if ((true_side != "left") & (true_side != "right")) 
     {stop('row_locate_binary_bounds: uknown orientation option, see help')}
   
-  if (true_side == "right") {fliplr}
+  if (true_side == "right") {xb = xa[,seq(dim(xa)[2],1,-1)]} else {xb = xa}
   
   row_max_inds = rep(0, dim(xb)[1])
   
