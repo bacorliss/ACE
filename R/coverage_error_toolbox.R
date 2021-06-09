@@ -654,3 +654,67 @@ error_test_codes <-function(is_error_rate_zero, is_error_rate_alpha) {
 
 
 
+
+slopes_by_rowcol <- function(m, row_vals, col_vals) {
+  #' Calculate pearson correlation on a 2d heatmap by row and by column,
+  #' return bonferroni corrected p values to investigate trends. Row slope 
+  #' calculation is done with  absolute value of the variable for rows because
+  #' these heatmaps are symmetric about the origin.
+  #' 
+  #' @param m 2d matrix of heatmap
+  #' @param row_vals values for each column of matrix
+  #' @param col_cols values for each row of matrix
+  #' @return slope_stats a 2 element names list that each contain a dataframe,
+  #' one for the slopes for rows (df_row), and columns (df_col).
+  bonf_corr = dim(m)[1] + dim(m)[2]
+  
+  df_row <- data.frame(row_vals = row_vals, pearson_p = rep(0,dim(m)[1]), slope = rep(0,dim(m)[1]), 
+                       slope_95L = rep(0,dim(m)[1]), slope_95U = rep(0,dim(m)[1]))
+  
+  for (r in seq( dim(m)[1])) {
+    # Pearson p value
+    if (all(is.nan(unname(m[r,])))) {
+      df_row$pearson_p[r] <- NaN
+      df_row$slope_95L[r] <- NaN
+      df_row$slope_95U[r] <- NaN
+    } else {
+      df_row$pearson_p[r] = cor.test(unname(m[r,]),abs(col_vals),method = "pearson")$p.value/bonf_corr
+      # Linear regression
+      fit <- lm( y~x, data = data.frame(x=abs(col_vals), y = m[r,]))
+      conf <- confint(fit, "x", level=1-0.05/bonf_corr)
+      df_row$slope[r] <- fit$coefficients[2]
+      df_row$slope_95L[r] <- conf[1]
+      df_row$slope_95U[r] <- conf[2]
+    }
+  }
+  # df_row$sig_labels <- ifelse(row_pearson_p<0.05, "*","")
+  
+  
+  df_col <- data.frame(col_vals = col_vals, pearson_p = rep(0,dim(m)[2]), slope = rep(0,dim(m)[2]), 
+                       slope_95L = rep(0,dim(m)[2]), slope_95U = rep(0,dim(m)[2]))
+  for (c in seq(dim(m)[2])){
+    
+    if (all(is.nan(unname(m[,c])))) {
+      df_col$pearson_p[c] <- NaN
+      df_col$slope_95L[c] <- NaN
+      df_col$slope_95U[c] <- NaN
+    } else {
+      # Pearson p value
+      df_col$pearson_p[c] = cor.test(unname(m[,c]),row_vals,method = "pearson")$p.value/bonf_corr
+      # Linear regression
+      fit <- lm( y~x, data = data.frame(x=abs(row_vals), y = m[,c]))
+      conf <- confint(fit, "x", level=1-0.05/bonf_corr)
+      df_col$slope[c] <- fit$coefficients[2]
+      df_col$slope_95L[c]  <- conf[1]
+      df_col$slope_95U[c]  <- conf[2]
+      
+    }
+    
+  } 
+  # df_col$col_sig_labels <- ifelse(col_pearson_p<0.05, "*","")
+  
+  slope_stats <- list(df_row, df_col)
+  names(slope_stats)<-c("df_row", "df_col")
+  return(slope_stats)
+}
+
