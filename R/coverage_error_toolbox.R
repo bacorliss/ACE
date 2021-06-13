@@ -119,14 +119,16 @@ quant_coverage_errors <-
       if (is_parallel_proc) { 
         print("Starting parallel cluster...")
         # browser()
-        cl = makeCluster(detectCores()[1]-1)
+        cl = makeCluster(max(c(floor(detectCores()[1]*.9), 1)))
         registerDoParallel(cl)
+        on.exit(stopCluster(cl))
+        
         df_lin2 <- 
           foreach(n = seq(1,n_sigmas*n_mus,1),
                   .export = c(mdm_functions, ldm_functions, row_effect_size_functions,
                               "quant_coverage_error","quant_error_rate",
                               rationormal_functions), 
-                  .combine = rbind, .packages = c("tidyr")) %dopar% {
+                  .combine = rbind, .packages = c("tidyr", "cubature")) %dopar% {
                     #calling a function
                     tempMatrix <- quant_coverage_error(df = df_lin[n,], 
                                                        raw_error = raw_error,
@@ -134,7 +136,7 @@ quant_coverage_errors <-
                                                        included_stats = included_stats) 
                     tempMatrix
                   }
-        stopCluster(cl)
+        # stopCluster(cl)
       } else {            # Process effect sizes serially
         # browser();
         df_list <- list()

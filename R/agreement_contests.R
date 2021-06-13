@@ -41,6 +41,7 @@ source("R/ldm.R")
 row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
 mdm_functions <- parse_functions_source("R/mdm.R")
 ldm_functions <- parse_functions_source("R/ldm.R")
+rationormal_functions <- parse_functions_source("R/rationormal_toolbox.R")
 
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
@@ -883,7 +884,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER"),
-                .export = c(row_stats_toolbox_fun, mdm_functions,ldm_functions,
+                .export = c(row_stats_toolbox_fun, mdm_functions,ldm_functions, rationormal_functions,
                             "quantify_esize_simulation")) %dopar% {
         #calling a function
         tempMatrix <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n,
@@ -897,6 +898,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       df_list = list();
       # Process effect sizes serially and bind rows into one dataframe
       for (n in seq(1,n_sims)) {
+        print(n)
         df_list[[n]] <- quantify_esize_simulation(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE, 
                                             stat_exclude_list = stat_exclude_list) 
@@ -950,6 +952,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
                 ncol = df$n_2b)
   #save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # # load(file = "temp/debug.RData")
+  
   
   # Calculate effect sizes for both experiments
   dfs_1 <- quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
@@ -1301,8 +1304,8 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   #' candidate statistics versus the indepdent variable.
   
   
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+  save(list = ls(all.names = TRUE), file = "temp/lineplot_indvar_vs_stats.RData",envir = environment())
+  # load(file = "temp/lineplot_indvar_vs_stats.RData")
   # browser();
   
   

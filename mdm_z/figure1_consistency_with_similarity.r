@@ -21,20 +21,16 @@ p_load(gplots)
 # User defined libraries
 source("R/mdm.R")
 source("R/agreement_contests.R")
-
-
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "mdm_z"
 fig_num = "1" 
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
-
 # Simulation parameters
 #-------------------------------------------------------------------------------
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
-
 n_samples = 1e3
 n_obs = 50
 rand.seed = 1
@@ -50,12 +46,15 @@ include_bf = TRUE
 
 # Unscaled Mu: Pearson rho of abs(mu_d1) versus abs(mean of each stat)
 #------------------------------------------------------------------------------
+source("R/agreement_contests.R")
+source("R/mdm.R")
+source("R/rationormal_toolbox.R")
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
 mus_d_vect = seq(4.85,.1,-0.25)
 mus_a_vect = mus_d_vect*2
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
-sigmas_ab_vect=1
+sigmas_ab_vect = .1
 
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
@@ -64,9 +63,9 @@ df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
                                    sigmas_1b = sigmas_ab_vect,
-                                   mus_2a  = rep(0,n_sims), 
+                                   mus_2a  = rep(10,n_sims), 
                                    sigmas_2a = 1, 
-                                   mus_2b  = rep(0,n_sims),  
+                                   mus_2b  = rep(10,n_sims),  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -86,10 +85,9 @@ df_mu_pearson <-
 
 # Unscaled Sigma: Pearson rho of sigma versus abs(mean of each stat)
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed)
 sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
-mus_a_vect = sigmas_ab_vect
+mus_a_vect = sigmas_ab_vect*10
 mus_b_vect = mus_a_vect;
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_sigma", sep = "")
@@ -98,9 +96,9 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_b_vect, 
                                       sigmas_1b = sigmas_ab_vect,
-                                      mus_2a  = rep(0,n_sims), 
+                                      mus_2a  = rep(10,n_sims), 
                                       sigmas_2a = 1, 
-                                      mus_2b  = rep(0,n_sims),  
+                                      mus_2b  = rep(10,n_sims),  
                                       sigmas_2b = 1,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -122,8 +120,8 @@ df_sigma_pearson <-
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
-mus_ab_vect = 1
-sigmas_ab_vect = 1
+mus_ab_vect = 10
+sigmas_ab_vect = .5
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_df", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
@@ -131,9 +129,9 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_ab_vect, 
                                    sigmas_1b = sigmas_ab_vect,
-                                   mus_2a  = rep(0,n_sims), 
+                                   mus_2a  = rep(10,n_sims), 
                                    sigmas_2a = 1, 
-                                   mus_2b  = rep(0,n_sims),  
+                                   mus_2b  = rep(10,n_sims),  
                                    sigmas_2b = 1,
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -152,20 +150,23 @@ df_df_pearson <-
 # Unscaled Alpha:   increasing alpha increases agreement
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
+source("R/mdm.R")
+source("R/rationormal_toolbox.R")
+source("R/row_stats_toolbox.R")
 set.seed(rand.seed)
-alpha_1 = 0.5/seq(1, 20,1)
-alpha_2 = 0.5/seq(1, 20,1)
+alpha_1 = 0.05/seq(1, 100,5)
+alpha_2 = 0.05/seq(1, 100,5)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_alpha", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
-                                   mus_1a  = 1, 
+                                   mus_1a  = 20, 
                                    sigmas_1a = 1, 
-                                   mus_1b  = 1, 
+                                   mus_1b  = 20, 
                                    sigmas_1b = 1,
-                                   mus_2a  = 0, 
+                                   mus_2a  = 10, 
                                    sigmas_2a = 1, 
-                                   mus_2b  = 0,  
+                                   mus_2b  = 10,  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = alpha_1,
@@ -207,9 +208,9 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       sigmas_1a = sigmas_ab_vect,
                                       mus_1b  = mus_b_vect,
                                       sigmas_1b = sigmas_ab_vect,
-                                      mus_2a  = rep(0,n_sims),
+                                      mus_2a  = rep(10,n_sims),
                                       sigmas_2a = 1,
-                                      mus_2b  = rep(0,n_sims),
+                                      mus_2b  = rep(10,n_sims),
                                       sigmas_2b = 1,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -240,9 +241,9 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_b_vect, 
                                       sigmas_1b = sigmas_ab_vect,
-                                      mus_2a  = rep(0,n_sims), 
+                                      mus_2a  = rep(10,n_sims), 
                                       sigmas_2a = 1, 
-                                      mus_2b  = rep(0,n_sims),  
+                                      mus_2b  = rep(10,n_sims),  
                                       sigmas_2b = 1,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -261,10 +262,15 @@ df_rsigma_pearson <-
 
 # Relative Sample Size:   increasing df has higher agreement
 #------------------------------------------------------------------------------
+source("R/agreement_contests.R")
+source("R/mdm.R")
+source("R/rationormal_toolbox.R")
+source("R/row_stats_toolbox.R")
 set.seed(rand.seed)
-n_1ab_vect = seq(16, 100, 2); n_sims = length(n_1ab_vect)
-mus_a_vect = 1
-mus_b_vect = 1
+# n_1ab_vect = seq(16, 100, 2); n_sims = length(n_1ab_vect)
+n_1ab_vect = seq(44, 100, 2); n_sims = length(n_1ab_vect)
+mus_a_vect = 10
+mus_b_vect = 10
 sigmas_ab_vect = 1
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_df", sep = "")
@@ -273,9 +279,9 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
                                    sigmas_1b = sigmas_ab_vect,
-                                   mus_2a  = rep(0,n_sims), 
+                                   mus_2a  = rep(10,n_sims), 
                                    sigmas_2a = 1, 
-                                   mus_2b  = rep(0,n_sims),  
+                                   mus_2b  = rep(10,n_sims),  
                                    sigmas_2b = 1,
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
@@ -292,23 +298,25 @@ df_rdf_pearson <-
                            fig_path = fig_path,  dir_to_agreement = -1)
 
 
-# Unscaled Alpha:   increasing alpha increases agreement
+# Relative Alpha:   increasing alpha increases agreement
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
+source("R/mdm.R")
+source("R/rationormal_toolbox.R")
 set.seed(rand.seed)
-alpha_1 = 0.5/seq(1, 20,1)
-alpha_2 = 0.5/seq(1, 20,1)
+alpha_1 = 0.05/seq(1, 100,5)
+alpha_2 = 0.05/seq(1, 100,5)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
-                                   mus_1a  = 1, 
+df_init <- generateExperiment_Data(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
+                                   mus_1a  = 10, 
                                    sigmas_1a = 1, 
-                                   mus_1b  = 1, 
+                                   mus_1b  = 10, 
                                    sigmas_1b = 1,
-                                   mus_2a  = 0, 
+                                   mus_2a  = 10, 
                                    sigmas_2a = 1, 
-                                   mus_2b  = 0,  
+                                   mus_2b  = 10,  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = alpha_1,

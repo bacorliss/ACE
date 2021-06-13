@@ -418,7 +418,7 @@ max_abs_cl_mean_z_standard <-  function(x_bar, sem_x, alpha) {
 
 # Relative form of mdm
   
-rmdm_normal_zdist <- function(x_ctrl, y_exp, mdm = NULL, conf.level = 0.95, 
+rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95, 
                               verbose = FALSE,  var.equal = FALSE, method = "mdm_normalized")  {
   #' @description Calculates the relative most difference in means assuming with
   #' rmdm = mdm/X, X being the control group and Y the experimental
@@ -455,14 +455,12 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, mdm = NULL, conf.level = 0.95,
   }
 
   # browser()
-  
+  # print(mean_ctrl)
   if (method =="qnormrat") {
-    # Calculate mean and std of difference in means distribution
-     
-    # browser();
-    source("R/rationormal_toolbox.R")
     # Calculate upper percentile specified by 
     rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, mean_ctrl, se_ctrl)
+    
+    # if (is.na(rmdm)) {browser();}
     
   } else if (method =="mdm_normalized") {
 

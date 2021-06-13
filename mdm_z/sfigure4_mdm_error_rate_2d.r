@@ -40,7 +40,7 @@ fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 n_samples <- 1e3
 rand.seed <- 0
-overwrite <- TRUE
+overwrite <- FALSE
 is_parallel_proc <- TRUE
 
 
@@ -68,7 +68,6 @@ df_results <-
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
                         included_stats = c("mdm"))
-
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#
@@ -139,12 +138,13 @@ df_crit_mu <-
   locate_bidir_binary_thresh(mus_a = 100, sigmas_a = sigmas_a, n_a = n_a, 
                              mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_b,
                              mu_vsigmas_dm = NA, alphas = 0.05,
-                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_coverage_error_2D_mu_vs_sigma.rds",sep=""),
                              overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 # Plot of each boundary separate
-df_slopes <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
+df_slopes1 <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu, sigma,method = "pearson")$p.value)
+df_slopes1$adj_pearson <- p.adjust(df_slopes1$pearson,"bonferroni")
 # Plot of each boundary separate
 # df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
 gg <- ggplot(data=df_crit_mu,aes(x=sigma, y=critical_mu,
@@ -164,11 +164,6 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu.tiff",
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
-# 
-res.aov2 <- aov(abs(critical_mu) ~ er + side, data = df_crit_mu)
-summary_mu <- summary(res.aov2)
-capture.output(summary_mu, file = paste(fig_path, "\\", fig_num,
-                                        "_c mdm transition over mu.txt", sep=""))
 
 
 
@@ -267,19 +262,24 @@ df_crit_mu_ov_sigma <-
   locate_bidir_binary_thresh(mus_a = 100, sigmas_a = sigmas_a, n_a = n_a, 
                              mus_b = NA, sigmas_b = sigmas_b, n_b = n_b,
                              mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
-                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                             n_samples = n_samples, temp_path = paste(fig_path, "/mdm_coverage_error_2D_mu-sigma_vs_sigma.rds",sep=""),
                              overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 
-# Plot of each boundary separate
-df_slopes <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
+df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% 
+  summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95))
+df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu_over_sigma, sigma,method = "pearson")$p.value)
-df_slopes$adj_pearson <- p.adjust(df_slopes$pearson,"bonferroni")
+
+ci = confint(lm(critical_mu_over_sigma~sigma, data= df_crit_mu_ov_sigma),'sigma',level=0.95)
+
+
+df_slopes2$adj_pearson <- p.adjust(df_slopes2$pearson,"bonferroni")
+# Plot of each boundary separate
 gg <- ggplot(data=df_crit_mu_ov_sigma,aes(x=sigma, y=critical_mu_over_sigma,
                                           shape = er, color = side)) +
-  # facet_grid(rows = vars(er)) +
-  geom_point(size=1) +
-  geom_hline(yintercept=0,size=0.5) +
+  geom_point(size = 1) +
+  geom_hline(yintercept = 0, size = 0.5) +
   theme_classic(base_size = 8) +
   xlab(expression(sigma[DM])) + 
   ylab(expression(mu[DM]/sigma[DM])) + 
@@ -291,10 +291,7 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu_sigma.tiff",
                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 2,
           base_asp = 3, base_width = 2.5, dpi = 600)
 
-res.aov2 <- aov(abs(critical_mu_over_sigma) ~ er + side , data = df_crit_mu_ov_sigma)
-summary_mu_ov_sigma <- summary(res.aov2)
-capture.output(summary_mu_ov_sigma, file = paste(fig_path, "\\", fig_num,
-                                        "_c mdm transition over mu sigma.txt", sep=""))
+
 
 
 

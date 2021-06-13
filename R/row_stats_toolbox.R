@@ -179,10 +179,11 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
    
   if (method =="qnormrat") {
     # Calculate mean and std of difference in means distribution
-    
+  # browser();
     
     rmdms <- sapply(1:dim(m_c)[1], function(i)  
-      rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], mdm = NULL, conf.level, method = "qnormrat"))
+      rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
+                        method = "qnormrat"))
 
    
     
@@ -490,6 +491,8 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp",
                  "cohend", "mdm", "rmdm", "ldm", "rldm", "rand")
   
+  # browser();
+  
   df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
   colnames(df) <- stat_list
   df_hat <- df[1,]
@@ -553,10 +556,11 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$mdm <- "delta[M]"
   
   # 10) Relative most difference in means
-  df$rmdm = df$mdm / rowMeans(x_a)
+  df$rmdm = row_rmdm_2s_zdist(x_a, x_b, conf.level = conf.level, method = "qnormrat") 
   df_hat$rmdm <- "<"
   df_hdt$rmdm <- ">"
   df_pretty$rmdm <- "r*delta[M]"
+  # browser();
   
   # 11) Least Difference in Means
   df$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level=conf.level)

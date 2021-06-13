@@ -38,12 +38,11 @@ fig_num = "5"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE, recursive=TRUE)
 rand.seed <- 0
-overwrite <- TRUE
+overwrite <- FALSE
 
 
 
 
-source("R/coverage_error_toolbox.R")
 # Investigation 1: Initial coverage error of rmdm in mu space
 #
 #_______________________________________________________________________________
@@ -110,31 +109,33 @@ save_plot(paste(fig_path, "/", fig_num, "_1b rmdm 2D coverage error test, mu spa
           base_asp = 3, base_width = 2, dpi = 600)
 
 
-# Plot 1C: Line plot of location of error boundaries or rmdm with mu/sigma space
+# Plot 1C: Line plot of location of error boundaries or rmdm with mu space
 #------------------------------------------------------------------------------#
 # Coverage error simulations for mu space  
 n_obs = 100
 mus_a = 10
-mus_dm <- seq(.1, 1.2, by = .05)
-sigmas_dm <- seq(.01, .5, by = .01)
+mus_dm <- seq(.1, 1.2, by = .1)
+sigmas_dm <- seq(.01, .5, by = .02)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_ab = sigmas_dm/sqrt(2/n_obs)
 n_samples <- 1e3
-df_crit_mu_ov_sigma <- 
+df_crit_mu <- 
   locate_bidir_binary_thresh(ind_var = "rmdm", pop_var = "rmu_dm", mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
                              mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, mu_vsigmas_dm = NA, alphas = 0.05, n_samples, 
                              temp_path = paste(fig_path, "/I1_rmdm_boundary.rds",sep=""), 
-                             overwrite = TRUE, is_parallel_proc = TRUE, raw_error = FALSE, rel_error = TRUE)
+                             overwrite = overwrite, is_parallel_proc = TRUE, raw_error = FALSE, rel_error = TRUE)
+df_slopes1 <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
+  critical_mu, sigma,method = "pearson")$p.value)
+df_slopes1$adj_pearson <- p.adjust(df_slopes1$pearson,"bonferroni")
 # Plot of each boundary separate
-df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
-gg <- ggplot(data=df_crit_mu_ov_sigma, aes(x=sigma, y=critical_mu,
+gg <- ggplot(data=df_crit_mu, aes(x=sigma, y=critical_mu,
                                           shape = er, color = side)) +
   # facet_grid(rows = vars(er)) +
   geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  ylab(expression(sigma[DM])) + 
-  xlab(expression(mu[DM])) + 
+  xlab(expression(sigma[DM])) + 
+  ylab(expression(mu[DM])) + 
   theme(legend.position="none") +
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
@@ -223,7 +224,7 @@ n_obs = 100
 mus_a = 10
 # mus_dm <- seq(.1, 1.2, by = .1)
 sigmas_dm <- seq(.1, .5, by = .01)
-mu_vsigmas_dm <- seq(1.3, 2, by = .01)
+mu_vsigmas_dm <- seq(1.3, 2, by = .025)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
@@ -232,18 +233,24 @@ n_samples <- 1e3
 df_crit_mu_ov_sigma <- 
   locate_bidir_binary_thresh(ind_var = "rmdm", pop_var = "rmu_dm", mus_a, sigmas_a = sigmas_a, n_a = n_obs, 
                              mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05, n_samples, 
-                             temp_path = paste(fig_path, "/I2_rmdm_error_boundary.rds",sep=""), 
+                             temp_path = paste(fig_path, "/I2_rmdm_error_boundary_mu-sigma_vs_sigma.rds",sep=""), 
                              overwrite = overwrite, is_parallel_proc = TRUE, raw_error = FALSE, rel_error = TRUE)
-# Plot of each boundary separate
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
+# Test for relationship between border and mu/sigma
+df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
+  critical_mu_over_sigma, sigma,method = "pearson")$p.value)
+# df_slopes2$adj_pearson <- p.adjust(df_slopes2$pearson,"bonferroni")
+# df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% 
+#   summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95))
+# Plot of each boundary separate
 gg <- ggplot(data=df_crit_mu_ov_sigma, aes(x=sigma, y=critical_mu_over_sigma,
                                            shape = er, color = side)) +
   # facet_grid(rows = vars(er)) +
   geom_point(size=1) +
   geom_hline(yintercept=0,size=0.5) +
   theme_classic(base_size = 8) +
-  ylab(expression(sigma[DM])) + 
-  xlab(expression(mu[DM]/sigma[DM])) + 
+  xlab(expression(sigma[DM])) + 
+  ylab(expression(mu[DM]/sigma[DM])) + 
   theme(legend.position="none") +
   scale_color_manual(values = c("#66c2a5", "#fc8d62"))
 # scale_color_discrete(name = "", labels = c("-Ra  ","-R0 ","+R0  ","+Ra  "))
