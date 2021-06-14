@@ -11,7 +11,7 @@ base_dir = "mdm_z"
 fig_num = "3" 
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(getwd(),"/",base_dir,"/figure/F",fig_num, sep="")
-dir.create(file.path(getwd(), fig_path), showWarnings = FALSE)
+dir.create(fig_path, showWarnings = FALSE)
 
 
 norm_points <- function(n) {x = rnorm(n,0,1); x=(x-mean(x))/sd(x); x}
@@ -60,8 +60,7 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
     df_stat$mdm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 
                                         1 - parse_fract(df[[alphadm_str]][n]))
     df_stat$rmdm[n] <- 
-      row_rmdm_2s_zdist(m1 = xa, m2 = xb, mdms = df_stat$mdm[n], conf.level.mdm = 1 - 
-                          parse_fract(df[[alphadm_str]][n]), conf.level.rmdm = 0.95)
+      row_rmdm_2s_zdist(m_c = xa, m_e = xb, conf.level = 1 - parse_fract(df[[alphadm_str]][n]))
   
     df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbar1_str]][n])
     
@@ -83,25 +82,25 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
 
 
 # Total Cholesterol, Null Results
-raw_chol_null <- read_excel("mdm_z/Atherosclerosis_Review.xlsx", sheet = "Chol Null", skip = 1)
+raw_chol_null <- read_excel("mdm_z/atherosclerosis_review.xlsx", sheet = "Chol Null", skip = 1)
 chol_null <- raw_chol_null[-seq(min(which(is.na(raw_chol_null$s1))), dim(raw_chol_null)[1], 1),]
 df_stat_chol_null <- calc_stats(chol_null, fig_path,"chol_null.csv", p2_relrange = 0.3)
 
 
 # Total CHolesterol, crit Results
-raw_chol_crit <- read_excel("mdm_z/Atherosclerosis_Review.xlsx", sheet = "Chol Crit", skip=1)
+raw_chol_crit <- read_excel("mdm_z/atherosclerosis_review.xlsx", sheet = "Chol Crit", skip=1)
 chol_crit <- raw_chol_crit[-seq(min(which(is.na(raw_chol_crit$s1))), dim(raw_chol_crit)[1], 1),]
 df_stat_chol_crit <- calc_stats(chol_crit, fig_path,"chol_crit.csv", p2_relrange = 0.3)
 
 
 
 # Plaque Size, Null Results
-raw_plaq_null <- read_excel("mdm_z/Atherosclerosis_Review.xlsx", sheet = "Plaque Null", skip=1)
+raw_plaq_null <- read_excel("mdm_z/atherosclerosis_review.xlsx", sheet = "Plaque Null", skip=1)
 plaq_null <- raw_plaq_null[-seq(min(which(is.na(raw_plaq_null$s1))), dim(raw_plaq_null)[1], 1),]
 df_stat_plaq_null <- calc_stats(plaq_null, fig_path,"plaq_null.csv", p2_relrange = 0.4)
 
 
 # Plaque Size, Null Results
-raw_plaq_crit <- read_excel("mdm_z/Atherosclerosis_Review.xlsx", sheet = "Plaque Crit", skip=1)
+raw_plaq_crit <- read_excel("mdm_z/atherosclerosis_review.xlsx", sheet = "Plaque Crit", skip=1)
 plaq_crit <- raw_plaq_crit[-seq(min(which(is.na(raw_plaq_crit$s1))), dim(raw_plaq_crit)[1], 1),]
-
+df_stat_plaq_crit <- calc_stats(plaq_crit, fig_path,"plaq_crit.csv", p2_relrange = 0.4)

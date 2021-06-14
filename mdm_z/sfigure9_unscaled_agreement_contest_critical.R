@@ -184,7 +184,7 @@ source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1hat2"
-fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_near_zero", sep = "")
+fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = .1,

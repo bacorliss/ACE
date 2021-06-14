@@ -21,7 +21,6 @@ p_load(gplots)
 source("R/mdm.R")
 source("R/agreement_contests.R")
 
-
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "mdm_z"
@@ -29,7 +28,6 @@ fig_num = "8"
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), 
            showWarnings = FALSE, recursive = TRUE)
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
-
 
 # Simulation parameters
 #-------------------------------------------------------------------------------
@@ -41,6 +39,8 @@ parallel_sims = TRUE
 include_bf = TRUE
 scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
 df_unscaled_null = list();
+
+
 
 
 # Contest 1) Lower mu_d
@@ -92,12 +92,12 @@ fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = runif(n_sims, 1, 2),
-                                   mus_1ao  = 1, 
+                                   mus_1ao  = seq(.6,1.4,length.out = n_sims), 
                                    sigmas_1ao = runif(n_sims, 2, 8),
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = runif(n_sims, 1, 2),
-                                   mus_2ao  = 1,
+                                   mus_2ao  = seq(.6,1.4,length.out = n_sims),
                                    sigmas_2ao = runif(n_sims, 2, 8),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
