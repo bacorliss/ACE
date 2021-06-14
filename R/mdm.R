@@ -458,7 +458,7 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
   # print(mean_ctrl)
   if (method =="qnormrat") {
     # Calculate upper percentile specified by 
-    rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, mean_ctrl, se_ctrl)
+    rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, abs(mean_ctrl), se_ctrl)
     
     # if (is.na(rmdm)) {browser();}
     

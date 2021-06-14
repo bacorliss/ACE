@@ -51,14 +51,14 @@ set.seed(rand.seed)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
-                                   sigmas_1a = 1, 
+                                   mus_1a  = 20, 
+                                   sigmas_1a = 10, 
                                    mus_1ao  = runif(n_sims, 1, 8), 
-                                   sigmas_1ao = 19,
-                                   mus_2a  = 100, 
-                                   sigmas_2a = 1,
+                                   sigmas_1ao = 10,
+                                   mus_2a  = 200, 
+                                   sigmas_2a = 10,
                                    mus_2ao  = runif(n_sims, 1, 8), 
-                                   sigmas_2ao = 19,
+                                   sigmas_2ao = 10,
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs,
@@ -82,7 +82,7 @@ df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 
-# COntest 2) Lower sigma_pooled
+# Contest 2) Lower sigma_pooled
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
@@ -90,26 +90,26 @@ set.seed(rand.seed)
 gt_colnames = "is_sigmad_1hat2" 
 fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 5, 
-                                   sigmas_1a = 1,
-                                   mus_1ao  = 1.5, 
-                                   sigmas_1ao = runif(n_sims, 3, 25),
+                                   mus_1a  = 10, 
+                                   sigmas_1a = runif(n_sims, 1, 2),
+                                   mus_1ao  = 1, 
+                                   sigmas_1ao = runif(n_sims, 2, 8),
                                    
                                    mus_2a  = 100, 
-                                   sigmas_2a = 1,
-                                   mus_2ao  = 1.5,
-                                   sigmas_2ao = runif(n_sims, 3, 25),
+                                   sigmas_2a = runif(n_sims, 1, 2),
+                                   mus_2ao  = 1,
+                                   sigmas_2ao = runif(n_sims, 2, 8),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
                                    alpha_1 = 0.05, alpha_2 = 0.05,
 
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = TRUE,
+                                   toggle_sign_mean_ab = TRUE,
+                                   switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
-                                   switch_sigma_ab_12 = FALSE,
+                                   switch_sigma_ab_12 = TRUE,
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -131,7 +131,7 @@ set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_", "contest_df_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
+                                   mus_1a  = 10, 
                                    sigmas_1a = 1,
                                    mus_1ao  = seq(0.1,.8,length.out = n_sims),
                                    sigmas_1ao = 1,
@@ -163,7 +163,7 @@ df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 
-# COntest 4) Higher sig. level
+# Contest 4) Higher alpha
 # [Near from zero]
 #
 source("R/agreement_contests.R")
@@ -172,7 +172,7 @@ set.seed(rand.seed)
 gt_colnames = "is_alpha_1hat2"
 fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
+                                   mus_1a  = 10, 
                                    sigmas_1a = .1,
                                    mus_1ao  = seq(.05,0.5,length.out = n_sims), 
                                    sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
@@ -221,12 +221,12 @@ set.seed(rand.seed+1)
 gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 2, 
+                                   mus_1a  = 20, 
                                    sigmas_1a = 1, 
                                    mus_1ao  = runif(n_sims,2, 5), 
                                    sigmas_1ao = runif(n_sims,20,24),
                                    
-                                   mus_2a  = 50,  
+                                   mus_2a  = 500,  
                                    sigmas_2a = 1,
                                    mus_2ao  = runif(n_sims,9, 12), 
                                    sigmas_2ao = runif(n_sims,32,40),

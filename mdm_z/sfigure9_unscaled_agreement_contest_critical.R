@@ -45,142 +45,162 @@ df_unscaled_crit = list();
 
 
 
-# Contest 1) Lower mu_dm
+# Contest 1) Lower mu_d
+# [Near from zero]
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
-                                   sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims,1,3), 
-                                   sigmas_1ao = 1,
-                                   
-                                   mus_2a  = 100, 
-                                   sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims,1,3), 
-                                   sigmas_2ao = 1,
+                                   mus_1a  = 20, 
+                                   sigmas_1a = 2, 
+                                   mus_1ao  = runif(n_sims, 2, 8), 
+                                   sigmas_1ao = 2,
+                                   mus_2a  = 200, 
+                                   sigmas_2a = 2,
+                                   mus_2ao  = runif(n_sims, 2, 8), 
+                                   sigmas_2ao = 2,
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs,
+                                   alpha_1 = 0.05, alpha_2 = 0.05,
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
+                                   toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
                                    switch_sigma_ab_12 = FALSE,
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames)  
-df_unscaled_crit[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = parallel_sims,
-                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path)
+                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                   fig_path = fig_path,gt_colnames=gt_colnames)
+df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                                   y_ax_str = "abs(~mu[DM]*phantom(.))",
+                                                   include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
+                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
+                                                   fig_path = fig_path)
 
 
-# COntest 2) Lower sigmad
-# [Far from zero]
+
+
+
+# Contest 2) Lower sigma_pooled
+# [Near from zero]
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_sigmad_1hat2"
-fig_name = paste("F", fig_num, "_2_esize_contest_sigma_far_zero", sep = "")
+gt_colnames = "is_sigmad_1hat2" 
+fig_name = paste("F", fig_num, "_2_esize_", "_2_esize_contest_sigma_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
-                                   sigmas_1a = 1,
-                                   mus_1ao  = 10, 
-                                   sigmas_1ao = runif(n_sims, 5, 10),
+                                   mus_1a  = 10, 
+                                   sigmas_1a = runif(n_sims, 0.2, 1),
+                                   mus_1ao  = 1, 
+                                   sigmas_1ao = runif(n_sims, 1, 1.5),
                                    
                                    mus_2a  = 100, 
-                                   sigmas_2a = 1,
-                                   mus_2ao  = 10,
-                                   sigmas_2ao = runif(n_sims, 10, 20),
+                                   sigmas_2a = runif(n_sims, 0.2, 1),
+                                   mus_2ao  = 1,
+                                   sigmas_2ao = runif(n_sims, 1, 1.5),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
+                                   alpha_1 = 0.05, alpha_2 = 0.05,
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = TRUE,
+                                   toggle_sign_mean_ab = TRUE,
+                                   switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
                                    switch_sigma_ab_12 = TRUE,
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames)
-df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                    y_ax_str = "sigma[DM]",
-                                    include_bf = include_bf, parallel_sims = parallel_sims,
-                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path)
+                                   fig_name = paste(fig_name, ".tiff",sep = ""),
+                                   fig_path = fig_path,gt_colnames=gt_colnames)  
+df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                                   y_ax_str = "sigma[D]",
+                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
+                                                   fig_path = fig_path)
 
 
 
-# Contest 7) Lower df_pool
-n1 <- runif(n_sims, 6, 30)
-n2 <- runif(n_sims, 20, 50)
+
+# Contest 3) Higher df_pool
+# [Near from zero]
+#------------------------------------------------------------------------------
+source("R/agreement_contests.R")
+n1 <- round(runif(n_sims, 6, 20))
+n2 <- round(runif(n_sims, 15, 30))
 set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hat2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
+                                   mus_1a  = 10, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = 11, 
-                                   sigmas_1ao = 10,
+                                   mus_1ao  = seq(0.75,2,length.out = n_sims),
+                                   sigmas_1ao = 0,
                                    
-                                   mus_2a  = 50, 
+                                   mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = 11,
-                                   sigmas_2ao = 10,
+                                   mus_2ao  = seq(0.75,2,length.out = n_sims),
+                                   sigmas_2ao = 0,
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2, 
-
+                                   alpha_1 = 0.05, alpha_2 = 0.05,
+                                   
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = TRUE,
+                                   toggle_sign_mean_ab = TRUE,
+                                   switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
                                    switch_sigma_ab_12 = FALSE,
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = TRUE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames)
-df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                            y_ax_str = "df[DM]",
-                                            include_bf = include_bf, parallel_sims = parallel_sims,
-                                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                                            fig_path = fig_path)
+                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                   fig_path = fig_path, gt_colnames=gt_colnames)  
+df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+                                                   y_ax_str = "df[D]",
+                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
+                                                   fig_path = fig_path)
 
 
 
 
-# Contest 4) Lower alpha
+
+
+
+
+
+
+
+# Contest 4) Higher alpha
+# [Near from zero]
 #
+source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1hat2"
-fig_name = paste("F", fig_num, "_4_esize_contest_alpha_far_zero", sep = "")
+fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
-                                   sigmas_1a = 1, 
-                                   mus_1ao  = seq(1, 3, length.out = n_sims), 
-                                   sigmas_1ao = 1,
+                                   mus_1a  = 10, 
+                                   sigmas_1a = .1,
+                                   mus_1ao  = seq(.5, 2,length.out = n_sims), 
+                                   sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
                                    
                                    mus_2a  = 100, 
-                                   sigmas_2a = 1,
-                                   mus_2ao  = seq(1, 3, length.out = n_sims), 
-                                   sigmas_2ao = 1,
+                                   sigmas_2a = .1,
+                                   mus_2ao  = seq(.5, 2,length.out = n_sims),
+                                   sigmas_2ao = 1,#seq(2,12,length.out = n_sims),
                                    
-                                   n_1a = 50, n_1b = 50,
-                                   n_2a = 50, n_2b = 50,
+                                   n_1a = 30, n_1b = 30,
+                                   n_2a = 30, n_2b = 30, 
                                    alpha_1 = 0.05/1,
                                    alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
@@ -190,13 +210,19 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_sigma_ab_12 = FALSE,
                                    switch_alpha_12 = TRUE,
                                    switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames)  
-df_unscaled_crit[[4]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
-                                                   y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                                   include_bf = include_bf, parallel_sims = parallel_sims,
-                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                   fig_path = fig_path, gt_colnames=gt_colnames)  
+df_unscaled_null[[4]] <-
+  process_esize_simulations(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
+                            include_bf = include_bf, parallel_sims = parallel_sims, 
+                            fig_name = paste(fig_name, ".tiff",sep = ""),
+                            fig_path = fig_path)
+
+
+
+
+
+
 
 
 
@@ -213,7 +239,7 @@ n2 <- round(runif(n_sims, 15, 30))
 gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
 fig_name = paste("F", fig_num, "_4_esize_contest_free_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 1, 
+                                   mus_1a  = 10, 
                                    sigmas_1a = 1, 
                                    mus_1ao  = runif(n_sims, 3.5, 5), 
                                    sigmas_1ao = runif(n_sims, 1, 1.75),

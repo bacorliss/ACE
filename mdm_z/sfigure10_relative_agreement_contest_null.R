@@ -21,15 +21,11 @@ p_load(gplots)
 source("R/mdm.R")
 source("R/agreement_contests.R")
 base_dir = "mdm_z"
-
-
 # Figure parameters
 #-------------------------------------------------------------------------------
 fig_num = "10" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
-
-
 # Simulation parameters
 #-------------------------------------------------------------------------------
 # A simulation is a set of samples with a fixed set of parameters
@@ -38,12 +34,10 @@ n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
 rand.seed = 1
-
 parallel_sims = TRUE
 include_bf = TRUE
 rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
                             "_rscale_contest_results.csv",sep="")
-
 df_relative_null = list();
 
 

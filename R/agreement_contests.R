@@ -936,6 +936,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
   
+  # sprintf("%.3f+-")
   # Use Exp 1 and 2 coefficients to generate data from normalized base data
   x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
                       sd = df$sigma_1a), nrow = df$n_samples, 
