@@ -238,7 +238,7 @@ df_crit_mu_ov_sigma <-
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 # Test for relationship between border and mu/sigma
 df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
-  critical_mu_over_sigma, sigma,method = "pearson")$p.value)
+  critical_mu_over_sigma, sigma,method = "pearson")$p.value, x_bar = mean(critical_mu_over_sigma))
 # df_slopes2$adj_pearson <- p.adjust(df_slopes2$pearson,"bonferroni")
 # df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% 
 #   summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95))

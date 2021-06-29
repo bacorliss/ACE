@@ -143,7 +143,7 @@ df_crit_mu <-
 df_crit_mu$merge = paste(df_crit_mu$er, df_crit_mu$side)
 # Plot of each boundary separate
 df_slopes1 <- df_crit_mu %>% group_by(er,side) %>% summarize(pearson = cor.test(
-  critical_mu, sigma,method = "pearson")$p.value)
+  critical_mu, sigma,method = "pearson")$p.value, x_bar = mean(critical_mu))
 df_slopes1$adj_pearson <- p.adjust(df_slopes1$pearson,"bonferroni")
 # Plot of each boundary separate
 # df_pearson$adj_pearson <- p.adjust(df_pearson$pearson,"bonferroni")
@@ -267,7 +267,7 @@ df_crit_mu_ov_sigma <-
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
 
 df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% 
-  summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95))
+  summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95), x_bar = mean(critical_mu_over_sigma))
 df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
   critical_mu_over_sigma, sigma,method = "pearson")$p.value)
 
