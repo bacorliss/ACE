@@ -29,7 +29,7 @@ p_load(docstring)
 p_load(stringr)
 # User toolboxes
 source("R/coverage_error_toolbox.R")
-
+source("R/row_stats_toolbox.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "mdm_z"
@@ -39,7 +39,7 @@ fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE, recursive=TRUE)
 rand.seed <- 0
 overwrite <- FALSE
-
+yaxis_font_size <- 8
 
 
 
@@ -268,6 +268,10 @@ save_plot(paste(fig_path, "/", fig_num, "_2c rmdm error boundaries over mu_sigma
 #
 #______________________________________________________________________________#
 
+
+# TO DO Shouldn't this be mu/sigma instead of mu?
+
+
 # Coverage error at larger mu_dms
 # Coverage error simulations for mu space  
 n_obs = 100
@@ -330,7 +334,30 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   geom_vline(xintercept=0, color="black", size=0.2) +
   theme(legend.position="none")
 gg
-save_plot(paste(fig_path, "/", fig_num, "_3b rmdm coverage error extended mu_ov_sigma.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2, base_asp = 3, base_width = 3.3, dpi = 600) 
+save_plot(paste(fig_path, "/", fig_num, "_3b rmdm coverage error test extended mu_ov_sigma.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 1.1, base_asp = 3, base_width = 3.3, dpi = 600) 
+
+
+
+# Combine error rates across sigma values to visualize coverage error in relation to alpha
+#_______________________________________________________________________________
+# Calculate mean and 95% CI across sigma and plot
+
+mean_rmdm_err <- rowMeans(t(df_results$mean_err_abs_rmdm_lt_rmu_dm))
+sd_rmdm_err <- sqrt(rowVars(t(df_results$mean_err_abs_rmdm_lt_rmu_dm)))
+
+df_ci <- data.frame(mu_vsigmas_dm = mus_dm, mean_err = mean_rmdm_err, sd_err = sd_rmdm_err, 
+                    hi_95 = mean_rmdm_err + qnorm(0.975)*sd_rmdm_err, 
+                    lo_95 = mean_rmdm_err - qnorm(0.975)*sd_rmdm_err)
+gg <- ggplot(df_ci, aes(x = mu_vsigmas_dm, y = mean_err)) +
+  geom_line()+
+  geom_ribbon(aes(ymin = lo_95, ymax = hi_95), alpha = 0.1, linetype = 2) +
+  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
+  geom_hline(yintercept = 0.05, linetype="dashed")+
+  theme_classic(base_size=yaxis_font_size) +
+  theme(legend.position="none")
+gg
+save_plot(paste(fig_path, "/", fig_num, "_3c rmdm coverage error avg sigma versus mu_ov_sigma.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 1.1, base_asp = 3, base_width = 3.3, dpi = 600) 
 
 
