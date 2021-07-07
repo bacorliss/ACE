@@ -153,7 +153,6 @@ save_plot(paste(fig_path, "/", fig_num, "_1c rmdm error boundaries over mu_sigma
 #
 #______________________________________________________________________________#
 
-# Coverage error simulations for mu space  
 n_obs = 50
 sigmas_dm <- seq(.1, 5, by = .05)
 mu_vsigmas_dm <- seq(-3, 3, by = .05)
@@ -267,30 +266,26 @@ save_plot(paste(fig_path, "/", fig_num, "_2c rmdm error boundaries over mu_sigma
 # Row 3: coverage error rate of mdm in mu/sigma space with more range and sampling
 #
 #______________________________________________________________________________#
-
-
 # TO DO Shouldn't this be mu/sigma instead of mu?
 
-
-# Coverage error at larger mu_dms
 # Coverage error simulations for mu space  
-n_obs = 100
-mus_a = 10
-mus_dm <- seq(-100, 100, by = 5)
-sigmas_dm <- seq(.01, .5, by = .025)
-# mus_dm <- seq(5, 10, by = .1)
-# sigmas_dm <- seq(.1, .2, by = .02)
+n_obs = 50
+sigmas_dm <- seq(.1, .5, by = .01)
+mu_vsigmas_dm <- seq(-150, 150, by = 5)
+# mus_dm <- seq(-150, 150, by = 5)
 
 # Spread sigma_dm across sigma_a and sigma_b equally
-sigmas_ab = sigmas_dm/sqrt(2/n_obs)
+sigmas_a = sigmas_dm/sqrt(2/n_obs)
+sigmas_b = sigmas_a
 n_samples <- 1e3
-mu_ov_sigmas = NULL
+
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- 
-  quant_coverage_errors(mus_a = mus_a, sigmas_a = sigmas_ab, n_a = n_obs, 
-                        mus_b = mus_a + mus_dm, sigmas_b = sigmas_ab, n_b = n_obs, alphas = 0.05,
+  quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
+                        mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
+                        mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/I3_rmdm_error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
+                        overwrite=TRUE, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
                         rand.seed = rand.seed,
                         included_stats = c("rmdm"))
 
@@ -335,7 +330,7 @@ gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
   theme(legend.position="none")
 gg
 save_plot(paste(fig_path, "/", fig_num, "_3b rmdm coverage error test extended mu_ov_sigma.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 1.1, base_asp = 3, base_width = 3.3, dpi = 600) 
+          gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 3.3, dpi = 600) 
 
 
 

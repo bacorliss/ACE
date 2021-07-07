@@ -76,6 +76,8 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
   # if (max(df$y)<0.02) {gg1 <- gg1 + scale_y_continuous(labels = scales::scientific)}
   save_plot(paste(fig_path, "/F",fig_num, "_", base_name,"_E1", ".tiff", sep = ""),
             gg1, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
+  
+  
   # Experiment 2
   df <- tibble(group = as.factor(c(rep("A",length(xa2)),rep("B",length(xb2)))),y = c(xa2,xb2))
   df_stats <- df %>% group_by(group) %>% summarise(mean = mean(y),sd = sd(y))
@@ -199,16 +201,33 @@ xb1 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
 xa2 <- (a2-mean(a2))/sd(a2)*sqrt(2.3^2/2) + 10
 xb2 <- (b2-mean(b2))/sd(b2)*sqrt(2.85^2/2) + 11.2
 # Plot experiments and Difference of Means
-plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_mu", 
+gg_mu <- plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_mu", 
                  ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
+
+
+# Increase alpha
+#------------------------------------------------------------------------------
+# Keep group 1, change alpha only
+gg_mu_alpha <- plot_experiments(xa1, xb1, xa1, xb1, fig_num=fig_num, fig_path=fig_path, base_name="unsc_alpha", 
+                                ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2),
+                                conf.level.2 = 1-0.05/10000)
+# Steal jitter positions from mu_plot1 to use for alpha_plot2 to show they are 
+# exactly the same points
+q1 <- ggplot_build(gg_mu$gg1)
+q1$data[[1]]$x
+q2 <- ggplot_build(gg_mu_alpha$gg2)
+q2$data[[1]]$x <- q1$data[[1]]$x
+gq <- ggplot_gtable(q2)
+save_plot(paste(fig_path, "/F",fig_num, "_", "unsc_alpha","_E2", ".tiff", sep = ""),
+          gq, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
 
 
 # Increased std experiment 2
 #-------------------------------------------------------------------------------
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(4.5^2/2) + 10
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(4.5^2/2) + 10.3
+xa3 <- (a2-mean(a2))/sd(a2)*sqrt(4.5^2/2) + 10
+xb3 <- (b2-mean(b2))/sd(b2)*sqrt(4.5^2/2) + 10.3
 # Plot experiments and Difference of Means
-plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_sigma", 
+plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name="unsc_sigma", 
                  ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 
 
@@ -224,31 +243,6 @@ xb3 <- (b3-mean(b3))/sd(b3)*sqrt(2.3^2/2) + 10.3
 # Plot experiments and Difference of Means
 plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name="unsc_df", 
                  ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
-
-
-# Decrease alpha for experiment 2
-#-------------------------------------------------------------------------------
-rand_seed <- 0
-na1=25; nb1=25; na2=25; nb2=25;
-a1 <- rnorm(na1, mean = 0, sd = 1)
-b1 <- rnorm(nb1, mean = 0, sd = 1)
-a2 <- rnorm(na2, mean = 0, sd = 1)
-b2 <- rnorm(nb2, mean = 0, sd = 1)
-# Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(2.3^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
-xa2 <- (a1-mean(a1))/sd(a1)*sqrt(2.3^2/2) + 10
-xb2 <- (b1-mean(b1))/sd(b1)*sqrt(2.3^2/2) + 10.3
-# Plot experiments and Difference of Means
-plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_alpha", 
-                 ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2),
-                 conf.level.2 = 1-0.05/10000)
-
-
-
-
-
-
 
 
 
@@ -285,11 +279,25 @@ xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
 xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.40^2/2)/15 + 0.5
 xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.40^2/2)/15 + 0.54
 # Plot experiments and Difference of Means
-ggplots <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
+ggs_rmu <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rmu",data_scale = "relative")
-gg1 <- ggplots$gg1 + geom_blank(data=tibble(group=c('A','A'),y=c(8,12))) + scale_y_continuous(breaks = seq(8,12,1))
+gg1 <- ggs_rmu$gg1 + geom_blank(data=tibble(group=c('A','A'),y=c(8,12))) + scale_y_continuous(breaks = seq(8,12,1))
 save_plot(paste(fig_path, "/F",fig_num, "_", "rel_rmu","_E1", ".tiff", sep = ""),
           gg1, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
+
+# Alpha dm resuse group 1 from mu example
+# ---------------------
+gg_ralpha <- plot_experiments(xa1,xb1,xa1/3.5,xb1/3.5, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
+                 dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
+                 conf.level.2 = 1-0.05/1000)
+#Overwrite the figure for group 2 so it has exactly same placement as group 1
+q1 <- ggplot_build(gg1)
+q2 <- ggplot_build(gg_ralpha$gg2)
+q2$data[[1]]$x <- q1$data[[1]]$x
+gq <- ggplot_gtable(q2)
+save_plot(paste(fig_path, "/F",fig_num, "_", "rel_alpha","_E2", ".tiff", sep = ""),
+          gq, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
+
 
 
 # Relative sigma
@@ -323,18 +331,18 @@ ggplots <- plot_experiments(xa1, xb1, xa3, xb3, fig_num=fig_num, fig_path=fig_pa
                  dm_ybreaks = dm_ybreaks, base_name="rel_df", data_scale = "relative")
 
 
-# Decrease alpha for experiment 2
-#-------------------------------------------------------------------------------
-na1=15; nb1=15; na2=15; nb2=15;
-a1 <- rnorm(na1, mean = 0, sd = 1)
-b1 <- rnorm(nb1, mean = 0, sd = 1)
-a2 <- rnorm(na2, mean = 0, sd = 1)
-b2 <- rnorm(nb2, mean = 0, sd = 1)
-# Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
-xa2 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2)/3 + 10/3
-xb2 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2)/3 + 10.15/3
+# # Decrease alpha for experiment 2
+# #-------------------------------------------------------------------------------
+# na1=15; nb1=15; na2=15; nb2=15;
+# a1 <- rnorm(na1, mean = 0, sd = 1)
+# b1 <- rnorm(nb1, mean = 0, sd = 1)
+# a2 <- rnorm(na2, mean = 0, sd = 1)
+# b2 <- rnorm(nb2, mean = 0, sd = 1)
+# # Normalize points
+# xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2) + 10
+# xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
+# xa2 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2)/3 + 10/3
+# xb2 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2)/3 + 10.15/3
 plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                             dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
                             conf.level.2 = 1-0.05/1000)
