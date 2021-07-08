@@ -76,7 +76,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path,gt_colnames=gt_colnames)
-df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_unscaled_crit[[1]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "abs(~mu[DM]*phantom(.))",
                                                    include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -118,7 +118,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                    fig_path = fig_path,gt_colnames=gt_colnames)  
-df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "sigma[D]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -161,7 +161,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
-df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -212,7 +212,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
-df_unscaled_null[[4]] <-
+df_unscaled_crit[[4]] <-
   process_esize_simulations(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, ".tiff",sep = ""),

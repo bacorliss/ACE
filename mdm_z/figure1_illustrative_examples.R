@@ -188,7 +188,7 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
 #-------------------------------------------------------------------------------
 
 # Decreased mean offset for experiment 2
-rand_seed <- 0
+set.seed(0)
 na1=15; nb1=15; na2=15; nb2=15;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
@@ -267,7 +267,7 @@ dm_ybreaks = seq(-0.2, 0.2, 0.1)
 
 # Relative mu
 #-------------------------------------------------------------------------------
-rand_seed <- 1
+set.seed(0)
 na1=15; nb1=15; na2=15; nb2=15;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
@@ -292,9 +292,12 @@ gg_ralpha <- plot_experiments(xa1,xb1,xa1/3.5,xb1/3.5, fig_num=fig_num, fig_path
                  conf.level.2 = 1-0.05/1000)
 #Overwrite the figure for group 2 so it has exactly same placement as group 1
 q1 <- ggplot_build(gg1)
-q2 <- ggplot_build(gg_ralpha$gg2)
+q2 <- ggplot_build(gg_ralpha$gg2 + coord_cartesian(ylim = c(2.28,3.6)))
 q2$data[[1]]$x <- q1$data[[1]]$x
 gq <- ggplot_gtable(q2)
+
+print(gq)
+
 save_plot(paste(fig_path, "/F",fig_num, "_", "rel_alpha","_E2", ".tiff", sep = ""),
           gq, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
 
@@ -343,9 +346,9 @@ ggplots <- plot_experiments(xa1, xb1, xa3, xb3, fig_num=fig_num, fig_path=fig_pa
 # xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 10.15
 # xa2 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2)/3 + 10/3
 # xb2 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2)/3 + 10.15/3
-plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
-                            dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
-                            conf.level.2 = 1-0.05/1000)
+# plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
+#                             dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
+#                             conf.level.2 = 1-0.05/1000)
 
 
 

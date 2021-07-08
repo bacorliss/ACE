@@ -253,8 +253,10 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   
   # Relative sigma of difference
   # browser()
-  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
-  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
+  df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a)
+  df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a)
+  # df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
+  # df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
   df$is_rsigmad_1hat2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
   df_hat$is_rsigmad_1hat2 <- "lt"
   df$is_rsigmad_1hdt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
@@ -269,8 +271,8 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df_hdt$is_rsigmapool_1hdt2 <- "lt"
   
   # sigma of the difference of means distribution
-  df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a + df$mu_1dm/2)
-  df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a + df$mu_2dm/2)
+  df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a)
+  df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a)
   df$is_rsigmadm_1hat2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
   df_hat$is_rsigmadm_1hat2 <- "lt"
   df$is_rsigmadm_1hdt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
@@ -729,7 +731,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # load(file = "temp/plot_population_params.rds")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2", #"is_sigmad_1hat2",
+  param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2",
                    "is_rsigmad_1hat2", "is_dfdm_1hat2", "is_alpha_1hat2")
   # Alt sigmas: is_sigmapool_1hat2,is_rsigmapool_1hat2; is_sigmad_1hat2, is_rsigmad_1hat2
   

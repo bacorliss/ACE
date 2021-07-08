@@ -70,7 +70,6 @@ df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
@@ -255,7 +254,7 @@ df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rsigma_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1dm", indvar_pretty = "r*sigma[DM]", 
+  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1d", indvar_pretty = "r*sigma[DM]", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = 1)
 
