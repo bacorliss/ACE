@@ -51,8 +51,8 @@ source("R/mdm.R")
 source("R/rationormal_toolbox.R")
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
-mus_d_vect = seq(4.85,.1,-0.25)
-mus_a_vect = mus_d_vect*2
+mus_d_vect = seq(4.85, .1,-0.25)
+mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect = .1
 
@@ -197,9 +197,7 @@ df_alpha_pearson <-
 set.seed(rand.seed)
 mus_a_vect =  seq(10,20,0.2); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+1
-sigmas_ab_vect = mus_a_vect + 0.5 * (mus_b_vect - mus_a_vect)
-
-
+sigmas_ab_vect = mus_a_vect + .1 * (mus_a_vect)
 gt_colnames = "is_mudm_1hat2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,

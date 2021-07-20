@@ -49,8 +49,8 @@ yaxis_font_size <- 8
 # Coverage error simulations for mu space  
 n_obs = 100
 mus_a = 10
-mus_dm <- seq(-1.5, 1.5, by = .025)
-sigmas_dm <- seq(.01, .5, by = .005)
+mus_dm <- seq(-1.5, 1.5, by = .05)#by = .025)
+sigmas_dm <- seq(.01, .5, by = .01)#by = .005)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_ab = sigmas_dm/sqrt(2/n_obs)
 n_samples <- 1e3

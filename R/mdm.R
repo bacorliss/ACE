@@ -423,8 +423,8 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
   #' @description Calculates the relative most difference in means assuming with
   #' rmdm = mdm/X, X being the control group and Y the experimental
   #' 
-  #' @param x vector of measurements in control group
-  #' @param y vector of measurements in experimental group
+  #' @param x_ctrl vector of measurements in control group
+  #' @param y_exp vector of measurements in experimental group
   #' @param conf.level.mdm significance level for calculating upper mdm
   #' @param conf.level.rmdm significance level for calculating upper rmdm
   #' 
@@ -454,30 +454,23 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
     sd_dm = sqrt(sd_ctrl^2/n_ctrl + sd_exp^2/n_exp)
   }
 
-  # browser()
   # print(mean_ctrl)
   if (method =="qnormrat") {
-    # Calculate upper percentile specified by 
+    # # Each one tailed confidence bound specified by conf.level
+    # qn_lo <- qnormrat(1-conf.level, mean_dm, sd_dm, abs(mean_ctrl), se_ctrl)
+    # qn_hi <- qnormrat(conf.level, mean_dm, sd_dm, abs(mean_ctrl), se_ctrl)
+    # rmdm = max(abs(c(qn_lo, qn_hi)))
     rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, abs(mean_ctrl), se_ctrl)
     
-    # if (is.na(rmdm)) {browser();}
     
   } else if (method =="mdm_normalized") {
 
-    mdm <- mdm_normal_zdist(x_ctrl, y_exp, conf.level = 1-sqrt(1-conf.level)) 
-   
-    rmdm <- qnormrat(1-sqrt(1-conf.level), mdm, sd_dm, mean_ctrl, se_ctrl)
+    # mdm <- mdm_normal_zdist(x_ctrl, y_exp, conf.level = 1-sqrt(1-conf.level)) 
+    # 
+    # rmdm <- qnormrat(1-sqrt(1-conf.level), mdm, sd_dm, mean_ctrl, se_ctrl)
     
   } else {stop('rmdm_normal_zdist(): unsupported method')}
   
-  
-  
-  
-  # Calculate 95% CI of ratio of means, must input std into equations
-  # rmdm <- ttest_diffratio(df$mu_f, sqrt(sd(y)^2 + sd(x)^2), length(x)+length(y)-1, 
-  #                         mean(x), sd(x), length(y), alternative = "less", rho = 1, 
-  #                              var.equal = FALSE, conf.level = 0.95)$conf.int[2]
-    
     
   # browser()
   
