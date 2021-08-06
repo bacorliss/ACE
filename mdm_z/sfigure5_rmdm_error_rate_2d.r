@@ -38,7 +38,7 @@ fig_num = "5"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE, recursive=TRUE)
 rand.seed <- 0
-overwrite <- FALSE
+overwrite <- TRUE
 yaxis_font_size <- 8
 
 
@@ -263,96 +263,96 @@ save_plot(paste(fig_path, "/", fig_num, "_2c rmdm error boundaries over mu_sigma
 
 
 
-# Row 3: coverage error rate of mdm in mu/sigma space with more range and sampling
-#
-#______________________________________________________________________________#
-# TO DO Shouldn't this be mu/sigma instead of mu?
-
-# Coverage error simulations for mu space  
-n_obs = 50
-sigmas_dm <- seq(.1, .5, by = .01)
-mu_vsigmas_dm <- seq(-150, 150, by = 5)
-# mus_dm <- seq(-150, 150, by = 5)
-
-# Spread sigma_dm across sigma_a and sigma_b equally
-sigmas_a = sigmas_dm/sqrt(2/n_obs)
-sigmas_b = sigmas_a
-n_samples <- 1e3
-
-# Run simulations calculating error of mdm with mu and sigma swept
-df_results <- 
-  quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
-                        mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
-                        mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
-                        n_samples = n_samples, out_path = paste(fig_path, "/I3_rmdm_error_2D_mu_vs_sigma.rds",sep=""),
-                        overwrite=TRUE, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
-                        rand.seed = rand.seed,
-                        included_stats = c("rmdm"))
-
-# Plot 3: 2D error rate of rMDM < rmu in mu space
-#------------------------------------------------------------------------------
-# Convert from matrix to dataframe
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
-# Plot heatmap
-gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() + 
-  scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) + theme_classic(base_size=8) +
-  scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-                       (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-                         ticks.colour = "black",  direction = "horizontal"),
-                       breaks = c(0, 0.05, 2*0.05), limits=c(0,0.13), values = c(0,0.38,1)) +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "center",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.65, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-gg
-save_plot(paste(fig_path, "/", fig_num, "_3a rmdm coverage error extended mu_ov_sigma.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 3.3, dpi = 600) 
-
-# Hypotehsized error rate
-# Convert from matrix to data frame
-df_err_test <- cbind(sigma = sigmas_dm, as_tibble(error_test_codes(
-  df_results$pval_err_eq_zero_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas_dm)*length(mus_dm)),
-  df_results$pval_err_eq_alpha_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas_dm)*length(mus_dm))))) %>% gather(mu, z, -sigma)
-df_err_test$mu <- as.numeric(df_err_test$mu)
-df_err_test$sigma <- as.numeric(df_err_test$sigma)
-df_err_test$z <- factor(df_err_test$z,levels = c("0","1","2","3"))
-# Plot heat map
-gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
-  geom_tile()+
-  scale_x_continuous(expand=c(0,0)) +
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
-  theme_classic(base_size = 8) +
-  scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
-  geom_vline(xintercept=0, color="black", size=0.2) +
-  theme(legend.position="none")
-gg
-save_plot(paste(fig_path, "/", fig_num, "_3b rmdm coverage error test extended mu_ov_sigma.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 3.3, dpi = 600) 
-
-
-
-# Combine error rates across sigma values to visualize coverage error in relation to alpha
-#_______________________________________________________________________________
-# Calculate mean and 95% CI across sigma and plot
-
-mean_rmdm_err <- rowMeans(t(df_results$mean_err_abs_rmdm_lt_rmu_dm))
-sd_rmdm_err <- sqrt(rowVars(t(df_results$mean_err_abs_rmdm_lt_rmu_dm)))
-
-df_ci <- data.frame(mu_vsigmas_dm = mus_dm, mean_err = mean_rmdm_err, sd_err = sd_rmdm_err, 
-                    hi_95 = mean_rmdm_err + qnorm(0.975)*sd_rmdm_err, 
-                    lo_95 = mean_rmdm_err - qnorm(0.975)*sd_rmdm_err)
-gg <- ggplot(df_ci, aes(x = mu_vsigmas_dm, y = mean_err)) +
-  geom_line()+
-  geom_ribbon(aes(ymin = lo_95, ymax = hi_95), alpha = 0.1, linetype = 2) +
-  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
-  geom_hline(yintercept = 0.05, linetype="dashed")+
-  theme_classic(base_size=yaxis_font_size) +
-  theme(legend.position="none")
-gg
-save_plot(paste(fig_path, "/", fig_num, "_3c rmdm coverage error avg sigma versus mu_ov_sigma.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 1.1, base_asp = 3, base_width = 3.3, dpi = 600) 
+# # Row 3: coverage error rate of mdm in mu/sigma space with more range and sampling
+# #
+# #______________________________________________________________________________#
+# # TO DO Shouldn't this be mu/sigma instead of mu?
+# 
+# # Coverage error simulations for mu space  
+# n_obs = 50
+# sigmas_dm <- seq(.1, .5, by = .01)
+# mu_vsigmas_dm <- seq(-150, 150, by = 5)
+# # mus_dm <- seq(-150, 150, by = 5)
+# 
+# # Spread sigma_dm across sigma_a and sigma_b equally
+# sigmas_a = sigmas_dm/sqrt(2/n_obs)
+# sigmas_b = sigmas_a
+# n_samples <- 1e3
+# 
+# # Run simulations calculating error of mdm with mu and sigma swept
+# df_results <- 
+#   quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
+#                         mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
+#                         mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
+#                         n_samples = n_samples, out_path = paste(fig_path, "/I3_rmdm_error_2D_mu_vs_sigma.rds",sep=""),
+#                         overwrite=TRUE, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = TRUE,
+#                         rand.seed = rand.seed,
+#                         included_stats = c("rmdm"))
+# 
+# # Plot 3: 2D error rate of rMDM < rmu in mu space
+# #------------------------------------------------------------------------------
+# # Convert from matrix to dataframe
+# df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_rmdm_lt_rmu_dm)) %>% gather(mu, z, -sigma)
+# df$mu <- as.numeric(df$mu); df$sigma <- as.numeric(df$sigma)
+# # Plot heatmap
+# gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() + 
+#   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
+#   xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) + theme_classic(base_size=8) +
+#   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+#                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+#                          ticks.colour = "black",  direction = "horizontal"),
+#                        breaks = c(0, 0.05, 2*0.05), limits=c(0,0.13), values = c(0,0.38,1)) +
+#   theme(legend.position="top", legend.title = element_blank(),
+#         legend.justification = "center",  legend.key.height = unit(.05, "inch"),
+#         legend.key.width = unit(.65, "inch"),legend.margin = margin(0, 0, 0, 0),
+#         legend.box.spacing = unit(.1,"inch"))
+# gg
+# save_plot(paste(fig_path, "/", fig_num, "_3a rmdm coverage error extended mu_ov_sigma.tiff",sep=""),
+#           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 3.3, dpi = 600) 
+# 
+# # Hypothesized error rate
+# # Convert from matrix to data frame
+# df_err_test <- cbind(sigma = sigmas_dm, as_tibble(error_test_codes(
+#   df_results$pval_err_eq_zero_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas_dm)*length(mus_dm)),
+#   df_results$pval_err_eq_alpha_abs_rmdm_lt_rmu_dm > 0.05/(length(sigmas_dm)*length(mus_dm))))) %>% gather(mu, z, -sigma)
+# df_err_test$mu <- as.numeric(df_err_test$mu)
+# df_err_test$sigma <- as.numeric(df_err_test$sigma)
+# df_err_test$z <- factor(df_err_test$z,levels = c("0","1","2","3"))
+# # Plot heat map
+# gg<- ggplot(df_err_test, aes(mu, sigma, fill= z)) +
+#   geom_tile()+
+#   scale_x_continuous(expand=c(0,0)) +
+#   scale_y_continuous(expand=c(0,0)) +
+#   xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
+#   theme_classic(base_size = 8) +
+#   scale_fill_manual(values=c("white", "red", "blue","purple"),drop=FALSE) +
+#   geom_vline(xintercept=0, color="black", size=0.2) +
+#   theme(legend.position="none")
+# gg
+# save_plot(paste(fig_path, "/", fig_num, "_3b rmdm coverage error test extended mu_ov_sigma.tiff",sep=""),
+#           gg, ncol = 1, nrow = 1, base_height = 2.2, base_asp = 3, base_width = 3.3, dpi = 600) 
+# 
+# 
+# 
+# # Combine error rates across sigma values to visualize coverage error in relation to alpha
+# #_______________________________________________________________________________
+# # Calculate mean and 95% CI across sigma and plot
+# 
+# mean_rmdm_err <- rowMeans(t(df_results$mean_err_abs_rmdm_lt_rmu_dm))
+# sd_rmdm_err <- sqrt(rowVars(t(df_results$mean_err_abs_rmdm_lt_rmu_dm)))
+# 
+# df_ci <- data.frame(mu_vsigmas_dm = mu_vsigmas_dm, mean_err = mean_rmdm_err, sd_err = sd_rmdm_err, 
+#                     hi_95 = mean_rmdm_err + qnorm(0.975)*sd_rmdm_err, 
+#                     lo_95 = mean_rmdm_err - qnorm(0.975)*sd_rmdm_err)
+# gg <- ggplot(df_ci, aes(x = mu_vsigmas_dm, y = mean_err)) +
+#   geom_line()+
+#   geom_ribbon(aes(ymin = lo_95, ymax = hi_95), alpha = 0.1, linetype = 2) +
+#   xlab(expression(mu[DM]/sigma[DM])) + ylab(expression(sigma[DM])) +
+#   geom_hline(yintercept = 0.05, linetype="dashed")+
+#   theme_classic(base_size=yaxis_font_size) +
+#   theme(legend.position="none")
+# gg
+# save_plot(paste(fig_path, "/", fig_num, "_3c rmdm coverage error avg sigma versus mu_ov_sigma.tiff",sep=""),
+#           gg, ncol = 1, nrow = 1, base_height = 1.1, base_asp = 3, base_width = 3.3, dpi = 600) 
 
 

@@ -201,7 +201,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
 
                                    toggle_sign_rmu_d_hold_sigma = TRUE,
                                    toggle_sign_mean_ab = FALSE,
@@ -234,14 +234,14 @@ gt_colnames = c("is_rmudm_1hat2","is_rsigmad_1hat2", "is_dfdm_1hat2","is_alpha_1
 fig_name = paste("F", fig_num, "_5_esize_contest_free_null", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
-                                   sigmas_1a = 1, 
-                                   rmus_1d  = runif(n_sims,0.10, 0.2), 
-                                   rsigmas_1d = runif(n_sims, 1.3, 1.5),
+                                   sigmas_1a = .1, 
+                                   rmus_1d  = runif(n_sims,0.05, 0.1), 
+                                   rsigmas_1d = runif(n_sims, .6, .7),
                                    
                                    mus_2a  = 50,  
-                                   sigmas_2a = 1,
-                                   rmus_2d  = runif(n_sims,0.4, 0.5), 
-                                   rsigmas_2d = runif(n_sims, 1.7, 1.9),
+                                   sigmas_2a = .1,
+                                   rmus_2d  = runif(n_sims,0.15, 0.2), 
+                                   rsigmas_2d = runif(n_sims, .7, .8),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
