@@ -419,22 +419,20 @@ max_abs_cl_mean_z_standard <-  function(x_bar, sem_x, alpha) {
 # Relative form of mdm
   
 rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95, 
-                              verbose = FALSE,  var.equal = FALSE, method = "mdm_normalized")  {
+                              verbose = FALSE,  var.equal = FALSE, method = "fieller")  {
   #' @description Calculates the relative most difference in means assuming with
   #' rmdm = mdm/X, X being the control group and Y the experimental
   #' 
   #' @param x_ctrl vector of measurements in control group
   #' @param y_exp vector of measurements in experimental group
-  #' @param conf.level.mdm significance level for calculating upper mdm
-  #' @param conf.level.rmdm significance level for calculating upper rmdm
+  #' @param conf.level significance level for calculating upper mdm
   #' 
   #' @return relative most difference in means
   
   # Equation for pooled variance taken from:
   # https://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_confidence_intervals/bs704_confidence_intervals5.html
 
-  # browser()
-  
+  # Calculate basic sample statistics
   mean_ctrl = mean(x_ctrl)
   sd_ctrl = sd(x_ctrl)
   n_ctrl = length(x_ctrl)
@@ -445,8 +443,8 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
   n_exp = length(y_exp)
   se_exp = sd_exp/sqrt(n_exp)
   
-  
   mean_dm = mean_exp - mean_ctrl
+  
   # sd_dm is equivalent to se_d (standard error of difference)
   if (var.equal) {
     sd_dm = sqrt(  ( (n_ctrl - 1)*sd_ctrl^2 + (n_exp - 1)*sd_exp^2 ) / (n_ctrl + n_exp - 2)  ) * sqrt(1/n_exp + 1/n_exp)
@@ -454,7 +452,7 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
     sd_dm = sqrt(sd_ctrl^2/n_ctrl + sd_exp^2/n_exp)
   }
 
-  # print(mean_ctrl)
+  # Calculate RMDM based on specified method
   if (method =="qnormrat") {
     # # Each one tailed confidence bound specified by conf.level
     # qn_lo <- qnormrat(1-conf.level, mean_dm, sd_dm, abs(mean_ctrl), se_ctrl)
@@ -463,12 +461,15 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
     rmdm <- qnormrat(conf.level, abs(mean_dm), sd_dm, abs(mean_ctrl), se_ctrl)
     
     
-  } else if (method =="mdm_normalized") {
+  } else if (method =="fieller") {
 
-    # mdm <- mdm_normal_zdist(x_ctrl, y_exp, conf.level = 1-sqrt(1-conf.level)) 
-    # 
-    # rmdm <- qnormrat(1-sqrt(1-conf.level), mdm, sd_dm, mean_ctrl, se_ctrl)
+    # browser()
+    f <- n_ctrl + n_exp - 2
+    sSquared <- (sum((x_ctrl - mean_ctrl)^2) + sum((y_exp - mean_exp)^2))/f
     
+    fieller_int <- get_FiellerInterval(mean_ctrl, mean_exp, sSquared, 1/n_ctrl, 1/n_exp, f, v12 = 0, alpha=1-conf.level)
+    rmdm <- max(abs(c(fieller_int$lower,fieller_int$upper)))
+
   } else {stop('rmdm_normal_zdist(): unsupported method')}
   
     

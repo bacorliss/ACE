@@ -4,6 +4,70 @@ if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(cubature)
 
 
+
+
+
+get_FiellerInterval <- function(xbar, ybar, sSquared, v11, v22, f, v12 = 0, alpha=.025){
+  tQuantile <- qt(1-alpha, f)
+  A <- xbar^2 - v11*sSquared*tQuantile^2
+  if(A <= 0)
+    stop("confidence interval not available (unless you are okay with two disjoint intervals)")
+  B <- -2*((ybar - xbar)*xbar + sSquared*tQuantile^2*(v11 - v12))
+  C <- (ybar - xbar)^2 - sSquared*tQuantile^2*(v22 + v11 - 2*v12)
+  discriminant <- B^2 - 4*A*C
+  if(discriminant <= 0)
+    stop("confidence interval not available (complex-valued)")
+  center <- -B/2/A
+  width <- sqrt(discriminant)/2/A
+  list(lower = center - width, upper = center + width)
+}
+
+
+### verifications
+# case 1: exact (see overleaf pdf)
+verifyCase1 <- function(trueMuX, trueMuY, trueCommonSigma, xSampSize, ySampSize, confidence){
+  xs <- rnorm(n = xSampSize, mean = trueMuX, sd = trueCommonSigma)
+  ys <- rnorm(n = ySampSize, mean = trueMuY, sd = trueCommonSigma)
+  xbar <- mean(xs)
+  ybar <- mean(ys)
+  f <- xSampSize + ySampSize - 2
+  sSquared <- (sum((xs - xbar)^2) + sum((ys - ybar)^2))/f
+  v11 <- 1/xSampSize
+  v22 <- 1/ySampSize
+  
+  interval <- get_FiellerInterval(xbar, ybar, sSquared, v11, v22, f, v12 = 0, alpha=(1 - confidence)/2)
+  
+  trueRatio <- (trueMuY - trueMuX)/trueMuX
+  return(interval$lower < trueRatio && trueRatio < interval$upper)
+}
+
+# numReps <- 5000
+# # the following should roughly match what your confidence is
+# sum(replicate(numReps, verifyCase1(10, # true muX
+#                                    20, # true muY
+#                                    .1, # sigma
+#                                    20, # m
+#                                    30, # n
+#                                    .95 # confidence
+# )))/numReps
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 moments_foldnorm <- function(mu, sigma) {
   #' @description given the mean and standard deviation of a normal distribution 
   #' before absolute value transform, calculates the mean, std, and variance 
