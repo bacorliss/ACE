@@ -228,20 +228,20 @@ df_relative_null[[4]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
 set.seed(rand.seed+5)
-n1 <- runif(n_sims, 6, 25)
-n2 <- runif(n_sims, 30, 40)
+n1 <- ceiling(runif(n_sims, 6-1, 25))
+n2 <- ceiling(runif(n_sims, 30-1, 40))
 gt_colnames = c("is_rmudm_1hat2","is_rsigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_null", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = .1, 
                                    rmus_1d  = runif(n_sims,0.05, 0.1), 
-                                   rsigmas_1d = runif(n_sims, .6, .7),
+                                   rsigmas_1d = runif(n_sims, .2, .35),
                                    
                                    mus_2a  = 50,  
                                    sigmas_2a = .1,
                                    rmus_2d  = runif(n_sims,0.15, 0.2), 
-                                   rsigmas_2d = runif(n_sims, .7, .8),
+                                   rsigmas_2d = runif(n_sims, .35, .5),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
@@ -262,7 +262,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    gt_colnames=gt_colnames)
 df_relative_null[[5]] <- 
   process_esize_simulations(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            include_bf = include_bf, parallel_sims = TRUE,
                             fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                             fig_path = fig_path)
 df_relative_null[[6]] <- 

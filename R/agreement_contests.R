@@ -939,6 +939,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   set.seed(rand.seed)
   
   # sprintf("%.3f+-")
+  
   # Use Exp 1 and 2 coefficients to generate data from normalized base data
   x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
                       sd = df$sigma_1a), nrow = df$n_samples, 
@@ -964,16 +965,25 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
                                      stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
   stat_list <- colnames(dfs_1)
   
+  # browser();
+  # if (any(is.nan(dfs_1) || is.nan(dfs_2))) {browser();}
+  
+  save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
+  # # load(file = "temp/quantify_esize_simulation.RData")
   
   dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
   # Means and std of each statistic
   for (i in seq_along(stat_list)) {
     
-    dfc[[paste("exp1_mean_", stat_list[i],sep='')]] <- mean(dfs_1[[stat_list[i]]])
-    dfc[[paste("exp1_sd_", stat_list[i],sep='')]]   <- sd(dfs_1[[stat_list[i]]])
     
-    dfc[[paste("exp2_mean_", stat_list[i],sep='')]] <- mean(dfs_2[[stat_list[i]]])
-    dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]])
+    
+    dfc[[paste("exp1_mean_", stat_list[i],sep='')]] <- mean(dfs_1[[stat_list[i]]], na.rm = TRUE)
+    dfc[[paste("exp1_sd_", stat_list[i],sep='')]]   <- sd(dfs_1[[stat_list[i]]], na.rm = TRUE)
+    
+    dfc[[paste("exp2_mean_", stat_list[i],sep='')]] <- mean(dfs_2[[stat_list[i]]], na.rm = TRUE)
+    dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]], na.rm = TRUE)
+    
+    dfc[[paste("exp12_npass_", stat_list[i],sep='')]] <- sum(!is.nan(dfs_1[[stat_list[i]]]) & !is.nan(dfs_2[[stat_list[i]]]))
   }
 
  
@@ -984,7 +994,8 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
     dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
       sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
-            abs(dfs_2[[stat_list[i]]]))) / df$n_samples
+            abs(dfs_2[[stat_list[i]]]))) / 
+      dfc[[paste("exp12_npass_", stat_list[i],sep='')]]
     # Calcualte different of effect size between experiments
     dfc[[paste("mean_diff_", stat_list[i], "_1hat2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -

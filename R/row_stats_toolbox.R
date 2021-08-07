@@ -571,7 +571,6 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_hat$rmdm <- "<"
   df_hdt$rmdm <- ">"
   df_pretty$rmdm <- "r*delta[M]"
-  # browser();
   
   # 11) Least Difference in Means
   df$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level=conf.level)

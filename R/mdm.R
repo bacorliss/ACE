@@ -467,7 +467,10 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
     f <- n_ctrl + n_exp - 2
     sSquared <- (sum((x_ctrl - mean_ctrl)^2) + sum((y_exp - mean_exp)^2))/f
     
-    fieller_int <- get_FiellerInterval(mean_ctrl, mean_exp, sSquared, 1/n_ctrl, 1/n_exp, f, v12 = 0, alpha=1-conf.level)
+    fieller_int <- tryCatch(get_FiellerInterval(mean_ctrl, mean_exp, sSquared, 
+                                                1/n_ctrl, 1/n_exp, f, v12 = 0, alpha=1-conf.level), 
+                            error = function(c) data.frame(upper = NaN, lower = NaN))
+    
     rmdm <- max(abs(c(fieller_int$lower,fieller_int$upper)))
 
   } else {stop('rmdm_normal_zdist(): unsupported method')}

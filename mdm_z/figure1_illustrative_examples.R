@@ -294,6 +294,7 @@ gg_ralpha <- plot_experiments(xa1,xb1,xa1/3.5,xb1/3.5, fig_num=fig_num, fig_path
 q1 <- ggplot_build(gg1)
 q2 <- ggplot_build(gg_ralpha$gg2 + coord_cartesian(ylim = c(2.28,3.6)))
 q2$data[[1]]$x <- q1$data[[1]]$x
+q2$data[[1]]$x[seq(na1+1, na1+na2, 1)] <- q2$data[[1]]$x[seq(na1+1, na1+na2, 1)] - 1
 gq <- ggplot_gtable(q2)
 
 # grid.draw(gq)
