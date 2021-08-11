@@ -672,14 +672,14 @@ pop_params_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_si
     # are constant 
     #
     # rsigma_d =   sigma_d_old     =     sigma_d_new
-    #            --------------       ---------------
-    #              avg_mu_ab_old           avg_mu_ab_new
+    #            ______________         ________________
+    #              avg_mu_ab_old         avg_mu_ab_new
     #
     # Note: avg_mean_ab = (mu_a + mu_b) / 2
     #
     #
     #  sigma_d_new =  sigma_d_old * avg_mu_ab_new
-    #                ---------------------------
+    #                ____________________________
     #                       avg_mu_ab_old
     #
     #
@@ -872,7 +872,6 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   n_sims = dim(df_in)[1]
   df <- df_in
   
-  # browser();
   # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
   # # load(file = "temp/debug.RData")
 
@@ -935,6 +934,9 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   #' mean and std of each candidate statistic across samples along with their 
   #' comparison error for determining higher agreement.
   
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
+  # # load(file = "temp/quantify_esize_simulation.RData")
+  
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
   
@@ -954,8 +956,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   x_2b = matrix(rnorm(df$n_samples * df$n_2b, mean = df$mu_2b, 
                       sd = df$sigma_2b), nrow = df$n_samples, 
                 ncol = df$n_2b)
-  #save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # # load(file = "temp/debug.RData")
+  
   
   
   # Calculate effect sizes for both experiments
@@ -965,37 +966,33 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
                                      stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
   stat_list <- colnames(dfs_1)
   
-  # browser();
-  # if (any(is.nan(dfs_1) || is.nan(dfs_2))) {browser();}
   
-  save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
-  # # load(file = "temp/quantify_esize_simulation.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
+  # load(file = "temp/quantify_esize_simulation.RData")
   
   dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
   # Means and std of each statistic
+
   for (i in seq_along(stat_list)) {
-    
-    
-    
     dfc[[paste("exp1_mean_", stat_list[i],sep='')]] <- mean(dfs_1[[stat_list[i]]], na.rm = TRUE)
     dfc[[paste("exp1_sd_", stat_list[i],sep='')]]   <- sd(dfs_1[[stat_list[i]]], na.rm = TRUE)
     
     dfc[[paste("exp2_mean_", stat_list[i],sep='')]] <- mean(dfs_2[[stat_list[i]]], na.rm = TRUE)
     dfc[[paste("exp2_sd_", stat_list[i],sep='')]]   <- sd(dfs_2[[stat_list[i]]], na.rm = TRUE)
     
-    dfc[[paste("exp12_npass_", stat_list[i],sep='')]] <- sum(!is.nan(dfs_1[[stat_list[i]]]) & !is.nan(dfs_2[[stat_list[i]]]))
+    dfc[[paste("exp12_nincluded_", stat_list[i],sep='')]] <- sum(!is.nan(dfs_1[[stat_list[i]]]) & !is.nan(dfs_2[[stat_list[i]]]))
   }
 
  
   # Compare magnitude and difference with each statistic between exp 1 and exp 2
   for (i in seq_along(stat_list)) {
-
-    # Determine if exp 1 has higher agreement than (hat) than exp 2
+    # Determine if exp 1 has higher agreement/disagreement than (hat) than exp 2
+    # Candidates that returns NaNs are automatically designated as not doing this
+    #   (an incorrect wrong designation)
     dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
       sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
-            abs(dfs_2[[stat_list[i]]]))) / 
-      dfc[[paste("exp12_npass_", stat_list[i],sep='')]]
+            abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
     # Calcualte different of effect size between experiments
     dfc[[paste("mean_diff_", stat_list[i], "_1hat2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
@@ -1004,9 +1001,18 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
 
   
   df_out <- cbind(df, dfc)
+  
+  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]]))
+    { save(list = ls(all.names = TRUE),
+    file = "temp/quantify_esize_simulation.RData",envir = environment())}
+  
   # Carry over data frame metadata
   user_attr <- attr(dfs_1,"user_attributes")
   for (i in seq_along(user_attr)) {attr(df_out,user_attr[i])<-attr(dfs_1,user_attr[i])}
+  
+  
+  save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
+  # # load(file = "temp/quantify_esize_simulation.RData")
   
   return(df_out)
 }
@@ -1142,6 +1148,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   # Calculate group means and corrected confidence intervals
   # Note: if it errors here with df_result having one group then plyr package 
   # was loaded before dplyr
+  # browser();
+  
   df_result <- df_pretty %>%   
     group_by(name) %>% 
     summarize(mean = mean(value), bs_ci_mean_str = toString(
@@ -1256,12 +1264,10 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
 
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
-  
+  # save(list = ls(all.names = TRUE), file = "temp/process_esize_simulations.RData",envir = environment())
+  # load(file = "temp/process_esize_simulations.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
-  
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
@@ -1295,10 +1301,52 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   all_dfs[[2]] <- df_tidy; 
   all_dfs[[3]] <- df_pretty; 
   if (exists("df_plotted")) {all_dfs[[4]] <- df_plotted; }
+  
+  # save(list = ls(all.names = TRUE), file = "temp/process_esize_simulations.RData",envir = environment())
+  
+  # Some candidate stats may return NaNs, visualize wist histogram of fraction 
+  # of NaN samples across simulations
+  plot_nincluded_samples(df = df_es, var_prefix = "nincluded",
+                               fig_name = fig_name, fig_path = fig_path)
+  
   return(all_dfs)
 }
 
 
+plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name = fig_name, fig_path = fig_path) {
+  
+  # save(list = ls(all.names = TRUE), file = "temp/plot_nincluded_sampless.RData",envir = environment())
+  # load(file = "temp/plot_nincluded_sampless.RData")
+  
+  
+  # Get list of all variables that match the variable suffix string
+  matched_vars <- grep(var_prefix,colnames(df), perl=TRUE, value=TRUE)
+  
+  
+  df_nins <- df %>% pivot_longer(matched_vars, names_to = "variable", values_to = "count") %>% select(variable, count)
+  df_nins$count_prc = 1-df_nins$count/n_samples
+  # df_nins$variable <- sapply(df_nins$variable, function(x) {substring(x,17, nchar(x))})
+  df_nins$variable <- as.factor(df_nins$variable)
+  levels(df_nins$variable) <- as.factor(attr(df,"varnames_pretty") )
+  
+  gg <- ggplot(data = df_nins, aes(x = count_prc), fill = variable) +
+    geom_histogram(bins = 20) + facet_wrap(~variable, labeller=label_parsed) +
+    geom_vline(xintercept = 0.05, color = "red") +
+    scale_y_continuous(trans='log10') +
+    ylab("Log 10 Count") + xlab("fract discarded samples across sims") +
+    theme_classic()
+  print(gg)
+  save_plot(paste(fig_path,  '/',   str_replace(fig_name, '.tiff$', 'histo_fract_discard.tiff'),
+                  sep = ""), gg, ncol = 1, nrow = 1, 
+            base_height = 5, base_width = 5, dpi = 600)
+
+  # Check that all 
+  if (any(df_nins$count_prc > 0.05))
+  {stop(sprintf('More than 5%% of samples in %i simulations returned NaN',
+                  sum(df_nins$count_prc > 0.05)))}
+  
+  attr(df,"varnames_pretty")
+}
 
 lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_path,
                                      dir_to_agreement=1, alpha = 0.05) {
@@ -1318,7 +1366,7 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   #' candidate statistics versus the indepdent variable.
   
   
-  save(list = ls(all.names = TRUE), file = "temp/lineplot_indvar_vs_stats.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/lineplot_indvar_vs_stats.RData",envir = environment())
   # load(file = "temp/lineplot_indvar_vs_stats.RData")
   # browser();
   
