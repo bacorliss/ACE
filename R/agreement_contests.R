@@ -168,75 +168,75 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   
   # Dataframes that store direction of inequality for each parameter
   # hat: Exp 1 higher agreement than exp 2
-  df_hat = data.frame(is_mud_1hat2 = 0)
+  df_ldt = data.frame(is_mud_1ldt2 = 0)
   # hdt: Exp 2 higher disagreement than exp 2
-  df_hdt = data.frame(is_mud_1hdt2 = 0)
+  df_lat = data.frame(is_mud_1hdt2 = 0)
   
   # Mean of the difference
   # df$mu_1d <- df$mu_1b - df$mu_1a
   # df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_1hat2 <-  abs(df$mu_1d) < abs(df$mu_2d)
-  df_hat$is_mud_1hat2 <- "lt"
-  df$is_mud_1hdt2 <- !df$is_mud_1hat2
-  df_hdt$is_mud_1hdt2 <- "gt"
+  df$is_mud_1ldt2 <-  abs(df$mu_1d) < abs(df$mu_2d)
+  df_ldt$is_mud_1ldt2 <- "lt"
+  df$is_mud_1hdt2 <- !df$is_mud_1ldt2
+  df_lat$is_mud_1hdt2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-  df$is_sigmad_1hat2 <-  df$sigma_1d < df$sigma_2d
-  df_hat$is_sigmad_1hat2 <- "lt"
-  df$is_sigmad_1hdt2 <- df$is_sigmad_1hat2
-  df_hdt$is_sigmad_1hdt2 <- "lt"
+  df$is_sigmad_1ldt2 <-  df$sigma_1d < df$sigma_2d
+  df_ldt$is_sigmad_1ldt2 <- "lt"
+  df$is_sigmad_1hdt2 <- df$is_sigmad_1ldt2
+  df_lat$is_sigmad_1hdt2 <- "lt"
   
   # Degrees of freedom of the difference
   df$df_1d <- df$n_1a + df$n_1b - 2
   df$df_2d <- df$n_2a + df$n_2b - 2
-  df$is_dfd_1hat2 <- df$df_1d > df$df_2d
-  df_hat$is_dfd_1hat2 <- "gt"
-  df$is_dfd_1hdt2 <- df$is_dfd_1hat2
-  df_hdt$is_dfd_1hdt2 <- "gt"
+  df$is_dfd_1ldt2 <- df$df_1d > df$df_2d
+  df_ldt$is_dfd_1ldt2 <- "gt"
+  df$is_dfd_1hdt2 <- df$is_dfd_1ldt2
+  df_lat$is_dfd_1hdt2 <- "gt"
   
   # Degrees of freedom of the difference in means
-  df$is_dfdm_1hat2 <- df$df_1d > df$df_2d
-  df_hat$is_dfdm_1hat2 <- "gt"
-  df$is_dfdm_1hdt2 <- df$is_dfdm_1hat2
-  df_hdt$is_dfdm_1hdt2 <- "gt"
+  df$is_dfdm_1ldt2 <- df$df_1d > df$df_2d
+  df_ldt$is_dfdm_1ldt2 <- "gt"
+  df$is_dfdm_1hdt2 <- df$is_dfdm_1ldt2
+  df_lat$is_dfdm_1hdt2 <- "gt"
   
   # Pooled standard deviation
   df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
                             (df$n_1a-1 + df$n_1b -1 )  )
   df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
                             (df$n_2a-1 + df$n_2b-1 ))
-  df$is_sigmapool_1hat2 <- df$sigma_1pool < df$sigma_2pool
-  df_hat$is_sigmapool_1hat2 <- "lt"
-  df$is_sigmapool_1hdt2 <-  df$is_sigmapool_1hat2
-  df_hdt$is_sigmapool_1hdt2 <- "lt"
+  df$is_sigmapool_1ldt2 <- df$sigma_1pool < df$sigma_2pool
+  df_ldt$is_sigmapool_1ldt2 <- "lt"
+  df$is_sigmapool_1hdt2 <-  df$is_sigmapool_1ldt2
+  df_lat$is_sigmapool_1hdt2 <- "lt"
   
   # Mean and std of difference in means (taken from mean of D since we had the option
   # to invert the sign for D earlier in code)
   df$mu_1dm <- df$mu_1d
   df$mu_2dm <- df$mu_2d
-  df$is_mudm_1hat2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
-  df_hat$is_mudm_1hat2 <- "lt"
-  df$is_mudm_1hdt2 <-  !df$is_mudm_1hat2
-  df_hdt$is_mudm_1hdt2 <- "gt"
+  df$is_mudm_1ldt2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
+  df_ldt$is_mudm_1ldt2 <- "lt"
+  df$is_mudm_1hdt2 <-  !df$is_mudm_1ldt2
+  df_lat$is_mudm_1hdt2 <- "gt"
   
   # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/df$n_1a + df$sigma_1b^2/df$n_1b)
   df$sigma_2dm <- sqrt(df$sigma_2a^2/df$n_2a + df$sigma_2b^2/df$n_2b)
-  df$is_sigmadm_1hat2 <-  df$sigma_1dm < df$sigma_2dm
-  df_hat$is_sigmadm_1hat2 <- "lt"
-  df$is_sigmadm_1hdt2 <- df$is_sigmadm_1hat2
-  df_hdt$is_sigmadm_1hdt2 <- "lt"
+  df$is_sigmadm_1ldt2 <-  df$sigma_1dm < df$sigma_2dm
+  df_ldt$is_sigmadm_1ldt2 <- "lt"
+  df$is_sigmadm_1hdt2 <- df$is_sigmadm_1ldt2
+  df_lat$is_sigmadm_1hdt2 <- "lt"
   
   # ALPHA: significance level
   # Higher significance level, higher agreement
-  df$is_alpha_1hat2     <- df$alpha_1 > df$alpha_2
-  df_hat$is_alpha_1hat2 <- "gt"
+  df$is_alpha_1ldt2     <- df$alpha_1 > df$alpha_2
+  df_ldt$is_alpha_1ldt2 <- "gt"
   # Higher significance level, higher disagreement
   df$is_alpha_1hdt2     <- df$alpha_1 > df$alpha_2
-  df_hdt$is_alpha_1hat2 <- "gt" 
+  df_lat$is_alpha_1ldt2 <- "gt" 
   
   # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
   # determines whether results are in null region of critical region of t-test
@@ -246,10 +246,10 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # Statistics of difference of means distribution 
   df$rmu_1dm <- df$mu_1dm / df$mu_1a
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  df$is_rmudm_1hat2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
-  df_hat$is_rmudm_1hat2 <- "lt"
+  df$is_rmudm_1ldt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
+  df_ldt$is_rmudm_1ldt2 <- "lt"
   df$is_rmudm_1hdt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
-  df_hdt$is_rmudm_1hdt2 <- "gt"
+  df_lat$is_rmudm_1hdt2 <- "gt"
   
   # Relative sigma of difference
   # browser()
@@ -257,26 +257,26 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a)
   # df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
   # df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmad_1hat2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
-  df_hat$is_rsigmad_1hat2 <- "lt"
+  df$is_rsigmad_1ldt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
+  df_ldt$is_rsigmad_1ldt2 <- "lt"
   df$is_rsigmad_1hdt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
-  df_hdt$is_rsigmad_1hdt2 <- "lt"
+  df_lat$is_rsigmad_1hdt2 <- "lt"
   
   # Relative Pooled Sigma
   df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmapool_1hat2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
-  df_hat$is_rsigmapool_1hat2 <- "lt"
+  df$is_rsigmapool_1ldt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
+  df_ldt$is_rsigmapool_1ldt2 <- "lt"
   df$is_rsigmapool_1hdt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
-  df_hdt$is_rsigmapool_1hdt2 <- "lt"
+  df_lat$is_rsigmapool_1hdt2 <- "lt"
   
   # sigma of the difference of means distribution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a)
-  df$is_rsigmadm_1hat2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
-  df_hat$is_rsigmadm_1hat2 <- "lt"
+  df$is_rsigmadm_1ldt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
+  df_ldt$is_rsigmadm_1ldt2 <- "lt"
   df$is_rsigmadm_1hdt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
-  df_hdt$is_rsigmadm_1hdt2 <- "lt"
+  df_lat$is_rsigmadm_1hdt2 <- "lt"
   
   # Population parameter differences
   df$mean_mud_2m1 <- df$mu_2dm - df$mu_1dm
@@ -284,8 +284,8 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
   df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
   
-  attr(df,"df_hat") <- df_hat
-  attr(df,"df_hdt") <- df_hdt
+  attr(df,"df_ldt") <- df_ldt
+  attr(df,"df_lat") <- df_lat
   
   # browser();
   # Plot generated population parameters
@@ -731,9 +731,9 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   # load(file = "temp/plot_population_params.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2",
-                   "is_rsigmad_1hat2", "is_dfdm_1hat2", "is_alpha_1hat2")
-  # Alt sigmas: is_sigmapool_1hat2,is_rsigmapool_1hat2; is_sigmad_1hat2, is_rsigmad_1hat2
+  param_fields = c("is_mudm_1ldt2","is_rmudm_1ldt2","is_sigmad_1ldt2",
+                   "is_rsigmad_1ldt2", "is_dfdm_1ldt2", "is_alpha_1ldt2")
+  # Alt sigmas: is_sigmapool_1ldt2,is_rsigmapool_1ldt2; is_sigmad_1ldt2, is_rsigmad_1ldt2
   
   # bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
   if (!all(sapply(gt_colnames, function(x) any(x==param_fields)))) {stop("gt_colnames is not correctly worded")}
@@ -989,12 +989,12 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
     # Determine if exp 1 has higher agreement/disagreement than (hat) than exp 2
     # Candidates that returns NaNs are automatically designated as not doing this
     #   (an incorrect wrong designation)
-    dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]] <- 
+    dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]] <- 
       sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
             abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
     # Calcualte different of effect size between experiments
-    dfc[[paste("mean_diff_", stat_list[i], "_1hat2", sep='')]] <-
+    dfc[[paste("mean_diff_", stat_list[i], "_1ldt2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
       abs(dfc[[paste("exp1_mean_", stat_list[i],sep='')]])
   }
@@ -1002,7 +1002,7 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   df_out <- cbind(df, dfc)
   
-  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1hat2", sep='')]]))
+  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]]))
     { save(list = ls(all.names = TRUE),
     file = "temp/quantify_esize_simulation.RData",envir = environment())}
   
@@ -1290,7 +1290,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
     df_compare_string <- tibble(lt="Lesser", gt = "Greater")
     df_plotted <- 
       plot_esize_simulations(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
-                             compare_string = df_compare_string[[attr(df_init,'df_hat')[[gt_colname]]]],
+                             compare_string = df_compare_string[[attr(df_init,'df_ldt')[[gt_colname]]]],
                              y_ax_str = y_ax_str)
   }
   

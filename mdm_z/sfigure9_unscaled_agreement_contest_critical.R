@@ -50,7 +50,7 @@ df_unscaled_crit = list();
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 20, 
@@ -91,7 +91,7 @@ df_unscaled_crit[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_sigmad_1hat2" 
+gt_colnames = "is_sigmad_1ldt2" 
 fig_name = paste("F", fig_num, "_2_esize_", "_2_esize_contest_sigma_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -134,7 +134,7 @@ source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 6, 20))
 n2 <- round(runif(n_sims, 15, 30))
 set.seed(rand.seed)
-gt_colnames = "is_dfdm_1hat2"
+gt_colnames = "is_dfdm_1ldt2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -183,7 +183,7 @@ df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_alpha_1hat2"
+gt_colnames = "is_alpha_1ldt2"
 fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -236,7 +236,7 @@ df_unscaled_crit[[4]] <-
 set.seed(rand.seed)
 n1 <- round(runif(n_sims, 5, 8))
 n2 <- round(runif(n_sims, 15, 30))
-gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
+gt_colnames = c("is_mudm_1ldt2","is_sigmad_1ldt2", "is_dfdm_1ldt2","is_alpha_1ldt2")
 fig_name = paste("F", fig_num, "_4_esize_contest_free_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 

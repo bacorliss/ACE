@@ -34,7 +34,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 n_samples = 1e3
 n_obs = 50
 rand.seed = 1
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 parallel_sims = TRUE
 include_bf = TRUE
 
@@ -56,7 +56,7 @@ mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect = .1
 
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
 df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -88,7 +88,7 @@ set.seed(rand.seed)
 sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
 mus_a_vect = sigmas_ab_vect*10
 mus_b_vect = mus_a_vect;
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_sigma", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -121,7 +121,7 @@ set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
 mus_ab_vect = 10
 sigmas_ab_vect = .5
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_df", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_ab_vect, 
@@ -156,7 +156,7 @@ set.seed(rand.seed)
 alpha_1 = 0.05/seq(1, 100,5)
 alpha_2 = 0.05/seq(1, 100,5)
 n_sims = length(alpha_1)
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_alpha", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 20, 
@@ -198,7 +198,7 @@ set.seed(rand.seed)
 mus_a_vect =  seq(10,20,0.2); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+1
 sigmas_ab_vect = mus_a_vect + .1 * (mus_a_vect)
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
@@ -231,7 +231,7 @@ set.seed(rand.seed)
 mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect) 
 mus_a_vect = mus_b_vect
 sigmas_ab_vect = 1
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_rsigma", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -269,7 +269,7 @@ n_1ab_vect = seq(44, 100, 2); n_sims = length(n_1ab_vect)
 mus_a_vect = 10
 mus_b_vect = 10
 sigmas_ab_vect = 1
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_df", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -304,7 +304,7 @@ set.seed(rand.seed)
 alpha_1 = 0.05/seq(1, 100,5)
 alpha_2 = 0.05/seq(1, 100,5)
 n_sims = length(alpha_1)
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
 df_init <- generateExperiment_Data(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 10, 
