@@ -185,7 +185,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = 30, n_1b = 30,
                                    n_2a = 30, n_2b = 30, 
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
 
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
@@ -216,25 +216,25 @@ df_unscaled_null[[4]] <-
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 5, 10))
-n2 <- round(runif(n_sims, 15, 30))
+n2 <- round(runif(n_sims, 15, 20))
 set.seed(rand.seed+1)
 gt_colnames = c("is_mudm_1hat2","is_sigmad_1hat2", "is_dfdm_1hat2","is_alpha_1hat2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 20, 
+                                   mus_1a  = 40, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims,2, 5), 
-                                   sigmas_1ao = runif(n_sims,20,24),
+                                   mus_1ao  = runif(n_sims,1, 2.5), 
+                                   sigmas_1ao = runif(n_sims,10,12),
                                    
-                                   mus_2a  = 500,  
+                                   mus_2a  = 1000,  
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims,9, 12), 
-                                   sigmas_2ao = runif(n_sims,32,40),
+                                   mus_2ao  = runif(n_sims,4, 6), 
+                                   sigmas_2ao = runif(n_sims,16,20),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 5, 20),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,

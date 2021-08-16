@@ -727,8 +727,8 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #' 
   #' @return no return, exports figures to disk
 
-  save(list = ls(all.names = TRUE), file = "temp/plot_population_params.rds",envir = environment())
-  # load(file = "temp/plot_population_params.rds")
+  # save(list = ls(all.names = TRUE), file = "temp/plot_population_params.RData",envir = environment())
+  # load(file = "temp/plot_population_params.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mudm_1hat2","is_rmudm_1hat2","is_sigmad_1hat2",
@@ -872,8 +872,8 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   n_sims = dim(df_in)[1]
   df <- df_in
   
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # # load(file = "temp/debug.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulations.RData",envir = environment())
+  # # load(file = "temp/quantify_esize_simulations.RData")
 
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
@@ -1040,8 +1040,8 @@ tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TR
   #' 
   #' @return df_tidy tidy (long) version of input dataframe
   
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # # load(file = "temp/debug.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/tidy_esize_simulations.RData",envir = environment())
+  # # load(file = "temp/tidy_esize_simulations.RData")
   
   # Check if gt_colname exists
   if (length(grep(gt_colname, names(df))) == 0) stop("gt_colname does not exist in dataframe")
@@ -1105,8 +1105,8 @@ pretty_esize_levels<- function(df, var_prefix) {
   #' 
   #' @return df_pretty converts levels of df into pretty format (for plotting)
   
-  # save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/pretty_esize_levels.RData",envir = environment())
+  # load(file = "temp/pretty_esize_levels.RData")
 
   # Get current names for levels and the basenames for them to be matched against
   orig_levels <- levels(df$name)
@@ -1142,8 +1142,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   #' 
   #' @return no return, exports figures to disk
   
-  save(list = ls(all.names = TRUE), file = "temp/debug.RData",envir = environment())
-  # load(file = "temp/debug.RData")
+  save(list = ls(all.names = TRUE), file = "temp/plot_esize_simulations.RData",envir = environment())
+  # load(file = "temp/plot_esize_simulations.RData")
   
   # Calculate group means and corrected confidence intervals
   # Note: if it errors here with df_result having one group then plyr package 
@@ -1336,7 +1336,7 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
     ylab("Log 10 Count") + xlab("fract discarded samples across sims") +
     theme_classic()
   print(gg)
-  save_plot(paste(fig_path,  '/',   str_replace(fig_name, '.tiff$', 'histo_fract_discard.tiff'),
+  save_plot(paste(fig_path,  '/',   'histo_fract_discard', fig_name,
                   sep = ""), gg, ncol = 1, nrow = 1, 
             base_height = 5, base_width = 5, dpi = 600)
 
