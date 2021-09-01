@@ -7,6 +7,7 @@
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(docstring)
+p_load(cubature)
 source("R/rationormal_toolbox.R")
 
 
@@ -72,149 +73,86 @@ mdm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.leve
 }
 
 
-mdm_normal_tdist <- function(x,y = NULL, conf.level = 0.95, verbose = FALSE, 
-                             var.equal = FALSE, search_pad_percent = 0.01) {
-  #' Calculate most difference in means using t distribution
-  #'
-  #' @description  Calculate most difference in means statistic from integrating a
-  #' central normal t-distribution pdf shifted by -x_bar Using a root finding 
-  #' function to integrate over a normal CDF, with area under the curve equal 
-  #' to (1-a). Calculate stats of the difference in means distribution for two 
-  #' samples, or keeps same distribution for one sample case.
-  #'
-  #' @param x measurements from first group
-  #' @param y measurements from second group (optional)
-  #' @param conf.level confidence level for statistics (default 0.95)
-  #' @param verbose function prints out extra input during execution
-  #' @param search_pad_percent for calculating statistic, specifies how far 
-  #' outside the theoretical search window the root finding can look.
-  #' @return Returns most difference in means (single value)
-  #' @usage mdm_normal_tdist(x)
-  #' @usage mdm_normal_tdist(x, y)
-  #' @usage mdm_normal_tdist(x, y, conf.level = 0.95)
-  #' @examples 
-  #' x <- rnorm(n=8,mean=0,sd=1); 
-  #' y <- rnorm(n=8,mean=0,sd=1); 
-  #' mdm_normal_tdist(x,y)
 
-  # Calculate basic stats of input samples defined by distribution d, the 
-  # difference distribution (or the distirbution of the sampel for 1 sample)
-  n_x <- length(x); n_y <- length(y)
-  sd_x <- sd(x); sd_y <- sd(y)
-  # Pooled mean, degrees of freedom, and standard deviation
-  if (is.null(y)) {
-    # 1-sample stats
-    xbar_dm <- mean(x)
-    df_d <- n_x - 1
-    sd_d <- sd_x
-    sd_dm = sqrt( sd_x^2 / n_x)
-    
-  } else { 
-    # 2-sample stats
-    xbar_dm <- mean(y) - mean(x)
-    df_d <- n_x + n_y - 2
-    sd_d <- sqrt( (( n_x-1)*sd_x^2 + (n_y - 1) * sd_y^2 ) / df_d)
-    sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
-  }
+
+
+
+
+dft <- function(x, df, mu, sigma) {
+  #' @description: probability density function
+
+  # save(list = ls(all.names = TRUE), file = "temp/dft.RData",envir = environment())
+  # load(file = "temp/plot_population_params.RData")
   
-  # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
-  #alpha = (1 - conf.level)
-  #ci_mean_alpha  <- qt( c(  alpha/2, 1 -   alpha/2), ncp = xbar_dm, sd = sd_d)
-  #ci_mean_2alpha <- qt( c(2*alpha/2, 1 - 2*alpha/2), ncp = xbar_dm, sd = sd_d)
+  v = df
+  t1 <- (1 +  (1/v) * ((x - mu)^2 / sigma^2 )) ^ ( -(v+1) / 2)
+  t2 <- (1 +  (1/v) * ((x + mu)^2 / sigma^2 )) ^ ( -(v+1) / 2)
   
-  # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
-  ci_mean_alpha  <- t.test(x,y, conf.level = conf.level, paired = FALSE, 
-                       var.equal = FALSE, alternative = "two.sided")$conf.int
-  ci_mean_2alpha <- t.test(x,y, conf.level = 1-2*(1-conf.level), paired = FALSE, 
-                       var.equal = FALSE, alternative = "two.sided")$conf.int
-  lower_bounds =  max(abs(ci_mean_2alpha))
-  upper_bounds = max(abs(ci_mean_alpha))
-  # Add extra padding around search bounds so root finding not done on boundary
-  bounds_range = upper_bounds - lower_bounds
-  search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
-                    upper_bounds + search_pad_percent * bounds_range)
-  if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
+  d <- gamma( (v+1)/2 ) / (gamma(v/2) * sqrt(v*pi*sigma^2) ) * (t1 + t2)
+  # d is zero for all x<0 by definition
+  d[x<0]<- 0
+
+  return(d)
+}
+
+pft <- function(upper, df, mu, sigma, lower = -Inf) {
+  #' @description: cumulative distribution function
+  # save(list = ls(all.names = TRUE), file = "temp/pft.RData",envir = environment())
+  # load(file = "temp/plot_population_params.RData")
   
-  # Calculate MDM with root finding optmization
-  # Integration of folded t-distribution can be calculate from standard central t-distribution
-  t_star_standard <- function(x) {pt(q = (-xbar_dm + x) / sd_dm, df = df_d) - 
-                                  pt(q = (-xbar_dm - x) / sd_dm, df = df_d) - conf.level}
+  # browser();
   
-  # Debugging search bounds are correct
-  if (verbose) {
-    t = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)
-    f_t = sapply(t, t_star_standard)
-    plot(t,f_t)
-  }
+  # start_time <- Sys.time()
+  p <- integrate(f = function(y) dft(y, df, abs(mu),sigma),
+                 lower = lower, upper = upper,
+                  rel.tol = 1e-8, abs.tol = 1e-9)$value
+  # end_time <- Sys.time()
+  # end_time - start_time
+  # 
+  # start_time <- Sys.time()
+  # p <- cubintegrate(f = function(y) dft(y, df, abs(mu),sigma),
+  #                lower = lower, upper = upper,
+  #                relTol = 1e-6, absTol = 1e-12)$integral
+  # end_time <- Sys.time()
+  # end_time - start_time
   
   
-  # Solve for t star with root finding where t_star_standard equals (1 - alpha)
-  t_star = uniroot(t_star_standard, search_bounds, check.conv = TRUE,
-                         tol = .Machine$double.eps, maxiter = 1000, trace = 0)
-  # The optimized root should fall entirely within the earch bounds 
-  check_bounds(t_star, search_bounds, verbose = verbose, range_tol = 1000)
-    
-  # MDM is root location added to difference of means
-  if (verbose) print(sprintf("t_star: %.3f", t_star$root))
-  mdm = t_star$root 
+  return(p)
+}
+
+qft <- function(p, df, mu, sigma) {
+  #' @description Quantile function of ratio normal distribution (X/Y)
+  #' For given probability, return position of that percentile from cdf
+  #' 
+  #' @param p probability
+  # Estimate bounds to search for root
   
-  return(mdm)
+  # save(list = ls(all.names = TRUE), file = "temp/qft.RData",envir = environment())
+  # load(file = "temp/plot_population_params.RData")
+  
+  lo.bound = abs(mu)
+  hi.bound = abs(mu) + qt(1-(1-p)/4, df) * sigma 
+  
+  # x = seq(lo.bound, hi.bound, (hi.bound - lo.bound)/1e4)
+  # gg <- ggplot(data = data.frame(x=x,y=sapply(x,function(x)
+  #   pft(x, df = 100, mu = mu, sigma = sigma))),
+  #              aes(x=x, y=y)) + geom_line()
+  # print(gg)
+  
+  start_area = pft(x=lo.bound, df=df, mu=abs(mu), sigma=sigma, start = 0)
+  
+  xroot <-  uniroot(function(z) 
+    pft(x=z, df=df, mu=abs(mu), sigma=sigma, start = lo.bound) + start_area -p, 
+    lower = lo.bound, upper = hi.bound, extendInt = "no", tol = .Machine$double.eps^.5)
+  
+  return(xroot$root)
 }
 
 
 
-mdm_normal_zdist_approx <- function(x, y = NULL, conf.level = 0.95) {
-  #' Calculate most difference in means using folded z distribution
-  #'
-  #' @description Calculate most difference in means statistic from a folded 
-  #' normal z distribution. Uses R built-in qfoldnorm to calculate, but this 
-  #' function is an approximation that has noticeably worse coverage error 
-  #'
-  #' @param x measurements from first group
-  #' @param y measurements from second group (optional)
-  #' @param conf.level confidence level for statistics (default 0.95)
-  #' @param verbose function prints out extra input during execution
-  #' @param var.equal boolean assume variance qual between groups (TODO: not 
-  #' implemented for TRUE)
-  #' @param search_pad_percent for calculating statistic, specifies how outside 
-  #' the theoretical search window the root finding can look.
-  #' @return Returns most difference in means (single value)
-  #' @usage mdm_normal_zdist_approx(x)
-  #' @usage mdm_normal_zdist_approx(x, y)
-  #' @usage mdm_normal_zdist_approx(x, y, conf.level = 0.95)
-  #' @examples
-  #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
-  #' mdm_normal_zdist_approx(x,y)
-  
-  # Calculate basic stats of input samples defined by distribution d, the 
-  # difference distribution (or the distirbution of the sampel for 1 sample)
-  n_x <- length(x); n_y <- length(y)
-  sd_x <- sd(x); sd_y <- sd(y)
-  
-  # Pooled mean, degrees of freedom, and standard deviation
-  if (is.null(y)) {
-    # 1-sample stats
-    df_d <- n_x - 1
-    xbar_dm <- mean(x)
-    sd_d <- sd_x
-    sd_dm = sd_x / sqrt(n_x)
-    
-  } else { 
-    # 2-sample stats
-    df_d <- n_x + n_y - 2
-    xbar_dm <- mean(y) - mean(x)
-    sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
-    sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    # if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
-  }
 
-  # Calculate the quantile function for folded normal with built-in qfoldnorm
-  mdm <- qfoldnorm(conf.level, mean = xbar_dm, sd = sd_dm, a1 = 1, a2 = 1,
-            lower.tail = TRUE, log.p = FALSE)
 
-  return(mdm)  
-}
+
 
 
 mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE, 
@@ -244,6 +182,9 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   #' x <- rnorm(n=50,mean=0,sd=1); y <- rnorm(n=50,mean=0,sd=1); 
   #' mdm_normal_zdist(x,y)
   
+  # save(list = ls(all.names = TRUE), file = "temp/mdm_normal_zdist.RData",envir = environment())
+  # load(file = "temp/mdm_normal_zdist.RData")
+  
   # Calculate basic stats of input samples defined by distribution d, the 
   # difference distribution (or the distirbution of the sampel for 1 sample)
   n_x <- length(x); n_y <- length(y)
@@ -252,77 +193,84 @@ mdm_normal_zdist <- function(x, y = NULL, conf.level = 0.95, verbose = FALSE,
   # Pooled mean, degrees of freedom, and standard deviation
   if (is.null(y)) {
     # 1-sample stats
-    df_d <- n_x - 1
+    wtt <- t.test(x=x,y=NULL, var.equal = FALSE, conf.level = 1-(1-conf.level)/4)
+    df_d <- wtt$parameter
     xbar_dm <- mean(x)
     sd_d <- sd_x
     sd_dm = sd_x / sqrt(n_x)
     
   } else { 
     # 2-sample stats
-    df_d <- n_x + n_y - 2
+    # df_d <- df_WelchSattern(x,y)
+    wtt <- t.test(x=y,y=x, var.equal = FALSE, conf.level = 1-(1-conf.level)/4)
+    df_d <- wtt$parameter
+    
     xbar_dm <- mean(y) - mean(x)
     sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
     sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
-    # if (verbose) print(sprintf("xbar_dm: %.3f", xbar_dm))  
+    # Assume unequal variance
   }
   
-  # Calculate search bounds defined by tails of alpha and 2*alpha CI of mean 
-  alpha = (1 - conf.level)
-  if (method =="standard") {
-    lower_bounds = max_abs_cl_mean_z_standard(xbar_dm, sd_dm, 2*alpha)
-    upper_bounds= max_abs_cl_mean_z_standard(xbar_dm, sd_dm, alpha)
-    
-    # Note: xbar_dm and x do not need to be in z_score units because they are z 
-    # normalized after insertion into function
-    z_star_fcn <- function(x) { pnorm( (-xbar_dm + x)/sd_dm, mean = 0, sd = 1) - 
-        pnorm( (-xbar_dm - x)/sd_dm, mean = 0, sd = 1) - conf.level - xbar_dm}
-    
-  } else if (method =="nonstandard") {
-    lower_bounds = max_abs_cl_mean_z(xbar_dm, sd_dm, 2*alpha)
-    upper_bounds = max_abs_cl_mean_z(xbar_dm, sd_dm, alpha)
-    
-    # Integration of folded z-distribution from standard central z-distribution
-    z_star_fcn <- function(x) {pnorm( +x, mean = xbar_dm, sd = sd_dm) - 
-        pnorm( -x, mean = xbar_dm, sd = sd_dm) - conf.level}
-    
-  } 
 
-  # Add extra padding around search bounds for root finding at boundary
-  bounds_range = upper_bounds - lower_bounds
+  # browser();
+  
+  lo.bound= abs(xbar_dm)
+  hi.bound = max(abs(wtt$conf.int))
+  if (lo.bound>hi.bound) {browser();}
   
   
-  search_bounds = c(lower_bounds - search_pad_percent * bounds_range,
-                    upper_bounds + search_pad_percent * bounds_range)
-  # if (verbose) print(sprintf('Bounds:[ %.3f  %.3f]', search_bounds[1], search_bounds[2]))
+  
+  # The MDM is always greater than the sample mean, so integrate to that point first
+  # Integration is broken up bceause in cases where xbar_dm >> sd_dm, the pdf is 
+  # so sparse that integration algorithm can miss the peak
+  start_area = tryCatch(
+    pft(upper = max(c(lo.bound - 10*sd_dm,0)), df = df_d, mu = abs(xbar_dm), sigma = sd_dm, lower = 0) +
+    pft(upper = lo.bound, df = df_d, mu = abs(xbar_dm), sigma = sd_dm, max(c(lo.bound - 10*sd_dm,0))), 
+    error = function(c) NaN)
+  
+  mdm <-  tryCatch(
+    uniroot( function(z) 
+    pft(upper=z, df=df_d, mu=abs(xbar_dm), sigma=sd_dm, lower = lo.bound) + start_area - conf.level, 
+    lower = lo.bound, upper = hi.bound, extendInt = "no")$root, 
+                            error = function(c) NaN)
+  
+  #todo: add mu.sigma cuttoff where abs value transform ignored (will get greater accuracy)
 
-  # Solve for t star with root finding
-  z_star = uniroot(z_star_fcn, search_bounds, check.conv = TRUE,
-                   tol = .Machine$double.eps, maxiter = 1000, trace = 0, 
-                   extendInt="upX")
-  
-  if (verbose) {
-    z = seq(from = search_bounds[1], to = search_bounds[2], by = diff(search_bounds)/100)
-    f_z = lapply(z, z_star_fcn)
-    plot(z,f_z,type="l"); abline(v=z_star$root,col="blue")
-    abline(v = lower_bounds, col="red", lwd=3, lty=2)
-    abline(v = upper_bounds, col="red", lwd=3, lty=2)
-    z_star$root-lower_bounds
-  }
-  
-  
-  # The optimized root should fall entirely within the earch bounds 
-  is_warn = check_bounds(z_star$root, c(lower_bounds, upper_bounds), verbose = FALSE, range_tol= 1000)
-  if (is_warn) {browser()}
-  
-  # MDM is root of integration
-  if (verbose) print(sprintf("z_star: %.4e, lower:%.4e, upper:%.4e", z_star$root,lower_bounds,upper_bounds))
-  mdm = z_star$root
-  
 
+  # x = seq(lo.bound, hi.bound, (hi.bound - lo.bound)/1e4)
+  # gg <- ggplot(data = data.frame(x=x,y=sapply(x,function(x)
+  #   pft(x, df = 100, mu = abs(xbar_dm), sigma = sd_dm))),
+  #              aes(x=x, y=y)) + geom_line()
+  # print(gg)
+  # 
+  # 
+  # x = seq(lo.bound-0.5, hi.bound+2, (hi.bound - lo.bound)/1e4)
+  # gg <- ggplot(data = data.frame(x=x,y=sapply(x,function(x)
+  #   dft(x, df = 100, mu = abs(xbar_dm), sigma = sd_dm))),
+  #   aes(x=x, y=y)) + geom_line()
+  # print(gg)
+
+
+  # mdm <- tryCatch(qft(p = conf.level, df = df_d, mu = xbar_dm, sigma = sd_dm), 
+  #                         error = function(c) NaN)
+  if (is.nan(mdm) || is.nan(start_area)) {browser();}
+  
+  # mdm = qft(conf.level, df_d, abs(xbar_dm), sd_dm)
+  
   return(mdm)  
 }
 
 
+df_WelchSatter<- function(x,y) {
+  s1 = sd(x)
+  s2 = sd(y)
+  n1 = length(x)
+  n2 = length(y)
+  
+  v1 = n1 - 1; v2 = n2 - 1
+  v = (s1^2/n1 + s2^2/n2)^2/ ( s1^4/(n1^2/v1)  +  s2^4/(n2^2/v2)  )
+  return(v)
+}
 
 check_bounds <- function(x, search_bounds, verbose = FALSE, range_tol=1000) {
   
@@ -483,21 +431,21 @@ rmdm_normal_zdist <- function(x_ctrl, y_exp, conf.level = 0.95,
 
 
 
-rmdm_normal_montecarlo <- 
-  function(m_x, se_x, m_y, se_y, means_x = NULL, means_y = NULL, conf.level = 0.95,
-           n_trials=1e6)  {
-
-  
-  if (m_y < 0) {stop('Mean of y must be > 0')}
-  
-  # Each trials just draws means instead of generating data points
-  if (is.null(means_x)){ means_x = rnorm(n_trials, mean = m_x, sd = se_x)}
-  if (is.null(means_y)){ means_y = rnorm(n_trials, mean = m_y, sd = se_y)}
-  
-  
-  stat = abs(means_y-means_x)/means_y
-  
-  rmdm = quantile(stat, conf.level)
-  
-}
+# rmdm_normal_montecarlo <- 
+#   function(m_x, se_x, m_y, se_y, means_x = NULL, means_y = NULL, conf.level = 0.95,
+#            n_trials=1e6)  {
+# 
+#   
+#   if (m_y < 0) {stop('Mean of y must be > 0')}
+#   
+#   # Each trials just draws means instead of generating data points
+#   if (is.null(means_x)){ means_x = rnorm(n_trials, mean = m_x, sd = se_x)}
+#   if (is.null(means_y)){ means_y = rnorm(n_trials, mean = m_y, sd = se_y)}
+#   
+#   
+#   stat = abs(means_y-means_x)/means_y
+#   
+#   rmdm = quantile(stat, conf.level)
+#   
+# }
 

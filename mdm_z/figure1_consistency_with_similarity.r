@@ -197,7 +197,7 @@ df_alpha_pearson <-
 set.seed(rand.seed)
 mus_a_vect =  seq(10,20,0.2); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+1
-sigmas_ab_vect = mus_a_vect + .1 * (mus_a_vect)
+sigmas_ab_vect = mus_a_vect + .01 * (mus_a_vect)
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
@@ -301,23 +301,22 @@ source("R/agreement_contests.R")
 source("R/mdm.R")
 source("R/rationormal_toolbox.R")
 set.seed(rand.seed)
-alpha_1 = 0.05/seq(1, 100,5)
-alpha_2 = 0.05/seq(1, 100,5)
+alpha_1 = 0.05/seq(1, 10,0.5)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
 df_init <- generateExperiment_Data(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
-                                   mus_1a  = 10, 
+                                   mus_1a  = 50, 
                                    sigmas_1a = 1, 
-                                   mus_1b  = 10, 
+                                   mus_1b  = 50, 
                                    sigmas_1b = 1,
-                                   mus_2a  = 10, 
+                                   mus_2a  = 50, 
                                    sigmas_2a = 1, 
                                    mus_2b  = 10,  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = alpha_1,
-                                   alpha_2 = alpha_2,
+                                   alpha_2 = alpha_1,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
@@ -367,9 +366,13 @@ scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
                df_df_pearson$pearson_rho, df_alpha_pearson$pearson_rho)
 scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
                    df_df_pearson$is_pearson_rho_sig, df_alpha_pearson$is_pearson_rho_sig)
+# Zero color to white for fields that are not statistically significant
+zeroed_scores = scores
+zeroed_scores[!scores_sig] <- 0
+
 png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
-heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
+heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
           labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",
@@ -387,9 +390,13 @@ scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
                df_rdf_pearson$pearson_rho, df_ralpha_pearson$pearson_rho)
 scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
                    df_rdf_pearson$is_pearson_rho_sig, df_alpha_pearson$is_pearson_rho_sig)
+# Zero color to white for fields that are not statistically significant
+zeroed_scores = scores
+zeroed_scores[!scores_sig] <- 0
+
 png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
     width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
-heatmap.2(scores, trace = "none", dendrogram = "none", key = FALSE,
+heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5);},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_esize,"varnames_pretty"), function(x) parse(text=x)),labCol = "",

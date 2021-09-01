@@ -234,7 +234,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
                                    toggle_sign_rmu_d_hold_sigma = TRUE,
                                    toggle_sign_mean_ab = FALSE,

@@ -1323,8 +1323,8 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
   matched_vars <- grep(var_prefix,colnames(df), perl=TRUE, value=TRUE)
   
   
-  df_nins <- df %>% pivot_longer(matched_vars, names_to = "variable", values_to = "count") %>% select(variable, count)
-  df_nins$count_prc = 1-df_nins$count/n_samples
+  df_nins <- df %>% pivot_longer(matched_vars, names_to = "variable", values_to = "count") %>% select(variable, count, n_samples)
+  df_nins$count_prc = 1-df_nins$count/df_nins$n_samples
   # df_nins$variable <- sapply(df_nins$variable, function(x) {substring(x,17, nchar(x))})
   df_nins$variable <- as.factor(df_nins$variable)
   levels(df_nins$variable) <- as.factor(attr(df,"varnames_pretty") )
@@ -1342,7 +1342,8 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
 
   # Check that all 
   if (any(df_nins$count_prc > 0.05))
-  {stop(sprintf('More than 5%% of samples in %i simulations returned NaN',
+  {save(list = ls(all.names = TRUE), file = "temp/plot_nincluded_sampless.RData",envir = environment());
+    stop(sprintf('More than 5%% of samples in %i simulations returned NaN',
                   sum(df_nins$count_prc > 0.05)))}
   
   attr(df,"varnames_pretty")

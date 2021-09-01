@@ -215,21 +215,21 @@ df_unscaled_null[[4]] <-
 #
 #------------------------------------------------------------------------------
 source("R/agreement_contests.R")
-n1 <- round(runif(n_sims, 5, 10))
-n2 <- round(runif(n_sims, 15, 20))
+n1 <- round(runif(n_sims, 6, 10))
+n2 <- round(runif(n_sims, 10, 14))
 set.seed(rand.seed+1)
 gt_colnames = c("is_mudm_1ldt2","is_sigmad_1ldt2", "is_dfdm_1ldt2","is_alpha_1ldt2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 40, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims,1, 2.5), 
+                                   mus_1ao  = runif(n_sims,1, 3.5), 
                                    sigmas_1ao = runif(n_sims,10,12),
                                    
                                    mus_2a  = 1000,  
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims,4, 6), 
-                                   sigmas_2ao = runif(n_sims,16,20),
+                                   mus_2ao  = runif(n_sims,5.5, 9), 
+                                   sigmas_2ao = runif(n_sims,12,16),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,

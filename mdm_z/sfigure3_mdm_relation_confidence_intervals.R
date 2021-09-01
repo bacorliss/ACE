@@ -141,9 +141,10 @@ y_sweep <- sweep(y_expanded,1, df$x,'+')
 df$mdm_95    <- apply(y_sweep, 1, mdm_normal_zdist)
 # Max absolute confidence level
 df$mcl_90   <- apply(y_sweep, 1, function (x)  
-  max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
-df$mcl_95  <- apply(y_sweep, 1, function (x)  max(abs( 
-  max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )))
+  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))) 
+  # max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
+df$mcl_95  <- apply(y_sweep, 1, function (x)    
+  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .95)$conf.int)))
 # T test p value
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
 # df$mdm_95 - df$mcl_90 
@@ -200,118 +201,121 @@ graphics.off()
 
 
 
-# MDM and rTOST compared to CL95 and CL90
-#
-#-------------------------------------------------------------------------------
-# n_sims = 101
-n_samples = 1E3
-n_obs = 50
-mus <-  seq(-0.26, 0.26, by = .02)
-sigmas <- rep(.1, length(mus))
-# Initialize dataframe of metrics
-df <- tibble(mu = mus, sigma = sigmas, 
-             mean_macl90 = length(mus),          sd_macl90 = rep(0, length(mus)),
-             mean_macl95 = length(mus),          sd_macl95 = rep(0, length(mus)),
-             mean_mdm95 = rep(0, length(mus)), sd_mdm95 = rep(0, length(mus)), 
-             mean_rtost95 = length(mus),   sd_rtost95 = rep(0, length(mus)),
-             mean_coeff_mdm95 = rep(0, length(mus)), sd_coeff_mdm95 = rep(0, length(mus)), 
-             mean_coeff_rtost95 = length(mus),   sd_coeff_rtost95 = rep(0, length(mus)))
+# # MDM and rTOST compared to CL95 and CL90
+# #
+# #-------------------------------------------------------------------------------
+# # n_sims = 101
+# n_samples = 1E3
+# n_obs = 50
+# mus <-  seq(-0.26, 0.26, by = .02)
+# sigmas <- rep(.1, length(mus))
+# # Initialize dataframe of metrics
+# df <- tibble(mu = mus, sigma = sigmas, 
+#              mean_macl90 = length(mus),          sd_macl90 = rep(0, length(mus)),
+#              mean_macl95 = length(mus),          sd_macl95 = rep(0, length(mus)),
+#              mean_mdm95 = rep(0, length(mus)), sd_mdm95 = rep(0, length(mus)), 
+#              mean_rtost95 = length(mus),   sd_rtost95 = rep(0, length(mus)),
+#              mean_coeff_mdm95 = rep(0, length(mus)), sd_coeff_mdm95 = rep(0, length(mus)), 
+#              mean_coeff_rtost95 = length(mus),   sd_coeff_rtost95 = rep(0, length(mus)))
+# 
+# x0 = t(sapply(1:n_samples, function(x) rnorm(n_obs, mean = 0, sd = 1),
+#               simplify = TRUE))
+# x0 = (x0-rowMeans(x0))/rowSds(x0)
+# 
+# # For each simulation, draw samples from specified population parameters
+# for (n in seq_along(mus)) {
+#   xr = x0 + mus[n]
+#   # Calculate max( |CL_90| )
+#   macl90 <- apply(xr, 1, function(x)   
+#     max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))) 
+#   df$mean_macl90[n]  <- mean(macl90)
+#   df$sd_macl90[n]    <- sd(macl90)
+#   # Calculate max( |CL_95| )
+#   macl95 <- apply(xr, 1, function(x)   
+#     max(abs(t.test(x=x, var.equal = FALSE, conf.level = .95)$conf.int)))
+#   df$mean_macl95[n]  <- mean(macl95)
+#   df$sd_macl95[n]    <- sd(macl95)  
+#   # Calculate MDM across samples
+#   mdm95 <- apply(xr, 1, function(x) mdm_normal_zdist(x, conf.level = 0.95))
+#   df$mean_mdm95[n]  <- mean(mdm95)
+#   df$sd_mdm95[n]    <- sd(mdm95)
+#   # Coeff relative
+#   coeff_mdm95 <- (mdm95-macl90)/(macl95-macl90)
+#   df$mean_coeff_mdm95[n]  <- mean(coeff_mdm95)
+#   df$sd_coeff_mdm95[n]    <- sd(coeff_mdm95)
+#   # calculate reverse TOST across all samples
+#   rtost95 <- apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  )
+#   df$mean_rtost95[n]  <- mean(rtost95)
+#   df$sd_rtost95[n]    <- sd(rtost95)
+#   # Coeff relative
+#   coeff_rtost95 <- (rtost95-macl90)/(macl95-macl90)
+#   df$mean_coeff_rtost95[n] <- mean(coeff_rtost95)
+#   df$sd_coeff_rtost95[n]   <- sd(coeff_rtost95)
+# }
+# 
+# df_plot <- df %>% gather(metric, mean_y, starts_with("mean_coeff")) #%>%
+# # gather(metric, sd_y, starts_with("sd_coeff"))
+# df_plot$metric <- as.factor(df_plot$metric)
+# 
+# # Plot MDM and rTOST normlaized to CL95 and CL90
+# gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
+#   geom_hline(aes(yintercept = 0, linetype = "CL_90"), color = "#377eb8",  size = 1, alpha = 0.2) +
+#   geom_hline(aes(yintercept = 1, linetype = "CL_95"), color = "#e41a1c", size = 1, alpha = 0.2) +
+#   geom_point(aes(color = metric), size = 1) +
+#   scale_linetype_manual(name = "", labels = c(expression(Max(abs(CL[95]))),
+#                                               expression(Max(abs(CL[90])))),
+#                         values = c("solid", "solid")) +
+#   scale_color_manual(name="", labels = c( expression(MDM[95]), expression(rTOST[95])),
+#                      values=c("#ff7f00","#984ea3")) +
+#   xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
+#   theme_classic(base_size = 8) + theme(legend.position = "none")
+# gg
+# save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F3a_RTOST_vs_MDM.tiff",sep=""),
+#           gg, ncol = 1, nrow = 1, base_height = 1.25, base_width = 3.5, dpi = 600) 
 
-x0 = t(sapply(1:n_samples, function(x) rnorm(n_obs, mean = 0, sd = 1),
-              simplify = TRUE))
-x0 = (x0-rowMeans(x0))/rowSds(x0)
-
-# For each simulation, draw samples from specified population parameters
-for (n in seq_along(mus)) {
-  xr = x0 + mus[n]
-  # Calculate max( |CL_90| )
-  macl90 <- apply(xr, 1, function(x) max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), a = 0.10))
-  df$mean_macl90[n]  <- mean(macl90)
-  df$sd_macl90[n]    <- sd(macl90)
-  # Calculate max( |CL_95| )
-  macl95 <- apply(xr, 1, function(x) max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), a = 0.05))
-  df$mean_macl95[n]  <- mean(macl95)
-  df$sd_macl95[n]    <- sd(macl95)  
-  # Calculate MDM across samples
-  mdm95 <- apply(xr, 1, function(x) mdm_normal_zdist(x, conf.level = 0.95))
-  df$mean_mdm95[n]  <- mean(mdm95)
-  df$sd_mdm95[n]    <- sd(mdm95)
-  # Coeff relative
-  coeff_mdm95 <- (mdm95-macl90)/(macl95-macl90)
-  df$mean_coeff_mdm95[n]  <- mean(coeff_mdm95)
-  df$sd_coeff_mdm95[n]    <- sd(coeff_mdm95)
-  # calculate reverse TOST across all samples
-  rtost95 <- apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  )
-  df$mean_rtost95[n]  <- mean(rtost95)
-  df$sd_rtost95[n]    <- sd(rtost95)
-  # Coeff relative
-  coeff_rtost95 <- (rtost95-macl90)/(macl95-macl90)
-  df$mean_coeff_rtost95[n] <- mean(coeff_rtost95)
-  df$sd_coeff_rtost95[n]   <- sd(coeff_rtost95)
-}
-
-df_plot <- df %>% gather(metric, mean_y, starts_with("mean_coeff")) #%>%
-# gather(metric, sd_y, starts_with("sd_coeff"))
-df_plot$metric <- as.factor(df_plot$metric)
-
-# Plot MDM and rTOST normlaized to CL95 and CL90
-gg <- ggplot(data = df_plot,(aes(x=mu, y=mean_y))) +
-  geom_hline(aes(yintercept = 0, linetype = "CL_90"), color = "#377eb8",  size = 1, alpha = 0.2) +
-  geom_hline(aes(yintercept = 1, linetype = "CL_95"), color = "#e41a1c", size = 1, alpha = 0.2) +
-  geom_point(aes(color = metric), size = 1) +
-  scale_linetype_manual(name = "", labels = c(expression(Max(abs(CL[95]))),
-                                              expression(Max(abs(CL[90])))),
-                        values = c("solid", "solid")) +
-  scale_color_manual(name="", labels = c( expression(MDM[95]), expression(rTOST[95])),
-                     values=c("#ff7f00","#984ea3")) +
-  xlab(expression(bar(x))) + ylab("Coeff. CL [90-95]") +
-  theme_classic(base_size = 8) + theme(legend.position = "none")
-gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "F3a_RTOST_vs_MDM.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 1.25, base_width = 3.5, dpi = 600) 
 
 
 
-
-# Agreement between rTOST and MACL90
-#
-#-------------------------------------------------------------------------------
-set.seed(rand.seed)
-n_samples = 1E2
-mus <-  seq(-2, 2, by = 0.1)
-sigmas <- runif(n_samples, 0.1, 1)
-
-df_list <- list() 
-for (n in seq_along(mus)) {
-  xr <- t(sapply(sigmas, function(x) rnorm(n_obs, mean = mus[n], sd = x),
-                 simplify = TRUE))
-  dfn <- tibble(mu = mus[n],sigma = sigmas, 
-                macl90 = apply(xr, 1, function(x) max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), a = 0.10)),
-                rtost95 = apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  ))
-  df_list[[n]] <- dfn
-}
-df <- head(do.call(rbind, df_list))
-df <- bind_rows(df_list, .id = "column_label")
-
-df_compare <- tibble(mu = df$mu, sigma = df$sigma, 
-                     rdiffs = (df$macl90 - df$rtost95)/rowMeans(cbind(df$macl90,df$rtost95 )),
-                     means = rowMeans(cbind(df$macl90,df$rtost95 )))
-# Bland altman of agreement between MDM algorithms
-gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
-  geom_hline(yintercept = 1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
-  geom_hline(yintercept = -1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
-  geom_hline(yintercept = 0, color="grey30", size=0.25)+
-  geom_point(size=0.05) +
-  xlab("Mean") + 
-  ylab("Rel. Diff.") +
-  theme_classic(base_size=8)+
-  scale_y_continuous(labels = function(x) scales::scientific(x,digits = 2)) 
-  # geom_blank(aes(y = 1.1E-15)) +
-  # geom_blank(aes(y = -1.1E-15))
-gg
-save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
-                sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
-          base_asp = 3, base_width = 2, dpi = 600) 
+# # Agreement between rTOST and MACL90
+# #
+# #-------------------------------------------------------------------------------
+# set.seed(rand.seed)
+# n_samples = 1E2
+# mus <-  seq(-2, 2, by = 0.1)
+# sigmas <- runif(n_samples, 0.1, 1)
+# 
+# df_list <- list() 
+# for (n in seq_along(mus)) {
+#   xr <- t(sapply(sigmas, function(x) rnorm(n_obs, mean = mus[n], sd = x),
+#                  simplify = TRUE))
+#   dfn <- tibble(mu = mus[n],sigma = sigmas, 
+#                 macl90 = apply(xr, 1, function(x)   
+#                   max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))),
+#                 rtost95 = apply(xr, 1, function(x) rev_ztost(x, alpha = 0.05)  ))
+#   df_list[[n]] <- dfn
+# }
+# df <- head(do.call(rbind, df_list))
+# df <- bind_rows(df_list, .id = "column_label")
+# 
+# df_compare <- tibble(mu = df$mu, sigma = df$sigma, 
+#                      rdiffs = (df$macl90 - df$rtost95)/rowMeans(cbind(df$macl90,df$rtost95 )),
+#                      means = rowMeans(cbind(df$macl90,df$rtost95 )))
+# # Bland altman of agreement between MDM algorithms
+# gg <- ggplot(df_compare, aes(x=means,y=rdiffs)) +
+#   geom_hline(yintercept = 1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
+#   geom_hline(yintercept = -1.96*sd(df_compare$rdiffs), color = "grey30", linetype="dashed", size=0.25) +
+#   geom_hline(yintercept = 0, color="grey30", size=0.25)+
+#   geom_point(size=0.05) +
+#   xlab("Mean") + 
+#   ylab("Rel. Diff.") +
+#   theme_classic(base_size=8)+
+#   scale_y_continuous(labels = function(x) scales::scientific(x,digits = 2)) 
+#   # geom_blank(aes(y = 1.1E-15)) +
+#   # geom_blank(aes(y = -1.1E-15))
+# gg
+# save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs MACL90.tiff", 
+#                 sep = ""), gg, ncol = 1, nrow = 1, base_height = 1.25,
+#           base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
@@ -326,7 +330,9 @@ save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "g_BA rTOST95 vs
 mus = c(seq(0-0.00001,0.33,0.00001), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
 # mus = c(seq(0, 0.1,0.001), seq(0.11,0.5,0.01), 1, 2, 5, 10, 50, 100,1000)
 
-sigmas = runif(length(mus),0.1, 2)
+# mus = c(seq(0-0.00001,0.33,0.01), .5, 1, 2,5, 10, 20,50, 100, 500, 1000, 10000)
+
+sigmas = 1
 n_samples = 50
 n_obs = 50
 set.seed(0)
@@ -347,11 +353,11 @@ for (n in seq_along(mus)) {  # print(mus[n])
   df_coeff$mean_mdm_95[n] <-  mean(mdm_95)
   df_coeff$sd_mdm_95[n] <-    sd(mdm_95)
   # Calculate 90% max abs CL
-  mabs_cl_90 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.10) )
+  mabs_cl_90 <- apply(xnorm, 1, function (x)  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int)) )
   df_coeff$mean_mabs_cl_90[n] <- mean(mabs_cl_90)
   df_coeff$sd_mabs_cl_90[n] <-   sd(mabs_cl_90)
   # Calculate 95% max abs CL
-  mabs_cl_95 <- apply(xnorm, 1, function (x)  max_abs_cl_mean_z(x=x, alpha=0.05) )
+  mabs_cl_95 <- apply(xnorm, 1, function (x)  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .95)$conf.int)) )
   df_coeff$mean_mabs_cl_95[n] <- mean(mabs_cl_95)
   df_coeff$sd_mabs_cl_95[n] <-   sd(mabs_cl_95)
   # Calcualte mdm coeff
@@ -390,7 +396,7 @@ write.csv(x=df_lut, file=file.path(getwd(),"/R/coeff_mdm_CLa_CL2a.csv"))
 #
 #-------------------------------------------------------------------------------
 mus = seq(0,0.5,0.001)
-n_samples = 1000
+n_samples = 100
 set.seed(0)
 mus = runif(n_samples, -50,50)
 sigmas = runif(n_samples,.1,10)
@@ -405,8 +411,10 @@ interp_fun = splinefun(x=df_lut$abs_nmu, y=df_lut$coeff_mdm_95, method="fmm",  t
 
 # Function to determine 95% MDM with LUT
 mdm_95_lut <- function (x,interp_fun) {
-  mabs_cl_90 <- max_abs_cl_mean_z(x=x, alpha=0.10)
-  mabs_cl_95 <- max_abs_cl_mean_z(x=x, alpha=0.05)
+  mabs_cl_90 <-   
+    max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))
+  mabs_cl_95 <-   
+    max(abs(t.test(x=x, var.equal = FALSE, conf.level = .95)$conf.int)) 
   # Normalized mu
   abs_nmu = abs(mean(x)/sd(x))
   coeff_mdm <- interp_fun(abs_nmu)
@@ -495,9 +503,9 @@ for (n in seq(1,length(mus),1)) {
   mdm_95    <- apply(y_sweep, 1, mdm_normal_zdist)
   # Two tailed confidence intervals
   mcl_90   <- apply(y_sweep, 1, function (x)  
-    max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) )
-  mcl_95  <- apply(y_sweep, 1, function (x)  
-    max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.05) )
+        max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int)))
+  mcl_95  <- apply(y_sweep, 1, function (x)    
+    max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))) 
   # mcl_90_t   <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.10)$conf.int )))
   # mcl_95_t  <- apply(y_sweep, 1, function (x)  max(abs(t.test(x, conf.level = 1-0.05)$conf.int )))
   mdm_diff <- mdm_95 - mcl_90

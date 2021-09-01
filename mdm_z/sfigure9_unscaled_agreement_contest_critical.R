@@ -95,14 +95,14 @@ gt_colnames = "is_sigmad_1ldt2"
 fig_name = paste("F", fig_num, "_2_esize_", "_2_esize_contest_sigma_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
-                                   sigmas_1a = runif(n_sims, 0.2, 1),
-                                   mus_1ao  = 1, 
-                                   sigmas_1ao = runif(n_sims, 1, 1.5),
+                                   sigmas_1a = 0.5,
+                                   mus_1ao  = runif(n_sims, 0.8, 1.2), 
+                                   sigmas_1ao = runif(n_sims, 0.4, .8),
                                    
                                    mus_2a  = 100, 
-                                   sigmas_2a = runif(n_sims, 0.2, 1),
-                                   mus_2ao  = 1,
-                                   sigmas_2ao = runif(n_sims, 1, 1.5),
+                                   sigmas_2a = 0.5,
+                                   mus_2ao  = runif(n_sims, 0.8, 1.2),
+                                   sigmas_2ao = runif(n_sims, 1.4, 1.8),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
@@ -252,7 +252,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 10, 20),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,

@@ -79,17 +79,20 @@ scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5)
 scale_score_norm <- sapply(scale_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_unscaled_null[[1]]$df_es, "varnames")))
 
+# Zero color to white for fields that are not statistically significant
+zeroed_scale_scores <- scale_scores
+zeroed_scale_scores[!scale_scores_sig] <- 0
 png(paste(sum_fig_path, "/F", fig_num, "_es_contest scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
-heatmap.2(scale_scores, trace = "none", dendrogram = "none", key = FALSE,
+heatmap.2(zeroed_scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scale_scores_sig,1.5); makeRects(scale_score_norm,1.5)}, 
-          col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
+          col = my_palette,  Rowv = F, Colv = F, sepwidth = c(0,0),
           labRow =  sapply(attr(df_unscaled_null[[1]]$df_es, "varnames"),
                            function(x) parse(text=x)),labCol = "",
-          cellnote=matrix(sapply(scale_scores,function(x) sprintf("%0.2+f",x)),
+          cellnote = matrix(sapply(scale_scores,function(x) sprintf("%0.2+f",x)),
                           nrow = dim(scale_scores)[1]),
           breaks = col_breaks,
-          notecol="black",notecex=1, lwid=c(0.001,5),lhei=c(0.001,5),margins =c(0,0))
+          notecol ="black", notecex = 1, lwid = c(0.001,5),lhei = c(0.001,5),margins = c(0,0))
 dev.off()
 
 
@@ -131,9 +134,12 @@ rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5)
 rscale_score_norm <- sapply(relative_norm_ind, function(ind,len) 
   ifelse(1:len == ind, TRUE,FALSE), length(attr(df_relative_null[[1]]$df_es,"varnames_pretty")))
 
+# Zero color to white for fields that are not statistically significant
+zeroed_rscale_scores <- rscale_scores
+zeroed_rscale_scores[!rscale_scores_sig] <- 0
 png(paste(sum_fig_path,"/F", fig_num, "es_contest relative scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
-heatmap.2(rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
+heatmap.2(zeroed_rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(rscale_scores_sig,1.5); makeRects(rscale_score_norm,1.5)}, 
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_relative_null[[1]]$df_es,"varnames_pretty"),
