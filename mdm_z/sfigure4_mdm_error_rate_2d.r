@@ -40,7 +40,7 @@ fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 n_samples <- 1e3
 rand.seed <- 0
-overwrite <- FALSE
+overwrite <- TRUE
 is_parallel_proc <- TRUE
 
 
@@ -52,8 +52,8 @@ is_parallel_proc <- TRUE
 # First Row
 # Coverage error simulations for mu space  
 n_obs = 50
-mus_dm <- seq(-2.5, 2.5, by = .1)
-sigmas_dm <- seq(.01, 1, by = .02)
+mus_dm <- seq(-2.5, 2.5, by = .05)
+sigmas_dm <- seq(.01, 1, by = .01)
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
@@ -177,8 +177,8 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu.tiff",
 # First Row
 # Coverage error simulations for mu space  
 n_obs = 50
-sigmas_dm <- seq(.1, 5, by = .1)
-mu_vsigmas_dm <- seq(-3, 3, by = .1)
+sigmas_dm <- seq(.1, 5, by = .05)
+mu_vsigmas_dm <- seq(-3, 3, by = .05)
 
 
 # Spread sigma_dm across sigma_a and sigma_b equally
@@ -191,7 +191,7 @@ df_results <-
   quant_coverage_errors(mus_a = 100,  sigmas_a = sigmas_a, n_a = n_obs, 
                         mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
                         mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
-                        n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
+                        n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_mu_ov_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
                         included_stats = c("mdm"))
 # 2A, Error rate of MDM < mu in mu/sigma space
@@ -265,12 +265,9 @@ df_crit_mu_ov_sigma <-
                              n_samples = n_samples, temp_path = paste(fig_path, "/mdm_coverage_error_2D_mu-sigma_vs_sigma.rds",sep=""),
                              overwrite = overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE)
 df_crit_mu_ov_sigma$merge = paste(df_crit_mu_ov_sigma$er, df_crit_mu_ov_sigma$side)
-
-df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% 
-  summarize(ci = confint(lm(critical_mu_over_sigma~sigma),'sigma',level=0.95), x_bar = mean(critical_mu_over_sigma))
+# Calcualte if slope of border is nonzero
 df_slopes2 <- df_crit_mu_ov_sigma %>% group_by(er,side) %>% summarize(pearson = cor.test(
-  critical_mu_over_sigma, sigma,method = "pearson")$p.value)
-
+  critical_mu_over_sigma, sigma,method = "pearson")$p.value, x_bar = mean(critical_mu_over_sigma))
 ci = confint(lm(critical_mu_over_sigma~sigma, data= df_crit_mu_ov_sigma),'sigma',level=0.95)
 
 
