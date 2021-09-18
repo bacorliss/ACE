@@ -18,7 +18,7 @@ p_load(stringr)
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "1" 
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")

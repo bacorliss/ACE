@@ -210,7 +210,7 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   # Only compute requested statistics
   df_include = data.frame(matrix(rep(TRUE,length(included_stats)), nrow = 1, 
                                  dimnames = list(NULL, included_stats)))
-
+  # browser()
   # Initial sample metrics
   ci_mean = row_ci_mean_2s_zdist(m_c = x_ctrl, m_e = x_exp)
   
@@ -236,6 +236,9 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
                                    gt_name = "mu_dm", use_absolute = FALSE)
   }
   
+  
+  
+  
   if (!is.null(df_include$mdm)) {
     df_init$mdm = row_mdm_2s_zdist(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
     df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "mdm",
@@ -247,6 +250,19 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
                                                      gt_name = "mu_dm", use_absolute = TRUE)
   }
   
+  
+  if (!is.null(df_include$macb)) { 
+    df_init$macb = row_macb_tdist_2sample(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
+    df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "macb",
+                                                     gt_name = "mu_dm", use_absolute = TRUE)
+  }
+  
+  
+  if (!is.null(df_include$macb_2a)) {   
+    df_init$macb_2a = row_macb_tdist_2sample(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha/2)
+    df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "macb_2a",
+                                                     gt_name = "mu_dm", use_absolute = TRUE)
+  }
   
   
   # Ground truth for relative difference in means (population values)
@@ -270,7 +286,6 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   }
   
   if (!is.null(df_include$rldm)) {
-    
     df_list[[length(df_list) + 1]] <-
       quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = NULL,
                        gt_name = "rmu_dm", use_absolute = TRUE)

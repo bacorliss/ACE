@@ -139,9 +139,15 @@ row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
 }
 
 row_mdm_2s_zdist <- function(m_c, m_e, ...) {
-  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], ...))
+  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_c[i,], m_e[i,], ...))
+  return(mdm)
 }
 
+
+row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
+  macb <- sapply(1:dim(m_c)[1], function(i)  macb_tdist_2sample (m_c[i,], m_e[i,], ...))
+  return(macb)
+}
 
 
 
@@ -183,7 +189,7 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
   # browser();
     
     rmdms <- sapply(1:dim(m_c)[1], function(i)  
-      rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
+      rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
                         method = "qnormrat"))
 
    
@@ -193,7 +199,7 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
     # browser();
     
     rmdms <- sapply(1:dim(m_c)[1], function(i)  
-      rmdm_normal_zdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
+      rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
                         method = "fieller"))
     
     
@@ -228,9 +234,9 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
   }  else if (method =="mdm_normalized") {
     
     mdm <- sapply(1:dim(m_c)[1], function(i)  
-      mdm_normal_zdist(x=m_c[i,], y=m_e[i,], conf.level = sqrt(0.05)))
+      mdm_tdist(x=m_c[i,], y=m_e[i,], conf.level = sqrt(0.05)))
     rmdms <- sapply(1:dim(m_c)[1], function(i)  
-      rmdm_normal_zdist(x=m_c[i,], y=m_e[i,], mdm = mdms[i], conf.level), method = method)
+      rmdm_tdist(x=m_c[i,], y=m_e[i,], mdm = mdms[i], conf.level), method = method)
     
   } else {stop('row_rmdm_2s_zdist(): unsupported method')}
   
@@ -306,7 +312,7 @@ row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "ttestrat
   
   # Calcualt mdm from data if not supplied
   # if (is.null(mdms)) {
-  #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_normal_zdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
+  #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
   # }
   # Calculate standard deviation of difference in means
   # s_dm <- sqrt(rowvars(m_c)/dim(m_c)[2] + rowvars(m_e)/dim(m_e)[2])

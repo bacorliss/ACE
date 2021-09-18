@@ -18,7 +18,7 @@ p_load(stringr)
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "0" 
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
@@ -206,7 +206,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*sqrt(4^2/2) + 10
 gg_mu <- plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_mu", 
                  ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 sprintf("p-val) 1: %.2e, 2: %.2e", t.test(xa1, xb1)$p.value,t.test(xa2, xb2)$p.value)
-sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_normal_zdist(xa1,xb1),rmdm_normal_zdist(xa2,xb2))
+sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_tdist(xa1,xb1),rmdm_tdist(xa2,xb2))
 
 
 
@@ -220,7 +220,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*sqrt(3.6^2/2) + 10.4
 gg_mu <- plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="pval_larger", 
                           ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 sprintf("p-val) 1: %.2e, 2: %.2e", t.test(xa1, xb1)$p.value,t.test(xa2, xb2)$p.value)
-sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_normal_zdist(xa1,xb1),rmdm_normal_zdist(xa2,xb2))
+sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_tdist(xa1,xb1),rmdm_tdist(xa2,xb2))
 
 
 
@@ -233,7 +233,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*sqrt(3) + 11.5
 gg_mu <- plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="pval_smaller", 
                           ylims = c(6,14), dm_ylims = c(-2.25,2.25), dm_ybreaks=seq(-2,2,2))
 sprintf("p-val) 1: %.2e, 2: %.2e", t.test(xa1, xb1)$p.value,t.test(xa2, xb2)$p.value)
-sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_normal_zdist(xa1,xb1),rmdm_normal_zdist(xa2,xb2))
+sprintf("deltaM) 1: %.3f, 2: %.3f", rmdm_tdist(xa1,xb1),rmdm_tdist(xa2,xb2))
 
 
 

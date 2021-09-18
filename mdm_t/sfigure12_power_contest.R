@@ -3,7 +3,7 @@
 
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 
 #' Take same simulations fro similarity contests, but sweep the indepdent variable 
 #' and plot error rate with 95% CI for subset of stats across indepdendent variable

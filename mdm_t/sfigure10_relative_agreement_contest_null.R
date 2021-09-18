@@ -20,7 +20,7 @@ p_load(gplots)
 # User defined libraries
 source("R/mdm.R")
 source("R/agreement_contests.R")
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 # Figure parameters
 #-------------------------------------------------------------------------------
 fig_num = "10" 

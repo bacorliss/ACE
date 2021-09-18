@@ -32,7 +32,7 @@ source("R/coverage_error_toolbox.R")
 source("R/row_stats_toolbox.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 # Script Parameters
 fig_num = "5"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))

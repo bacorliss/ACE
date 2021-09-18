@@ -24,7 +24,7 @@ source("R/agreement_contests.R")
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "9" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(file.path(getwd(), fig_path), showWarnings = FALSE)

@@ -22,7 +22,7 @@ p_load(dplyr)
 p_load(cowplot)
 p_load(VGAM)
 # source("R/stat_helper.r")
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 
 
 # Figure parameters

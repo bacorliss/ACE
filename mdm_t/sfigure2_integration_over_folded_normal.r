@@ -16,7 +16,7 @@ p_load(VGAM)
 p_load(boot)
 p_load(dplyr)
 p_load(cowplot)
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 
 fig_num = "2"
 dir.create(file.path(getwd(), paste(base_dir,"/figure/F",fig_num,sep="")), 

@@ -23,7 +23,7 @@ source("R/mdm.R")
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "3"
 dir.create(file.path(getwd(), paste(base_dir,"/figure/SF",fig_num,sep="")), 
            showWarnings = FALSE, recursive = TRUE)
@@ -123,7 +123,7 @@ for (n in seq_along(mus)) {
   df$sd_macl95[n]    <- sd(macl95)  
   
   # Calculate MDM across samples
-  mdm95 <- apply(xr, 1, function(x) mdm_normal_zdist(x, conf.level = 0.95))
+  mdm95 <- apply(xr, 1, function(x) mdm_tdist(x, conf.level = 0.95))
   df$mean_mdm95[n]  <- mean(mdm95)
   df$sd_mdm95[n]    <- sd(mdm95)
   # Coeff relative

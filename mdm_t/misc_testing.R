@@ -56,7 +56,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*1 + 1
 
 
 source("R/mdm.R")
-mdm_normal_zdist(xa1, xb1)
-mdm_normal_zdist_old(xa1, xb1)
+mdm_tdist(xa1, xb1)
+mdm_tdist_old(xa1, xb1)
 
 

@@ -28,7 +28,7 @@ source("R/norm_versus_fnorm.R")
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "3"
 dir.create(file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep="")), showWarnings = FALSE,recursive = TRUE)
 rand.seed=0
@@ -138,17 +138,18 @@ y_expanded + dim(df$x[row(y_expanded)])
 y_sweep <- sweep(y_expanded,1, df$x,'+')
 
 # Calculate most hidden difference
-df$mdm_95    <- apply(y_sweep, 1, mdm_normal_zdist)
-# Max absolute confidence level
-df$mcl_90   <- apply(y_sweep, 1, function (x)  
-  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .90)$conf.int))) 
-  # max_abs_cl_mean_z(mean(x), sd(x)/sqrt(length(x)), alpha=0.10) ) 
-df$mcl_95  <- apply(y_sweep, 1, function (x)    
-  max(abs(t.test(x=x, var.equal = FALSE, conf.level = .95)$conf.int)))
+df$mdm_95    <- apply(y_sweep, 1, mdm_tdist)
+# Max absolute one tailed confidence bounds
+df$macb_95   <- apply(y_sweep, 1, function (x)  
+  macb_tdist_2sample(x=x, y=NULL, conf.level = .95))
+df$macb_97p5  <- apply(y_sweep, 1, function (x)  
+  macb_tdist_2sample(x=x, y=NULL, conf.level = .975))
+
+
 # T test p value
-df$coeff_mdm_95 = (df$mdm_95  - df$mcl_90) / (df$mcl_95 - df$mcl_90)
+df$coeff_mdm_95 = (df$mdm_95  - df$macb_95) / (df$macb_97p5 - df$macb_95)
 df$ttest_p_val  <- apply(y_sweep, 1, function (x)  t.test(x)$p.value )
-# df$mdm_95 - df$mcl_90 
+# df$mdm_95 - df$macb_95 
 x_critical <-  RootSpline1(x=df$x,y=df$ttest_p_val,y0 = 0.05)
 ci_labels = c(bquote(max((~abs(CI[95])))~" "),
               bquote(max((~abs(CI[90])))), bquote(MDM[95]))
@@ -158,12 +159,12 @@ g1A = ggplot(data=df,mapping = aes(x=x,y=mdm_95))
 g1A <- g1A + theme_classic() +
   geom_rect(aes(xmin=-Inf, xmax=x_critical[1], ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
   geom_rect(aes(xmin=x_critical[2], xmax=Inf, ymin=-Inf, ymax=Inf), fill = lighten('black',0.9)) +
-  geom_line(aes(x=x,y=mcl_90, col="CL_90"), size=.8, linetype="solid", color = col_pal$CL90) +
-  geom_line(aes(x=x,y=mcl_95, col="CL_95"), size=.8, linetype="solid",color = col_pal$CL95) +
+  geom_line(aes(x=x,y=macb_95, col="CL_90"), size=.8, linetype="solid", color = col_pal$CL90) +
+  geom_line(aes(x=x,y=macb_97p5, col="CL_95"), size=.8, linetype="solid",color = col_pal$CL95) +
   geom_point(aes(col="MDM_95"), shape = 16,size = 1, color = col_pal$mdm95) +
   xlab("") + ylab("f(x)") +
   theme_classic(base_size=8) + theme(
-    axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(),
+    #axis.title.x=element_blank(), axis.text.x=element_blank(),axis.ticks.x=element_blank(),
     legend.position = "right",legend.justification = c(0, 0.5), legend.title = element_blank(),
     legend.margin = margin(c(0, 0, 0, 0)), plot.margin = unit(c(0,0,0,0),"mm"), legend.box = "vertical",
     legend.text=element_text(size=8),legend.key.size = unit(.5,"line"), legend.text.align=0,
@@ -196,7 +197,7 @@ g1B
 cg = plot_grid(g1A, g1B, label_size = 12, ncol=1,rel_heights = c(.45,.55) )
 cg
 save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2AB_MDM_vs_CI95.tiff",sep=""),
-          cg, ncol = 1, nrow = 1, base_height = 1.4, base_width = 5, dpi = 600) # paper="letter"
+          g1A, ncol = 1, nrow = 1, base_height = 1.4, base_width = 3, dpi = 600) # paper="letter"
 graphics.off()
 
 

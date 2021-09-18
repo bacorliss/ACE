@@ -26,7 +26,7 @@ p_load(tidyr)
 # https://cran.rstudio.com/web/packages/TOSTER/vignettes/IntroductionToTOSTER.html
 # p_load(TOSTER)
 p_load(docstring)
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 
 # Script Parameters
 fig_num = "2"

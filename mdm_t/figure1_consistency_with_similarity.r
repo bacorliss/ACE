@@ -23,7 +23,7 @@ source("R/mdm.R")
 source("R/agreement_contests.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_num = "1" 
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)

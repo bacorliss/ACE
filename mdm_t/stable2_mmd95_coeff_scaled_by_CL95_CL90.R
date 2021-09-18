@@ -21,7 +21,7 @@ source("R/row_stats_toolbox.R")
 
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 out_dir = file.path(getwd(), paste(base_dir, "/figure/T2",sep=""))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -43,7 +43,7 @@ for (n in seq_along(mus)) {  # print(mus[n])
   xnorm <- (xi - rowMeans(xi))/rowSds(xi) + mus[n]
   
   # Calculate MDM
-  mdm_95 <- apply(xnorm, 1, mdm_normal_zdist)
+  mdm_95 <- apply(xnorm, 1, mdm_tdist)
   df_coeff$mean_mdm_95[n] <-  mean(mdm_95)
   df_coeff$sd_mdm_95[n] <-    sd(mdm_95)
   # Calculate 90% max abs CL

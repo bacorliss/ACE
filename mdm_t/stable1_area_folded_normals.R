@@ -18,7 +18,7 @@ p_load(cowplot)
 # User defined libraries
 source("R/mdm.R")
 source("R/row_stats_toolbox.R")
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 
 # Figure parameters
 #-------------------------------------------------------------------------------

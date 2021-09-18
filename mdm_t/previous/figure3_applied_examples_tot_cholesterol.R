@@ -6,7 +6,7 @@ p_load(ggplot2)
 p_load(cowplot)
 
 fig_num = "3"
-base_dir = "mdm_z"
+base_dir = "mdm_t"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/F",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 
