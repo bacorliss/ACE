@@ -146,7 +146,7 @@ quant_coverage_errors <-
                                                raw_error = raw_error,
                                                rel_error = rel_error,
                                                included_stats = included_stats) 
-          
+          # browser();
         }
         df_lin2 <- do.call("rbind", df_list)
       }
@@ -157,7 +157,7 @@ quant_coverage_errors <-
         df_mat2[[col_list[n]]] <- matrix(df_lin2[[col_list[n]]], nrow = n_sigmas, 
                                          ncol = n_mus, dimnames = dimnames)
       }
-      
+
       
       # Save an object to a file
       saveRDS(df_mat2, file = out_path)
@@ -238,6 +238,7 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   
   
   
+  # browser();
   
   if (!is.null(df_include$mdm)) {
     df_init$mdm = row_mdm_2s_zdist(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
@@ -258,9 +259,9 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   }
   
   
-  if (!is.null(df_include$macb_2a)) {   
-    df_init$macb_2a = row_macb_tdist_2sample(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha/2)
-    df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "macb_2a",
+  if (!is.null(df_include$macb_aov2)) {   
+    df_init$macb_aov2 = row_macb_tdist_2sample(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - 0.5*df$alpha)
+    df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "macb_aov2",
                                                      gt_name = "mu_dm", use_absolute = TRUE)
   }
   

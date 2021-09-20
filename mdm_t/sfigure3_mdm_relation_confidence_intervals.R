@@ -70,33 +70,7 @@ ztest <- function(x, y = NULL, mu = 0, conf.level= 0.95, alternative = "two.side
   return(p)
 }
 
-ztost <- function(x, delta) {
-  #' Two one sided Tests for z distribution, used for equivalence testing
-  #' 
-  #' 
-  # Equivalence: -delta <=  u1 < delta
-  # z_low  <- (mean(x) - delta)/(sd(x) / sqrt(length(x)))
-  # z_high <- (mean(x) + delta)/(sd(x) / sqrt(length(x)))
-  
-  p_lower <- ztest(x, mu = -abs(delta), alternative = "greater")
-  p_upper <- ztest(x, mu =  abs(delta), alternative = "lesser" )
-  # H01: delta <= -delta_0,     Ha1: delta >  -delta_0
-  # p1 <- pnorm(-zp_lower_low)
-  # H02: delta >= delta_0,      Ha2: delta <  delta_0
-  # p2 <- pnorm(z_high)
-  
-  p = max(c(p_lower,p_upper))
-  return(p)
-}
 
-rev_ztost <- function(xs, alpha) {
-  #' Calculates the reverse two one sided tests for z distribution, returns the 
-  #' largest equivalence region where results are still significant (p=0.05)
-  rtost_crit <- uniroot(function(x) ztost(xs, delta=x) - alpha,
-                        interval = c(0, abs(mean(xs)) + 6*sd(xs) ), 
-                        tol = .Machine$double.eps)$root
-  return(rtost_crit)
-}
 
 RootSpline1 <- function (x, y, y0 = 0, verbose = FALSE) {
   #' Given (x, y) data, find x where the linear interpolation crosses y = y0

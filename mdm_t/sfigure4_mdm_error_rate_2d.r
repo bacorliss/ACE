@@ -51,9 +51,10 @@ is_parallel_proc <- TRUE
 
 # First Row
 # Coverage error simulations for mu space  
-n_obs = 50
+n_obs = 6
 mus_dm <- seq(-2.5, 2.5, by = .05)
 sigmas_dm <- seq(.01, 1, by = .01)
+
 # Spread sigma_dm across sigma_a and sigma_b equally
 sigmas_a = sigmas_dm/sqrt(2/n_obs)
 sigmas_b = sigmas_a
@@ -67,7 +68,7 @@ df_results <-
                         mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                        included_stats = c("mdm","macb", "macb_2a"))
+                        included_stats = c("mdm", "macb", "macb_aov2"))
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#
@@ -182,55 +183,18 @@ save_plot(paste(fig_path, "/", fig_num, "_1a mean macb.tiff",sep=""),
 
 
 
-
-
-# # Error rrate
-# #------------------------------------------------------------------------------#
-# # Convert from matrix to dataframe
-# df2 <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_err_abs_macb_lt_mu_dm)) %>% gather(mu, z, -sigma)
-# df2$mu <- as.numeric(df2$mu)
-# df2$sigma <- as.numeric(df2$sigma)
-# # grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
-# # Plot heatmap
-# gg<- ggplot(df2, aes(mu, sigma, fill= z)) + 
-#   geom_tile()+ 
-#   scale_x_continuous(expand=c(0,0)) + 
-#   scale_y_continuous(expand=c(0,0)) +
-#   xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
-#   theme_classic(base_size=8) +
-#   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-#                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-#                          ticks.colour = "black",  direction = "horizontal"),
-#                        limits=c(0,.1)) +
-#   theme(legend.position="top", legend.title = element_blank(),
-#         legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-#         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-#         legend.box.spacing = unit(.1,"inch"))
-# gg
-# save_plot(paste(fig_path, "/", fig_num, "_1a macb error rate 2D.tiff",sep=""),
-#           gg, ncol = 1, nrow = 1, base_height = 2.2,
-#           base_asp = 3, base_width = 2, dpi = 600) 
-
-
-
-
-
-
-
-
-# Differences between MACB and MDM
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_mdm)) %>% gather(mu, z, -sigma)
-df$mu <- as.numeric(df2$mu)
-df$sigma <- as.numeric(df2$sigma)
-df2 <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_macb)) %>% gather(mu, z, -sigma)
-df2$mu <- as.numeric(df2$mu)
-df2$sigma <- as.numeric(df2$sigma)
+# Relative scaling between MACB_95 to MACB_97.5 with MDM
 # Convert from matrix to dataframe
+df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_macb)) %>% gather(mu, z, -sigma)
+df2 <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_mdm)) %>% gather(mu, z, -sigma)
+df3 <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_macb_aov2)) %>% gather(mu, z, -sigma)
+
 # grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
 # Plot heatmap
-df3 = df
-df3$z = abs(df2$z-df$z)
-gg<- ggplot(df3, aes(mu, sigma, fill= z)) + 
+df4 <- df
+df4$z = (df2$z-df$z)/(df3$z-df$z)
+df4$mu <- as.numeric(df4$mu); df4$sigma <- as.numeric(df4$sigma)
+gg<- ggplot(df4, aes(mu, sigma, fill= z)) + 
   geom_tile()+ 
   scale_x_continuous(expand=c(0,0)) + 
   scale_y_continuous(expand=c(0,0)) +
@@ -245,9 +209,7 @@ save_plot(paste(fig_path, "/", fig_num, "_diff values mdm macd 2D.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 # Show where MDM equals MACB
-df3 = df
-df3$z = abs(df2$z-df$z)<1e-4
-gg<- ggplot(df3, aes(mu, sigma, fill= z)) + 
+gg<- ggplot(df4, aes(mu, sigma, fill= abs(z)<1e-4)) + 
   geom_tile()+ 
   scale_x_continuous(expand=c(0,0)) + 
   scale_y_continuous(expand=c(0,0)) +
@@ -267,50 +229,6 @@ save_plot(paste(fig_path, "/", fig_num, "_equal values mdm macd 2D.tiff",sep="")
 
 
 
-
-
-
-# Differences between MACB_2A and MDM
-df <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_mdm)) %>% gather(mu, z, -sigma)
-df2 <- cbind(sigma = sigmas_dm, as_tibble(df_results$mean_abs_macb_2a)) %>% gather(mu, z, -sigma)
-# Convert from matrix to dataframe
-# grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
-# Plot heatmap
-df3 = df
-df3$z = abs(df2$z-df$z)/df$z
-df3$mu <- as.numeric(df3$mu)
-df3$sigma <- as.numeric(df3$sigma)
-
-gg<- ggplot(df3, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
-  theme_classic(base_size=8) +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-gg
-save_plot(paste(fig_path, "/", fig_num, "_diff values mdm macd_ao2 2D.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
-          base_asp = 3, base_width = 2, dpi = 600) 
-# Show where MDM equals MACB
-df3$z = df3$z < .01
-gg<- ggplot(df3, aes(mu, sigma, fill= z)) + 
-  geom_tile()+ 
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0)) +
-  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
-  theme_classic(base_size=8) +
-  theme(legend.position="top", legend.title = element_blank(),
-        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-        legend.box.spacing = unit(.1,"inch"))
-gg
-save_plot(paste(fig_path, "/", fig_num, "_equal values mdm macd_ao2 2D.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
-          base_asp = 3, base_width = 2, dpi = 600) 
 
 
 

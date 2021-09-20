@@ -66,7 +66,7 @@ qft <- function(p, df, mu, sigma, lo.bound, hi.bound) {
   # Estimate bounds to search for root
 
   # save(list = ls(all.names = TRUE), file = "temp/qft.RData",envir = environment())
-  # load(file = "temp/plot_population_params.RData")
+  # load(file = "temp/qft.RData")
 
   # Integration is also used to calculate p, but it can be a very sparse 
   # integration (long spans where f(x)=0 and then a very small width spike in the pdf)
@@ -91,10 +91,12 @@ qft <- function(p, df, mu, sigma, lo.bound, hi.bound) {
   xroot <-  tryCatch(
     uniroot( function(z)
       pft(upper = z, df = df, mu = abs(mu), sigma = sigma, lower = lo.bound) + 
-        start_area - conf.level,
+        start_area - p,
       lower = lo.bound, upper = hi.bound, extendInt = "no")$root,
     error = function(c) NaN)
 
+  # browser();
+  
   return(xroot)
 }
 
@@ -152,9 +154,10 @@ mdm_tdist <- function(x, y = NULL, conf.level = 0.95) {
   # Quantile with prob set to alpha and sampple estimates as parameters
   mdm <-  tryCatch(qft(p = conf.level, df = df_d, mu = xbar_dm, sigma = sd_dm,
                        lo.bound, hi.bound), error = function(c) NaN)
-
+  
   # If integration fails pause execution
-  if (is.nan(mdm) || is.nan(start_area)) {browser();}
+  if (is.nan(mdm) || is.null(mdm)) {browser();}
+  
   return(mdm)
 }
 
