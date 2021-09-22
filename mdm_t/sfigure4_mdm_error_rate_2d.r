@@ -228,6 +228,25 @@ save_plot(paste(fig_path, "/", fig_num, "_equal values mdm macd 2D.tiff",sep="")
 
 
 
+# grid_slopes <- slopes_by_rowcol(df_results$mean_mdm_error_rate, sigmas, mus)
+# Plot heatmap
+df5 <- df
+df5$z = (df2$z-df$z)
+df5$mu <- as.numeric(df5$mu); df5$sigma <- as.numeric(df5$sigma)
+gg<- ggplot(df5, aes(mu, sigma, fill= z)) + 
+  geom_tile()+ 
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0)) +
+  xlab(expression(mu[DM])) + ylab(expression(sigma[DM])) +
+  theme_classic(base_size=8) +
+  theme(legend.position="top", legend.title = element_blank(),
+        legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+        legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+        legend.box.spacing = unit(.1,"inch"))
+gg
+save_plot(paste(fig_path, "/", fig_num, "_diff mdm and macb.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          base_asp = 3, base_width = 2, dpi = 600) 
 
 
 
