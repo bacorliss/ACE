@@ -189,3 +189,89 @@ save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "2C_MDM_vs_CI95.
           gg, base_height = 1.2, base_width = 5, dpi = 600) 
 graphics.off()
 
+
+
+
+
+
+
+
+
+
+
+## Explore trends between MDM and CI at a population level
+#
+#--------------------------------------------------------------------------------------#
+
+# Generate 1000 samples, loop through different shifts, and quantify MDM, UCL_95, UCL_90
+mus = seq(-2,2,.25)
+sigma = 1
+n_samples = 1000
+n_obs = 6
+set.seed(1)
+# Sample around mean
+
+
+# Make list of data frames to be concatenated at end of computations
+df_list <- list()
+for (n in seq(1,length(mus),1)) {
+  
+  y_sweep <- matrix(rnorm(n_samples*n_obs,mus[n],sigma), nrow = n_samples, byrow = TRUE)
+  # Calculate MDM and max abs confidence intervals
+  mdm_95    <- apply(y_sweep, 1, mdm_tdist)
+  # Two tailed confidence intervals
+  macb_95   <- apply(y_sweep, 1, function (x)  
+    macb_tdist_2sample(x=x, y=NULL, conf.level = .95))
+  macb_975  <- apply(y_sweep, 1, function (x)  
+    macb_tdist_2sample(x=x, y=NULL, conf.level = .975))
+
+  mdm_diff <- mdm_95 - macb_95
+  ci_diff <- macb_975 - macb_95
+  coeff_mdm95 <- mdm_diff/ci_diff
+  print(mus[n])
+  df_list[[n]] = tibble(n = as.factor(n), mu = mus[n],
+                        coeff_mdm95 = coeff_mdm95, mdm_95 = mdm_95, 
+                        macb_95 = macb_95, macb_975 = macb_975)
+  df_list[[n]]$mu <- as.factor(mus[n])
+}
+
+df <- do.call(rbind, df_list)     #ldply(df_list, rbind)
+df$mu <- as.factor(df$mu)
+
+# df$mu <- as.factor(df$mu)
+# Get groups means and CI of mean
+df_plotted <- df %>% group_by(mu) %>% 
+  summarize(mean_coeff_mdm95 = mean(coeff_mdm95)) 
+# lcl_mu = boot.ci(boot(df$coeff_mdm95, statistic=
+#                         function(data, i) {return(mean(data[i]))}, R=1000), 
+#                  conf=0.95, type="bca")$bca[4],
+# ucl_mu = boot.ci(boot(df$coeff_mdm95, statistic=
+#                         function(data, i) {return(mean(data[i]))}, R=1000), 
+#                  conf=0.95, type="bca")$bca[5])
+df_plotted$mu <- as.factor(df_plotted$mu)
+# Pairwise test between groups
+pw_means <- pairwise.t.test(df$coeff_mdm95, df$mu, p.adjust.method = "bonferroni",
+                            paired = TRUE, alternative = "two.sided")
+adj_sig_str <- adjacent_compare_str(pw_means$p.value<0.05,'*')
+
+# Plotting MDM vs coefficient population level
+gg <- ggplot(df, aes(x = mu, y=coeff_mdm95)) +
+  geom_violin(scale = "width", fill = "grey85", color="white") +
+  geom_point(data=df_plotted, aes(x=mu,y=mean_coeff_mdm95), color ="#FF7F00") +
+  geom_hline(aes(yintercept = 0), color = "#377eb8",  size = 1, alpha = 0.2) +
+  geom_hline(aes(yintercept = 1), color = "#e41a1c", size = 1, alpha = 0.2) +
+  xlab(expression(mu[DM]/sigma[DM])) + ylab(expression("Coeff."~"95%"~delta[M])) +
+  # geom_text(data = data.frame(), aes(x = as.factor(mus), y = rep(1.03, length(mus)), 
+  #                                    label=adj_sig_str),  size=5, position = position_nudge(x = 0.5, y = 0), color="black")+
+  coord_cartesian(ylim=c(0,1.05))+
+  theme_classic(base_size=8)
+gg
+# Export figure to disk
+save_plot(paste(base_dir, "/figure/SF", fig_num, "/F", fig_num, "5a_coeff_MDM_from_pop.tiff",sep=""),
+          gg, ncol = 1, nrow = 1, base_height = 1.5,
+          base_asp = 3, base_width = 5, dpi = 600) # paper="letter"
+graphics.off()
+
+
+
+

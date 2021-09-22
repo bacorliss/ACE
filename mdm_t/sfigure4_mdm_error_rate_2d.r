@@ -205,7 +205,7 @@ gg<- ggplot(df4, aes(mu, sigma, fill= z)) +
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
         legend.box.spacing = unit(.1,"inch"))
 gg
-save_plot(paste(fig_path, "/", fig_num, "_diff values mdm macd 2D.tiff",sep=""),
+save_plot(paste(fig_path, "/", fig_num, "_coeff values mdm.tiff",sep=""),
           gg, ncol = 1, nrow = 1, base_height = 2.2,
           base_asp = 3, base_width = 2, dpi = 600) 
 # Show where MDM equals MACB
