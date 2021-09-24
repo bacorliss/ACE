@@ -3,6 +3,18 @@
 
 
 
+lacb_tdist_2sample <- function (x, y, conf.level = 0.95) {
+  #' Least absolute one-tailed confidence bounds of t-distribution
+  #' 
+  lo_b <- t.test(x = x, y = y, conf.level = conf.level, alternative = "greater")$conf.int[1]
+  up_b <- t.test(x = x, y = y, conf.level = conf.level, alternative = "less")$conf.int[2]
+  
+  lacb <- min(abs(c(lo_b, up_b)))
+  if (sign(ci[1])!=signci[2]) {lacb <- 0}
+  
+  return(lacb)
+}
+
 
 
 ldm_normal <- function(x, y = NULL, paired = FALSE, var.equal = FALSE, conf.level = 0.95, 
