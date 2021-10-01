@@ -7,15 +7,12 @@ p_load(tidyr)
 p_load(stringr)
 
 source("R/parallel_utils.R")
-source("R/mdm.R")
-source("R/ldm.R")
-source("R/row_stats_toolbox.R")
-source("R/rationormal_toolbox.R")
+source("R/aces.R")
 
-mdm_functions <- parse_functions_source("R/mdm.R")
-ldm_functions <- parse_functions_source("R/ldm.R")
+mdm_functions <- parse_functions_source("R/aces.R")
+# ldm_functions <- parse_functions_source("R/ldm.R")
 row_effect_size_functions <- parse_functions_source("R/row_stats_toolbox.R")
-rationormal_functions <- parse_functions_source("R/rationormal_toolbox.R")
+# rationormal_functions <- parse_functions_source("R/rationormal_toolbox.R")
 
 RowVar <- function(x, ...) rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
 # Test if a value is within an interval (inclusive)
@@ -125,9 +122,8 @@ quant_coverage_errors <-
         
         df_lin2 <- 
           foreach(n = seq(1,n_sigmas*n_mus,1),
-                  .export = c(mdm_functions, ldm_functions, row_effect_size_functions,
-                              "quant_coverage_error","quant_error_rate",
-                              rationormal_functions), 
+                  .export = c(mdm_functions, row_effect_size_functions,
+                              "quant_coverage_error","quant_error_rate"), 
                   .combine = rbind, .packages = c("tidyr", "cubature")) %dopar% {
                     #calling a function
                     tempMatrix <- quant_coverage_error(df = df_lin[n,], 
@@ -309,28 +305,6 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
                        gt_name = "rmu_eoc", use_absolute = TRUE)
   }
   
-  
-  
-  
-  # spool_mu_dm =  sqrt(poolVar(c(df$sigma_a, df$sigma_b)^2, n=c(100,100))$var)
-  
-  # spool_mu_dm = sqrt( ((df$n_a-1)*df$sigma_a^2 + (df$n_b-1)*df$sigma_b^2)/(df$n_a + df$n_b -2)) * sqrt(1/df$n_a + 1/df$n_b)
-  # Calculate tru rmu_dm 95, the value the rmdm is meant to approximate
-  # df_init$rmu_dm_ucl <- max(abs(c(
-  #   qnormrat(p =     1/2*df$alpha, df$mu_dm, spool_mu_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)),
-  #   qnormrat(p = 1 - 1/2*df$alpha, df$mu_dm, spool_mu_dm, df$mu_a, df$sigma_a/sqrt(df$n_a)) )))
-  # See if this value has predicted error rate with samples
-  
-  # # Simple Test case
-  
-  
-  # Reverse test case
-  # Calculate true mu_eoc_ucl, the value that rmu_eoc is meant to estimate
-  # df_init$rmu_eoc_ucl <- max(abs(c(
-  #   qnormrat(p =     df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)),
-  #   qnormrat(p = 1 - df$alpha, df$mu_b, df$sigma_b/sqrt(df$n_b), df$mu_a, df$sigma_a/sqrt(df$n_a)))))
-  
-  # See if this value has predicted error rate with samples
   
   
   # browser();

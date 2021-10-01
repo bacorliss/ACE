@@ -9,6 +9,59 @@ p_load(docstring)
 p_load(cubature)
 
 
+mdm_credint <- function(x, y, conf.level=0.9, num_param_sims = 100/(1-conf.level), 
+                        plot=FALSE, relative = FALSE, sharedVar=FALSE){
+  
+  save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
+  # load(file = "temp/mdm_credint.RData")
+  
+    xbar <- mean(x)
+    ybar <- mean(y)
+    s2x <- var(x)
+    s2y <- var(y)
+    m <- length(x)
+    n <- length(y)
+    if(sharedVar){
+      shape <- .5*(m + n - 2)
+      scale <- .5*((m-1)*s2x + (n-1)*s2y)
+      ssSims <- 1/rgamma(num_param_sims, shape = shape, scale = scale)
+      mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ssSims/m))
+      mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ssSims/n))
+    }else{ # different variances
+      shape1 <- .5*(m-1)
+      scale1 <- .5*(m-1)*s2x
+      shape2 <- .5*(n-1)
+      scale2 <- .5*(n-1)*s2y
+      ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, scale = scale1)
+      ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, scale = scale2)
+      mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
+      mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
+    }
+    if(!relative){
+      cdf <- ecdf(mu1Sims - mu2Sims)
+    }else{
+      cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
+    }
+    # solve $F(c) - F(-c) = .95
+    upper <- uniroot(function(x){ cdf(x) - cdf(-x) - conf.level},
+                     lower = 0,
+                     upper = max(c(abs(x),abs(y))),
+                     extendInt = "yes")$root
+    if(plot & !relative){
+      hist(mu1Sims - mu2Sims)
+      abline(v=upper,col="red")
+      abline(v=-upper,col="red")
+    }else if(plot & relative){
+      hist((mu1Sims - mu2Sims)/mu2Sims)
+      abline(v=upper,col="red")
+      abline(v=-upper,col="red")
+    }
+    return(abs(upper))
+  }
+
+
+
+
 mdm_tdist <- function(x, y = NULL, conf.level = 0.95) {
   #' @description Calculate most difference in means statistic from integrating 
   #' over a folded t-distribution to an extent dicated by the conf.level
@@ -224,7 +277,7 @@ lacb_tdist_2sample <- function (x, y, conf.level = 0.95) {
   up_b <- t.test(x = x, y = y, conf.level = conf.level, alternative = "less")$conf.int[2]
   
   lacb <- min(abs(c(lo_b, up_b)))
-  if (sign(ci[1])!=signci[2]) {lacb <- 0}
+  if (sign(lo_b)!= sign(up_b)) {lacb <- 0}
   
   return(lacb)
 }

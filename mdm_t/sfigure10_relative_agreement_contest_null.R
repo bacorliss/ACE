@@ -18,7 +18,7 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mdm.R")
+source("R/aces.R")
 source("R/agreement_contests.R")
 base_dir = "mdm_t"
 # Figure parameters
@@ -53,7 +53,6 @@ df_relative_null = list();
 # Contest 1) Lower rmu_dm
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed)
 gt_colnames = "is_rmudm_1ldt2"
 fig_name = paste("F", fig_num, "_1_esize_contest_rmu_null", sep = "")
@@ -139,7 +138,6 @@ df_relative_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 3) Lower df_pool
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed)
 n1 <- runif(n_sims, 6, 60)
 n2 <- runif(n_sims, 6, 60)
@@ -182,7 +180,6 @@ df_relative_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 4) Lower alpha_dm
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1ldt2"
 fig_name = paste("F", fig_num, "_4_esize_contest_alpha_null", sep = "")
@@ -226,7 +223,6 @@ df_relative_null[[4]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 6) Lower mu_dm, sigma_pool, df_pool
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed+5)
 n1 <- ceiling(runif(n_sims, 6-1, 15))
 n2 <- ceiling(runif(n_sims, 16-1, 25))

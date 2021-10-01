@@ -18,7 +18,7 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mdm.R")
+source("R/aces.R")
 source("R/agreement_contests.R")
 
 # Figure parameters
@@ -124,7 +124,6 @@ df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 3) Higher df_pool
 # [Near from zero]
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 6, 25))
 n2 <- round(runif(n_sims, 15, 40))
 set.seed(rand.seed)
@@ -166,7 +165,6 @@ df_unscaled_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 4) Higher alpha
 # [Near from zero]
 #
-source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1ldt2"
@@ -214,7 +212,6 @@ df_unscaled_null[[4]] <-
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 6, 10))
 n2 <- round(runif(n_sims, 10, 14))
 set.seed(rand.seed+1)

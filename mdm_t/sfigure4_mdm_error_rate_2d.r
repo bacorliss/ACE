@@ -27,7 +27,7 @@ p_load(RColorBrewer)
 p_load(tidyr)
 p_load(docstring)
 # User defined functions
-source("R/mdm.R")
+source("R/aces.R")
 source("R/coverage_error_toolbox.R")
 
 
@@ -68,7 +68,7 @@ df_results <-
                         mus_b = 100 + mus_dm, sigmas_b = sigmas_b, n_b = n_obs, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_sigma.rds",sep=""),
                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                        included_stats = c("mdm", "macb", "macb_aov2"))
+                        included_stats = c("mdm"))
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#

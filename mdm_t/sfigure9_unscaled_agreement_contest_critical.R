@@ -19,7 +19,7 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mdm.R")
+source("R/aces.R")
 source("R/agreement_contests.R")
 
 # Figure parameters
@@ -129,8 +129,8 @@ df_unscaled_crit[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 # Contest 3) Higher df_pool
 # [Near from zero]
+source("R/aces.R")
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 n1 <- round(runif(n_sims, 6, 20))
 n2 <- round(runif(n_sims, 15, 30))
 set.seed(rand.seed)
@@ -140,12 +140,12 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    mus_1a  = 10, 
                                    sigmas_1a = 1,
                                    mus_1ao  = seq(0.75,2,length.out = n_sims),
-                                   sigmas_1ao = 0,
+                                   sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
                                    mus_2ao  = seq(0.75,2,length.out = n_sims),
-                                   sigmas_2ao = 0,
+                                   sigmas_2ao = 1,
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2, 
@@ -163,7 +163,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
 df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]",
-                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   include_bf = include_bf, parallel_sims = TRUE,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path)
 
@@ -180,7 +180,6 @@ df_unscaled_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 4) Higher alpha
 # [Near from zero]
 #
-source("R/agreement_contests.R")
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1ldt2"

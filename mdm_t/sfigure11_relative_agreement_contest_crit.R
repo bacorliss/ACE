@@ -19,7 +19,7 @@ p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries
-source("R/mdm.R")
+source("R/aces.R")
 source("R/agreement_contests.R")
 base_dir = "mdm_t"
 
@@ -171,7 +171,6 @@ df_relative_crit[[3]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 4) Lower alpha_dm
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed)
 gt_colnames = "is_alpha_1ldt2"
 fig_name = paste("F", fig_num, "_4_esize_contest_alpha_crit", sep = "")
@@ -214,7 +213,6 @@ df_relative_crit[[4]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 6) Lower mu_dm, sigma_pool, df_pool
 #
 #------------------------------------------------------------------------------
-source("R/agreement_contests.R")
 set.seed(rand.seed+5)
 n1 <- runif(n_sims, 6, 25)
 n2 <- runif(n_sims, 30, 50)
