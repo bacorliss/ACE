@@ -24,7 +24,7 @@ mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 600/(1-conf.lev
     if(sharedVar){
       shape <- .5*(m + n - 2)
       scale <- .5*((m-1)*s2x + (n-1)*s2y)
-      ssSims <- 1/rgamma(num_param_sims, shape = shape, scale = scale)
+      ssSims <- 1/rgamma(num_param_sims, shape = shape, rate = scale)
       mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ssSims/m))
       mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ssSims/n))
     }else{ # different variances
@@ -32,8 +32,8 @@ mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 600/(1-conf.lev
       scale1 <- .5*(m-1)*s2x
       shape2 <- .5*(n-1)
       scale2 <- .5*(n-1)*s2y
-      ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, scale = scale1)
-      ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, scale = scale2)
+      ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, rate = scale1)
+      ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, rate = scale2)
       mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
       mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
     }
