@@ -335,12 +335,13 @@ save_plot(paste(fig_path, "\\", fig_num, "_d mdm boundaries over mu.tiff",
 # Row 2: error rate of mdm in mu/sigma space
 #                                                                              #
 #______________________________________________________________________________#
-
+source("R/aces.R")
+source("R/coverage_error_toolbox.R")
 # First Row
 # Coverage error simulations for mu space  
 n_obs = 50
-sigmas_dm <- seq(.1, 5, by = .05)
-mu_vsigmas_dm <- seq(-3, 3, by = .05)
+sigmas_dm <- seq(.1, 5, by = .1)
+mu_vsigmas_dm <- seq(-3, 3, by = .1)
 
 
 # Spread sigma_dm across sigma_a and sigma_b equally
@@ -354,7 +355,7 @@ df_results <-
                         mus_b = NA, sigmas_b = sigmas_b, n_b = n_obs, 
                         mu_vsigmas_dm = mu_vsigmas_dm, alphas = 0.05,
                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_Error_2D_mu_vs_mu_ov_sigma.rds",sep=""),
-                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
+                        overwrite=overwrite, is_parallel_proc = FALSE, raw_error = TRUE, rel_error = FALSE,
                         included_stats = c("mdm"))
 # 2A, Error rate of MDM < mu in mu/sigma space
 #------------------------------------------------------------------------------#

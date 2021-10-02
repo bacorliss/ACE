@@ -135,20 +135,17 @@ row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
   return(ci)
 }
 
-row_mdm_2s_zdist <- function(m_c, m_e, ...) {
-  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_e[i,], m_c[i,], ...))
+row_mdm <- function(m_c, m_e, conf.level) {
+  # browser();
+  
+  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_e[i,], m_c[i,], conf.level = conf.level))
+  # mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_credint(m_e[i,], m_c[i,],
+  #                                                       conf.level = conf.level, relative = FALSE))
   return(mdm)
 }
 
 
-row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
-  macb <- sapply(1:dim(m_c)[1], function(i)  macb_tdist_2sample (m_c[i,], m_e[i,], ...))
-  return(macb)
-}
-
-
-
-row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "fieller") {
+row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "fieller") {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). m_c and m_e must have same number of rows (samples), but 
@@ -159,17 +156,22 @@ row_rmdm_2s_zdist <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method =
   #' 
   #' @return vector of rmdm values, one for each row of m_c and m_e
   
-    # rmdms <- sapply(1:dim(m_c)[1], function(i)  
-    #   rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
-    #                     method = "fieller"))
+    rmdms <- sapply(1:dim(m_c)[1], function(i)
+    rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
+                      method = "fieller"))
     
-    rmdms <-  sapply(1:dim(m_c)[1], function(i)  
-      mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+    # rmdms <-  sapply(1:dim(m_c)[1], function(i)
+    #   mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
     
    
   return(rmdms)
 }
 
+
+row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
+  macb <- sapply(1:dim(m_c)[1], function(i)  macb_tdist_2sample (m_c[i,], m_e[i,], ...))
+  return(macb)
+}
 
 
 #' row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "ttestratio_default") {
@@ -441,13 +443,13 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$cohend <- "Cd"
   
   # 9) most difference in means
-  df$mdm = row_mdm_2s_zdist(x_a, x_b, conf.level = conf.level)
+  df$mdm = row_mdm(x_a, x_b, conf.level = conf.level)
   df_ldt$mdm <- "<"
   df_lat$mdm <- ">"
   df_pretty$mdm <- "delta[M]"
   
   # 10) Relative most difference in means
-  df$rmdm = row_rmdm_2s_zdist(x_a, x_b, conf.level = conf.level, method = "fieller") 
+  df$rmdm = row_rmdm(x_a, x_b, conf.level = conf.level, method = "fieller") 
   df_ldt$rmdm <- "<"
   df_lat$rmdm <- ">"
   df_pretty$rmdm <- "r*delta[M]"

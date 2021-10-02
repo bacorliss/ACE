@@ -51,7 +51,7 @@ set.seed(rand.seed)
 mus_d_vect = seq(4.85, .1,-0.25)
 mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
-sigmas_ab_vect = .1
+sigmas_ab_vect = .001
 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
@@ -69,7 +69,7 @@ df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = TRUE,
+                                    include_bf = include_bf, parallel_sims = FALSE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
@@ -188,9 +188,9 @@ df_alpha_pearson <-
 # Relative Mean:  decreasing rmu has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-mus_a_vect =  seq(10,80,5); n_sims = length(mus_a_vect) 
-mus_b_vect =  mus_a_vect+2
-sigmas_ab_vect = mus_a_vect + .01 * (mus_a_vect)
+mus_a_vect =  seq(10,20*10,0.2*10); n_sims = length(mus_a_vect) 
+mus_b_vect =  mus_a_vect+10
+sigmas_ab_vect = 0.1*mus_a_vect 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
 df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,

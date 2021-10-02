@@ -30,6 +30,7 @@ p_load(tidyr)
 p_load(docstring)
 # User defined functions
 source("R/aces.R")
+source("R/row_stats_toolbox.R")
 # source("R/coverage_error_toolbox.R")
 
 
@@ -73,6 +74,10 @@ quant_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alphas
   save(list = ls(all.names = TRUE), file = "temp/quant_cred_intervals.RData",envir = environment())
   # load(file = "temp/quant_cred_intervals.RData")
   dir.create(dirname(out_path),showWarnings = FALSE, recursive = TRUE)
+  
+  # Only compute requested statistics
+  df_include = data.frame(matrix(rep(TRUE,length(included_stats)), nrow = 1, 
+                                 dimnames = list(NULL, included_stats)))
   
   # For any pop param not equal in length to n_sims, expand
   n_xbars = max(length(xbars_b), length(xbars_a))
@@ -124,7 +129,7 @@ quant_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alphas
     } 
     
     # Linearize matrix dataframe for parallel processing
-    df_lin <- tibble(mu_a = as.vector(init_mat));
+    df_lin <- tibble(xbar_a = as.vector(init_mat));
     for (n in seq_along(param_col_list)) { df_lin[[param_col_list[n]]] <- 
       as.vector(df_mat[[param_col_list[n]]]) }
     
@@ -132,22 +137,23 @@ quant_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alphas
     # Control group 
     x_ctrl <- rnorm(n=df_lin$n_a[1], mean = 0, sd = 1)
     x_ctrl <- (x_ctrl - mean(x_ctrl))/sd(x_ctrl)
-    x_ctrls <- rep(x_ctrl, dim(df_lin)[1])
+    x_ctrls <- matrix(rep(x_ctrl, dim(df_lin)[1]), nrow = dim(df_lin)[1])
     x_ctrls <- sweep(sweep(x_ctrls, MARGIN=1, df_lin$sd_a, `*`), MARGIN=1, df_lin$xbar_a,'+')
     # Experiment group
     x_exp  <- rnorm(df_lin$n_b[2], mean = 0, sd = 1)
     x_exp <- (x_exp - mean(x_exp))/sd(x_exp)
-    x_exps <- rep(x_exp, dim(df_lin)[1])
+    x_exps <- matrix(rep(x_exp, dim(df_lin)[1]), nrow = dim(df_lin)[1])
     x_exps <- sweep(sweep(x_exps, MARGIN=1, df_lin$sd_b, `*`), MARGIN=1, df_lin$xbar_b,'+')
     
     
-    df_list <- list()
-    for (n in seq(1,n_ss*n_xbars,1)) {
-      x_ctrl
-      
+    # Calculate statistic from grid of samples
+    if (!is.null(df_include$mdm)) { 
+      df_lin$mdm <- row_mdm(x_ctrls, x_exps, conf.level = 0.95)
     }
     
-    
+    if (!is.null(df_include$rmdm)) { 
+      df_lin$rmdm <- row_rmdm(x_ctrls, x_exps, conf.level = 0.95)
+    }
     
     
     df_list <- list()
@@ -167,6 +173,16 @@ quant_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alphas
       df_mat2[[col_list[n]]] <- matrix(df_lin2[[col_list[n]]], nrow = n_ss, 
                                        ncol = n_xbars, dimnames = dimnames)
     }
+    
+    
+    
+    # Linearize the larger coordinate system
+    
+    # Loop through each coordinate, produce a histogram image for each
+    # (1) pass_image
+    # (2) total_image
+    
+    # Average images together
     
     
     # Save an object to a file

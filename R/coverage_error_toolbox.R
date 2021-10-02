@@ -210,7 +210,11 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   # Initial sample metrics
   ci_mean = row_ci_mean_2s_zdist(m_c = x_ctrl, m_e = x_exp)
   
-  df_init = data.frame(xbar_dm = rowMeans(x_exp) - rowMeans(x_ctrl), 
+  # browser();
+  
+  df_init = data.frame(xbar_dm = rowMeans(x_exp) - rowMeans(x_ctrl),
+                       aquantile_mdm = quantile(abs(rowMeans(x_exp) - rowMeans(x_ctrl)), 1-df$alpha[1]),
+                       aquantile_rmdm = quantile(abs(rowMeans(x_exp) - rowMeans(x_ctrl))/abs(rowMeans(x_ctrl)), 1-df$alpha[1]),
                        ci_lower_z = ci_mean$ci_lower, 
                        ci_upper_z = ci_mean$ci_upper)
   
@@ -237,10 +241,12 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   # browser();
   
   if (!is.null(df_include$mdm)) {
-    df_init$mdm = row_mdm_2s_zdist(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
+    df_init$mdm = row_mdm(m_c = x_ctrl, m_e = x_exp, conf.level = 1 - df$alpha)
     df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "mdm",
                                                      gt_name = "mu_dm", use_absolute = TRUE)
+    df_list[[length(df_list)]]$diff_mdm_aquantile_mdm = mean(df_init$mdm) - mean(df_init$aquantile_mdm)
   }
+  
   if (!is.null(df_include$ldm)) {
     df_init$ldm = row_ldm_2s_zdist(x_ctrl, x_exp, conf.level = 1 - df$alpha)
     df_list[[length(df_list)+1]] <- quant_error_rate(df_init = df_init, lower_name = "ldm", upper_name = NULL,
@@ -274,7 +280,7 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   }
   
   if (!is.null(df_include$rmdm)) {
-    df_init$rmdm = row_rmdm_2s_zdist(x_ctrl, x_exp, conf.level = 1-df$alpha, mdms = df_init$mdm)
+    df_init$rmdm = row_rmdm(x_ctrl, x_exp, conf.level = 1-df$alpha, mdms = df_init$mdm)
     if (any(is.nan(df_init$rmdm))) { browser() }
     df_list[[length(df_list) + 1]] <-
       quant_error_rate(df_init = df_init, lower_name = NULL, upper_name = "rmdm" ,
@@ -307,7 +313,7 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   
   
   
-  # browser();
+  browser();
   df_err = do.call("cbind", df_list)
   return(df_err)
   

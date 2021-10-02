@@ -6,10 +6,10 @@
 # Load package manager
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(docstring)
-p_load(cubature)
+# p_load(cubature)
 
 
-mdm_credint <- function(x, y, conf.level=0.9, num_param_sims = 100/(1-conf.level), 
+mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 600/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE){
   
   save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())

@@ -139,8 +139,8 @@ df_relative_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-n1 <- runif(n_sims, 6, 60)
-n2 <- runif(n_sims, 6, 60)
+n1 <- runif(n_sims, 6, 20)
+n2 <- runif(n_sims, 20, 60)
 gt_colnames = "is_dfdm_1ldt2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_null", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed,  

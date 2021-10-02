@@ -62,10 +62,10 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
     df_stat$bf[n] <- row_bayesf_2s(xa, xb)
     df_stat$p_nhst[n] <- t.test(xa, xb, conf.level = 
                                   1 - parse_fract(df[[alphadm_str]][n]))$p.value
-    df_stat$mdm[n] <- row_mdm_2s_zdist(xa, xb, conf.level = 
+    df_stat$mdm[n] <- row_mdm(xa, xb, conf.level = 
                                         1 - parse_fract(df[[alphadm_str]][n]))
     df_stat$rmdm[n] <- 
-      row_rmdm_2s_zdist(m_c = xa, m_e = xb, conf.level = 1 - parse_fract(df[[alphadm_str]][n]))
+      row_rmdm(m_c = xa, m_e = xb, conf.level = 1 - parse_fract(df[[alphadm_str]][n]))
   
     df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbarA_str]][n])
     
