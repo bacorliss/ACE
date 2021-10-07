@@ -139,12 +139,12 @@ fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = seq(0.75,2,length.out = n_sims),
+                                   mus_1ao  = seq(1.2,4,length.out = n_sims),
                                    sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = seq(0.75,2,length.out = n_sims),
+                                   mus_2ao  = seq(1.2,4,length.out = n_sims),
                                    sigmas_2ao = 1,
                                    
                                    n_1a = n1, n_1b = n1,

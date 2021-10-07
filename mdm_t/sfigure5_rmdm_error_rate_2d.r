@@ -76,7 +76,7 @@ gg<- ggplot(df, aes(mu, sigma, fill= z)) + geom_tile() +
   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
                          ticks.colour = "black",  direction = "horizontal"),
-                       breaks = c(0, 0.25, .6), limits=c(0, .6)) +
+                       breaks = c(0, 0.05, .1), limits=c(0, .1)) +
   theme(legend.position="top", legend.title = element_blank(),
         legend.justification = "left",  legend.key.height = unit(.05, "inch"),
         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),

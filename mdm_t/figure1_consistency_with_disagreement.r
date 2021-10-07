@@ -69,7 +69,7 @@ df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = FALSE,
+                                    include_bf = include_bf, parallel_sims = TRUE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable

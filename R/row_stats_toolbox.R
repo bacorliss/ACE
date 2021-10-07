@@ -138,9 +138,11 @@ row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
 row_mdm <- function(m_c, m_e, conf.level) {
   # browser();
   
-  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_e[i,], m_c[i,], conf.level = conf.level))
+  # mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_e[i,], m_c[i,], conf.level = conf.level))
   # mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_credint(m_e[i,], m_c[i,],
-  #                                                       conf.level = conf.level, relative = FALSE))
+  #         conf.level = conf.level, relative = FALSE))
+  mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_confint(m_e[i,], m_c[i,],
+          conf.level = conf.level, relative = FALSE))
   return(mdm)
 }
 
@@ -156,13 +158,15 @@ row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "fieller
   #' 
   #' @return vector of rmdm values, one for each row of m_c and m_e
   
-    rmdms <- sapply(1:dim(m_c)[1], function(i)
-    rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
-                      method = "fieller"))
+    # rmdms <- sapply(1:dim(m_c)[1], function(i)
+    # rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
+    #                   method = "fieller"))
     
     # rmdms <-  sapply(1:dim(m_c)[1], function(i)
     #   mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
     
+  rmdms <-  sapply(1:dim(m_c)[1], function(i)
+    mdm_confint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
    
   return(rmdms)
 }

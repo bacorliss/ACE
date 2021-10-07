@@ -9,55 +9,95 @@ p_load(docstring)
 # p_load(cubature)
 
 
-mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 600/(1-conf.level), 
+mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 250/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE){
   
-  save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
   
-    xbar <- mean(x)
-    ybar <- mean(y)
-    s2x <- var(x)
-    s2y <- var(y)
-    m <- length(x)
-    n <- length(y)
-    if(sharedVar){
-      shape <- .5*(m + n - 2)
-      scale <- .5*((m-1)*s2x + (n-1)*s2y)
-      ssSims <- 1/rgamma(num_param_sims, shape = shape, rate = scale)
-      mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ssSims/m))
-      mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ssSims/n))
-    }else{ # different variances
-      shape1 <- .5*(m-1)
-      scale1 <- .5*(m-1)*s2x
-      shape2 <- .5*(n-1)
-      scale2 <- .5*(n-1)*s2y
-      ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, rate = scale1)
-      ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, rate = scale2)
-      mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
-      mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
-    }
-    if(!relative){
-      cdf <- ecdf(mu1Sims - mu2Sims)
-    }else{
-      cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
-    }
-    # solve $F(c) - F(-c) = .95
-    upper <- uniroot(function(x){ cdf(x) - cdf(-x) - conf.level},
-                     lower = 0,
-                     upper = max(c(abs(x),abs(y))),
-                     extendInt = "yes")$root
-    if(plot & !relative){
-      hist(mu1Sims - mu2Sims)
-      abline(v=upper,col="red")
-      abline(v=-upper,col="red")
-    }else if(plot & relative){
-      hist((mu1Sims - mu2Sims)/mu2Sims)
-      abline(v=upper,col="red")
-      abline(v=-upper,col="red")
-    }
-    return(abs(upper))
+  xbar <- mean(x)
+  ybar <- mean(y)
+  s2x <- var(x)
+  s2y <- var(y)
+  m <- length(x)
+  n <- length(y)
+  if(sharedVar){
+    shape <- .5*(m + n - 2)
+    scale <- .5*((m-1)*s2x + (n-1)*s2y)
+    ssSims <- 1/rgamma(num_param_sims, shape = shape, rate = scale)
+    mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ssSims/m))
+    mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ssSims/n))
+  }else{ # different variances
+    shape1 <- .5*(m-1)
+    scale1 <- .5*(m-1)*s2x
+    shape2 <- .5*(n-1)
+    scale2 <- .5*(n-1)*s2y
+    ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, rate = scale1)
+    ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, rate = scale2)
+    mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
+    mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
   }
+  if(!relative){
+    cdf <- ecdf(mu1Sims - mu2Sims)
+  }else{
+    cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
+  }
+  # solve $F(c) - F(-c) = .95
+  upper <- uniroot(function(x){ cdf(x) - cdf(-x) - conf.level},
+                   lower = 0,
+                   upper = max(c(abs(x),abs(y))),
+                   extendInt = "yes")$root
+  if(plot & !relative){
+    hist(mu1Sims - mu2Sims)
+    abline(v=upper,col="red")
+    abline(v=-upper,col="red")
+  }else if(plot & relative){
+    hist((mu1Sims - mu2Sims)/mu2Sims)
+    abline(v=upper,col="red")
+    abline(v=-upper,col="red")
+  }
+  return(abs(upper))
+}
+
+
+
+
+mdm_confint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
+                        plot=FALSE, relative = FALSE){
+  # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
+  # load(file = "temp/mdm_credint.RData")
+  
+  xbar <- mean(x)
+  ybar <- mean(y)
+  s2x <- var(x)
+  s2y <- var(y)
+  m <- length(x)
+  n <- length(y)
+  
+  mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(s2x / m))
+  mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(s2y / n))
+  
+  if(!relative){
+    cdf <- ecdf(mu1Sims - mu2Sims)
+  } else {
+    cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
+  }
+  # solve $F(c) - F(-c) = .95
+  upper <- uniroot(function(x){ cdf(x) - cdf(-x) - conf.level},
+                   lower = 0,
+                   upper = max(c(abs(x),abs(y))),
+                   extendInt = "yes")$root
+  if(plot & !relative){
+    hist(mu1Sims - mu2Sims)
+    abline(v=upper,col="red")
+    abline(v=-upper,col="red")
+  }else if(plot & relative){
+    hist((mu1Sims - mu2Sims)/mu2Sims)
+    abline(v=upper,col="red")
+    abline(v=-upper,col="red")
+  }
+  return(abs(upper))
+}
 
 
 
@@ -74,14 +114,14 @@ mdm_tdist <- function(x, y = NULL, conf.level = 0.95) {
   #' @examples
   #' x <- rnorm(n=3,mean=0,sd=1); y <- rnorm(n=3,mean=0,sd=1);
   #' mdm_tdist(x,y, conf.level = 0.95)
-
+  
   # save(list = ls(all.names = TRUE), file = "temp/mdm_tdist.RData",envir = environment())
   # load(file = "temp/mdm_tdist.RData")
-
+  
   # Calculate basic stats x and y
   n_x <- length(x); n_y <- length(y)
   sd_x <- sd(x); sd_y <- sd(y)
-
+  
   # Calculate difference in means stats
   if (is.null(y)) {
     # 1-sample case
@@ -93,28 +133,28 @@ mdm_tdist <- function(x, y = NULL, conf.level = 0.95) {
     xbar_dm <- mean(x)
     sd_d <- sd_x
     sd_dm = sd_x / sqrt(n_x)
-
+    
   } else {
     # 2-sample case
     # Degrees of freedom and upper search bound for quantiel function calculated 
     # from built-in welch's t-test
     wtt <- t.test(x=y,y=x, var.equal = FALSE, conf.level = 1-(1-conf.level)/4)
     df_d <- wtt$parameter
-
+    
     xbar_dm <- mean(y) - mean(x)
     sd_d <- sqrt( (( n_x - 1) * sd_x^2  +  (n_y - 1) * sd_y^2 ) / df_d)
     sd_dm = sqrt( sd_x^2 / n_x  + sd_y^2 / n_y)
   }
-
+  
   # Calculate search bounds for mdm, used for uniroot call
   lo.bound= abs(xbar_dm)
   hi.bound = max(abs(wtt$conf.int))
   if (lo.bound>hi.bound) {browser();}
-
+  
   # Quantile with prob set to alpha and sample estimates as parameters
   mdm <-  tryCatch(
     qft(p = conf.level, df = df_d, mu = xbar_dm, sigma = sd_dm,
-                       lo.bound, hi.bound),
+        lo.bound, hi.bound),
     error = function(c) NaN)
   
   # If integration fails pause execution
@@ -155,9 +195,9 @@ macb_tdist_2sample <- function (x, y, conf.level = 0.95) {
 
 
 
-  
+
 rmdm_tdist <- function(x_ctrl, y_exp, conf.level = 0.95, 
-                              verbose = FALSE,  var.equal = FALSE, method = "fieller")  {
+                       verbose = FALSE,  var.equal = FALSE, method = "fieller")  {
   #' @description Calculates the relative most difference in means assuming with
   #' rmdm = mdm/X, X being the control group and Y the experimental
   #' 
@@ -169,7 +209,7 @@ rmdm_tdist <- function(x_ctrl, y_exp, conf.level = 0.95,
   
   # Equation for pooled variance taken from:
   # https://sphweb.bumc.bu.edu/otlt/mph-modules/bs/bs704_confidence_intervals/bs704_confidence_intervals5.html
-
+  
   # Calculate basic sample statistics
   mean_ctrl = mean(x_ctrl)
   sd_ctrl = sd(x_ctrl)

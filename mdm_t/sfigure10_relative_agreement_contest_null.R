@@ -166,7 +166,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    switch_rmu_d_12_hold_rsigma = FALSE,
                                    switch_sigma_ab_12 = FALSE,
                                    switch_alpha_12 = FALSE,
-                                   switch_n_12 = FALSE,
+                                   switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
 df_relative_null[[3]] <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
