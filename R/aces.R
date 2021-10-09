@@ -76,6 +76,11 @@ mdm_confint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
   
   mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(s2x / m))
   mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(s2y / n))
+  # browser();
+  
+  # mu1Sims <-rowMeans(matrix(rnorm(n = m*num_param_sims, mean = xbar, sd = sqrt(s2x)), ncol = m))
+  # mu2Sims <-rowMeans(matrix(rnorm(n = n*num_param_sims, mean = ybar, sd = sqrt(s2y)), ncol = n))
+  
   
   if(!relative){
     cdf <- ecdf(mu1Sims - mu2Sims)
