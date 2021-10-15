@@ -40,7 +40,7 @@ fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 n_samples <- 1e3
 rand.seed <- 0
-overwrite <- TRUE
+overwrite <- FALSE
 is_parallel_proc <- TRUE
 
 

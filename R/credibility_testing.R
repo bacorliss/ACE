@@ -33,6 +33,10 @@ source("R/row_stats_toolbox.R")
 # source("R/coverage_error_toolbox.R")
 
 
+
+
+
+
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "mdm_t"
@@ -49,7 +53,8 @@ is_parallel_proc <- TRUE
 
 
 
-quant_cred_interval <-  function(df_sample, df_pops, sample_stat, pop_stat)  {
+quant_cred_interval <-  function(df_sample, n_mus = 25, n_sigmas = 25,
+                                 p_thresh_mu = 1e-6, p_thresh_sigma = 1e-6, )  {
   #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
@@ -57,6 +62,11 @@ quant_cred_interval <-  function(df_sample, df_pops, sample_stat, pop_stat)  {
   #' @param n_samples: number of samples drawn to evaluate converage error
   #' @param n_obs: 
   #' @return null, exports figures to disk
+  
+  # Quick run
+  # n_mus = 100; n_sigmas = 100; p_thresh_mu = 1e-6; p_thresh_sigma = 1e-6
+  
+  
   
   save(list = ls(all.names = TRUE), file = "temp/quant_cred_interval.RData",envir = environment())
   # load(file = "temp/quant_cred_interval.RData")
@@ -66,21 +76,146 @@ quant_cred_interval <-  function(df_sample, df_pops, sample_stat, pop_stat)  {
   #               df = df_sample$n_a + df_sample$n_b-2,
   #               ncp = df_pops$mu_dm/df_pops$sd_dm) * df_sample$diff_xbar_dm / df_sample$sd_dm
   
+
   
-  # Integrate between tick marks in grid
-  p_sample <-
-    pt(q = (df_sample$xbar_dm - df_pops$mu_dm)/df_pops$sigma_dm +
-         0.5*df_sample$diff_xbar_dm / df_sample$sd_dm,
-       df = df_sample$n_a + df_sample$n_b-2,
-       ncp = df_pops$mu_dm/df_pops$sigma_dm) -
-    pt(q = (df_sample$xbar_dm - df_pops$mu_dm)/df_pops$sigma_dm -
-         0.5*df_sample$diff_xbar_dm / df_sample$sd_dm,
-       df = df_sample$n_a + df_sample$n_b-2,
-       ncp = df_pops$mu_dm/df_pops$sigma_dm)
   
-  # Calculate 
-  p_pass  <- sum(p_sample[abs(df_pops$mu_dm) < df_sample$stat], na.rm = TRUE)
-  p_fail <- sum(p_sample[abs(df_pops$mu_dm) > df_sample$stat], na.rm = TRUE)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  # Calculate range for sigma based on how wide the distribution is
+  shape <- .5*(df_sample$n_a + df_sample$n_b - 2)
+  scale <- .5*((df_sample$n_a-1)*df_sample$sd_a^2 + (df_sample$n_b-1)*df_sample$sd_b^2)
+  sigma_lo.bound <- sqrt(qgamma( p_thresh_sigma, shape = shape, rate = scale))
+  sigma_hi.bound <- sqrt(qgamma( 1-p_thresh_sigma, shape = shape, rate = scale))
+  sigma_diff <- (sigma_hi.bound - sigma_lo.bound)/(n_sigmas-1)
+  sigmas <- seq(sigma_lo.bound, sigma_hi.bound, sigma_diff)
+  # Probability that each bin of sigma will be drawn
+  p_sigmas <- pgamma(sigmas+sigma_diff/2, shape = shape, rate = scale) -
+    pgamma(sigmas-sigma_diff/2, shape = shape, rate = scale)
+  
+  
+ # Calculate mu range for each sigma
+ mu_lo.bound <- qnorm(p_thresh_mu,mean = df_sample$xbar_dm, sd = df_sample$sd_dm)
+ mu_hi.bound <- qnorm(1-p_thresh_mu,mean = df_sample$xbar_dm, sd = df_sample$sd_dm)
+ mu_diff <- (mu_hi.bound - mu_lo.bound)/(n_mus-1)
+ mus <-  seq(mu_lo.bound, mu_hi.bound, mu_diff)
+ p_mus <-  pnorm(mus+mu_diff/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm) -
+   pnorm(mus-mu_diff/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm)
+  
+ ## Matrix multiply mus and sigmas for heatmap
+ # p_select <- p_mus %*% t(p_sigmas)
+ 
+ # Assemble dataframe of possible population values
+ df_pops <- tibble(mu_dm = rep(mus, length(sigmas)),
+                   p_mu_dm = rep(p_mus, length(sigmas)),
+                   sigma_dm = sigmas[rep(1:length(mus), each=length(sigmas))],
+                   p_sigma_dm = p_mus[rep(1:length(mus), each=length(sigmas))],
+                   df = df_sample$n_a + df_sample$n_b-2)
+ # Calculate probability of each pop parameter set occurring
+ df_pops$p_select <- df_pops$p_mu_dm * df_pops$p_sigma_dm
+ 
+
+ # Calculate chance of xbar being drawn from each pop param set
+ # df_pops$p_sample <-
+ # pt(q = (df_sample$xbar_dm + 0.5*df_sample$diff_xbar_dm - df_pops$mu_dm)/ df_pops$sigma_dm,
+ #    df=df_sample$n_a + df_sample$n_b-2) -
+ # pt(q = (df_sample$xbar_dm - 0.5*df_sample$diff_xbar_dm - df_pops$mu_dm)/df_pops$sigma_dm,
+ #    df=df_sample$n_a + df_sample$n_b-2)
+ 
+ 
+ df_pops$p_sample <-
+   dt(x = (df_sample$xbar_dm - df_pops$mu_dm)/ df_pops$sigma_dm,
+      df=df_sample$n_a + df_sample$n_b-2)
+ 
+  # Total probability of each pop parameter generating xbar_dm is
+  # (1) how likely a given pop parameter set is to generate the sample
+  # (2) how likely the pop parameter set is to occur
+ df_pops$p_tot = df_pops$p_sample * df_pops$p_select
+
+ 
+  # Prob of pop params getting selected
+  gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill= p_select)) + geom_tile()+ 
+    scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
+    xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
+    scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                         (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                           ticks.colour = "black",  direction = "horizontal")) +
+    theme(legend.position="top", legend.title = element_blank(),
+          legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+          legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+          legend.box.spacing = unit(.1,"inch"))
+  gg
+  
+  
+  # Prob of sample drawn from each pop param
+  gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill= p_sample)) + geom_tile()+ 
+    scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
+    xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
+    geom_vline(xintercept = df_sample$xbar_dm, size = 1, color = "black") +
+    scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                         (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                           ticks.colour = "black",  direction = "horizontal")) +
+    theme(legend.position="top", legend.title = element_blank(),
+          legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+          legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+          legend.box.spacing = unit(.1,"inch"))
+  gg
+  
+  
+  # Prob of pop params getting selected
+  gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill = p_tot)) + geom_tile()+ 
+    scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
+    xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
+    geom_vline(xintercept = df_sample$stat, size = 2, color = "orange") +
+    scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
+                         (raster = T, frame.colour = c("black"), frame.linewidth = .5,
+                           ticks.colour = "black",  direction = "horizontal")) +
+    theme(legend.position="top", legend.title = element_blank(),
+          legend.justification = "left",  legend.key.height = unit(.05, "inch"),
+          legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
+          legend.box.spacing = unit(.1,"inch"))
+  gg
+  
+
+  # Sum probability of param sets less than stat and greater than stat
+  p_pass <- sum(df_pops$p_tot[abs(df_pops$mu_dm) < df_sample$stat])
+  p_fail <- sum(df_pops$p_tot[abs(df_pops$mu_dm) > df_sample$stat])
   
   df_out <- df_sample
   df_out[[paste("n_trials_", pop_stat, "_pass",sep="")]] = p_pass 
@@ -130,7 +265,7 @@ process_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alph
   if (length(sds_a)==1) {sds_a = rep(sds_a, n_sds)}
   if (length(sds_b)==1) {sds_b = rep(sds_b, n_sds)}
   
-  # Caclulate difference in mean statistics
+  # Calculate difference in mean statistics
   xbar_dm = xbars_b - xbars_a
   sds_dm = sqrt(sds_a^2/n_a + sds_b^2/n_b) 
   

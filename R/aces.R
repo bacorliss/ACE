@@ -11,10 +11,8 @@ p_load(docstring)
 
 mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 250/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE){
-  
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
-  
   xbar <- mean(x)
   ybar <- mean(y)
   s2x <- var(x)
@@ -74,14 +72,21 @@ mdm_confint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
   m <- length(x)
   n <- length(y)
   
+  
   mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(s2x / m))
   mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(s2y / n))
-  # browser();
-  
+  # shape1 <- .5*(m-1)
+  # scale1 <- .5*(m-1)*s2x
+  # shape2 <- .5*(n-1)
+  # scale2 <- .5*(n-1)*s2y
+  # ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, rate = scale1)
+  # ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, rate = scale2)
+  # mu1Sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
+  # mu2Sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
+
   # mu1Sims <-rowMeans(matrix(rnorm(n = m*num_param_sims, mean = xbar, sd = sqrt(s2x)), ncol = m))
   # mu2Sims <-rowMeans(matrix(rnorm(n = n*num_param_sims, mean = ybar, sd = sqrt(s2y)), ncol = n))
-  
-  
+    
   if(!relative){
     cdf <- ecdf(mu1Sims - mu2Sims)
   } else {
@@ -169,7 +174,7 @@ mdm_tdist <- function(x, y = NULL, conf.level = 0.95) {
 }
 
 
-# 
+
 # df_WelchSatter<- function(x,y) {
 #   s1 = sd(x)
 #   s2 = sd(y)
