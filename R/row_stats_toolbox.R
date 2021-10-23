@@ -147,7 +147,7 @@ row_mdm <- function(m_c, m_e, conf.level) {
 }
 
 
-row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "fieller") {
+row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95) {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). m_c and m_e must have same number of rows (samples), but 
@@ -162,11 +162,11 @@ row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, method = "fieller
     # rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
     #                   method = "fieller"))
     
-    # rmdms <-  sapply(1:dim(m_c)[1], function(i)
-    #   mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+    rmdms <-  sapply(1:dim(m_c)[1], function(i)
+      mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
     
-  rmdms <-  sapply(1:dim(m_c)[1], function(i)
-    mdm_confint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+  # rmdms <-  sapply(1:dim(m_c)[1], function(i)
+  #   mdm_confint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
    
   return(rmdms)
 }
@@ -178,85 +178,6 @@ row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
 }
 
 
-#' row_ratio_normal_eoc <- function(m_c, m_e, conf.level = 0.95, method = "ttestratio_default") {
-#'   #' @description calculates relative mdm row by row given a matrix of control 
-#'   #' samples and experiment samples (limitation: samples must have same sample 
-#'   #' size within groups). m_c and m_e must have same number of rows (samples), but 
-#'   #' can have different numbers of columns (measurements)
-#'   #'
-#'   #' @param m_c control group
-#'   #' @param m_e experiment group
-#'   #' 
-#'   #' @return vector of rmdm values, one for each row of m_c and m_e
-#'   # browser()
-#'   
-#'   # Calcualt mdm from data if not supplied
-#'   # if (is.null(mdms)) {
-#'   #    mdms <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_c[i,], m_e[i,], conf.level = conf.level.mdm))
-#'   # }
-#'   # Calculate standard deviation of difference in means
-#'   # s_dm <- sqrt(rowvars(m_c)/dim(m_c)[2] + rowvars(m_e)/dim(m_e)[2])
-#'   # # Calculate means and standard error of control group
-#'   # # control
-#'   # xbar_1 <- rowmeans(m_c)
-#'   # se_1 <- rowsds(m_c)/dim(m_c)[2]
-#'   
-#'   # Numerator: experiment sample
-#'   xbar_x <- rowMeans(m_e)
-#'   n_x <- dim(m_e)[2]
-#'   sds_x <- rowSds(m_e)
-#'   ses_x <- sds_x/sqrt(n_x)
-#'   # sds_x <- rowSds(m_c)/sqrt(n_x)
-#'   # Denominator: control sample
-#'   xbar_y <- rowMeans(m_c)
-#'   n_y <- dim(m_c)[2]
-#'   sds_y <- rowSds(m_c)
-#'   ses_y = sds_y/sqrt(n_y)
-#'   # sds_y <- rowSds(m_e)/ sqrt(n_y)
-#'   
-#'   xbar_dm = xbar_x - xbar_y
-#'   sd_dm = sqrt(sds_x^2/n_x + sds_y^2/n_y)
-#'   df_dm = n_x + n_y - 2
-#'    
-#'   # browser();
-#'   
-#'   if (method == 'ttestratio_default') {
-#'     # browser()
-#'     ratio_cls <- 
-#'       abs(t(sapply(1:dim(m_c)[1], function(i) 
-#'         ttestratio_default(x=m_e[i,]*sign(mean(m_e[i,])), y=m_c[i,],alternative = "two.sided", rho = 1, 
-#'                            var.equal = TRUE, conf.level = 1 - 2*(1-conf.level))$conf.int)))
-#'     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
-#'     
-#'   } else if (method == 'ttestratio') {
-#'     ratio_cls <- t(sapply(1:dim(m_c)[1], function(i)
-#'       ttestratio(mx = abs(xbar_x[i]), sdx = sds_x[i], dfx = n_x-1,
-#'                  my = xbar_y[i], sdy = sds_y[i], dfy = n_y-1,
-#'                  alternative = "two.sided", rho = 1, var.equal = TRUE,
-#'                  conf.level =  1 - 2*(1-conf.level))$conf.int))
-#'     ratio_ucl <- rowmax_2col(ratio_cls[,1],ratio_cls[,2])
-#'     
-#'   } else if (method == 'qnormrat') {
-#'     
-#'     # browser();
-#'     
-#'     # Works with positive values mu_b/mu_a
-#'     ratio_cl_lo <- sapply(1:dim(m_c)[1], function(i)
-#'       qnormrat(p = 1-conf.level, xbar_x[i], ses_x[i], xbar_y[i], ses_y[i],
-#'                VERBOSE=FALSE))
-#'     
-#'     ratio_cl_hi <- sapply(1:dim(m_c)[1], function(i)
-#'       qnormrat(p = conf.level, xbar_x[i], ses_x[i], xbar_y[i], ses_y[i],
-#'                VERBOSE=FALSE))
-#'     
-#'     ratio_ucl <- rowmax_2col(abs(ratio_cl_lo), abs(ratio_cl_hi))
-#' 
-#'   } else {stop('row_ratio_normal_coe(): unsupported method')}
-#'   
-#'   
-#'   
-#'   return(ratio_ucl)
-#' }
 
 
 
