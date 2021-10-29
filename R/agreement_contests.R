@@ -788,7 +788,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
-    ylab(expression(Frac.~Exp[1]~hat.~Exp[2]~~~~~~~~~~~~~phantom("."))) +
+    ylab(expression(Frac.~Exp[1]~LDT~Exp[2]~~~~~~~~~~~~phantom("."))) +
     xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +

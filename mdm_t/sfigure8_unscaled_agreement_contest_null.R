@@ -11,10 +11,10 @@
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(ggplot2)
 p_load(tibble)
-p_load(broom)
+# p_load(broom)
 p_load(tidyr)
 p_load(dplyr)
-p_load(boot)
+# p_load(boot)
 p_load(readr)
 p_load(gplots)
 # User defined libraries

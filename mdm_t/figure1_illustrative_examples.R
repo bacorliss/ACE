@@ -57,10 +57,10 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
   
   na1 = length(xa1); nb1 = length(xb1)
   na2 = length(xa2); nb2 = length(xb2)  
-  blank_df <- tibble(group=c("a","b"), y=ylims)
+  blank_df <- tibble(group=c("X","Y"), y=ylims)
   
   # Experiment 1
-  df <- tibble(group = as.factor(c(rep("a",length(xa1)), rep("b",length(xb1)))), y = c(xa1,xb1))
+  df <- tibble(group = as.factor(c(rep("X",length(xa1)), rep("Y",length(xb1)))), y = c(xa1,xb1))
   df_stats <- df %>% group_by(group) %>% summarise(mean = mean(y),sd = sd(y))
   gg1 <- ggplot(data=df, aes(x=group, y=y)) +
     geom_jitter(width = 0.2, size=0.6, alpha = 0.5,color = grp_color[1],shape=16) + 
@@ -79,7 +79,7 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
   
   
   # Experiment 2
-  df <- tibble(group = as.factor(c(rep("a",length(xa2)),rep("b",length(xb2)))),y = c(xa2,xb2))
+  df <- tibble(group = as.factor(c(rep("X",length(xa2)),rep("Y",length(xb2)))),y = c(xa2,xb2))
   df_stats <- df %>% group_by(group) %>% summarise(mean = mean(y),sd = sd(y))
   gg2 <- ggplot(data=df, aes(x=group, y=y)) +
     geom_jitter(width = 0.2, size=0.6, alpha = 0.5,color = grp_color[2],shape=16) +
@@ -281,7 +281,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.40^2/2)/15 + 0.54
 # Plot experiments and Difference of Means
 ggs_rmu <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rmu",data_scale = "relative")
-gg1 <- ggs_rmu$gg1 + geom_blank(data=tibble(group=c('A','A'),y=c(8,12))) + scale_y_continuous(breaks = seq(8,12,1))
+gg1 <- ggs_rmu$gg1 + geom_blank(data=tibble(group=c('X','X'),y=c(8,12))) + scale_y_continuous(breaks = seq(8,12,1))
 save_plot(paste(fig_path, "/F",fig_num, "_", "rel_rmu","_E1", ".tiff", sep = ""),
           gg1, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
 

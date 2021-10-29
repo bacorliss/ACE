@@ -179,23 +179,14 @@ row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
 
 
 
-
-
 row_bayesf_2s <- function(m_c, m_e, parallelize = FALSE, paired = FALSE) {
   # Ignore diagnostic messages during function call.
-  wrap_fun <- function(x1,x2)   {
-    suppressMessages(extractBF(ttestBF(x = x1,  y = x2, onlybf = TRUE))$bf)
-  }
-  # if (parallelize) {
-  #   bf <- future_sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
-  # } else {
-    bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
-  # }
-  # browser();
+  wrap_fun <-  function(x1,x2)   {extractBF(ttestBF(x = x1,  y = x2), onlybf = TRUE)}
+
+  bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
+
   return(bfx)
 }
-
-
 
 
 row_ldm_2s_zdist <- function(m_c, m_e, conf.level = 0.95) {
@@ -374,7 +365,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$mdm <- "delta[M]"
   
   # 10) Relative most difference in means
-  df$rmdm = row_rmdm(x_a, x_b, conf.level = conf.level, method = "fieller") 
+  df$rmdm = row_rmdm(x_a, x_b, conf.level = conf.level) 
   df_ldt$rmdm <- "<"
   df_lat$rmdm <- ">"
   df_pretty$rmdm <- "r*delta[M]"
