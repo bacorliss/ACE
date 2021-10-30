@@ -117,24 +117,29 @@ quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 25
       
     
     # Calculate mu range for each sigma
-    mu_lo.bound <- qnorm(p_thresh_mu,mean = df_sample$xbar_dm, sd = sigmas)
-    mu_hi.bound <- qnorm(1-p_thresh_mu,mean = df_sample$xbar_dm, sd = sigmas)
+    mu_lo.bound <- qnorm(p_thresh_mu,mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm))
+    mu_hi.bound <- qnorm(1-p_thresh_mu,mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm))
     mu_diff <- (mu_hi.bound - mu_lo.bound)/(n_mus-1)
     # mus <-  seq(mu_lo.bound, mu_hi.bound, mu_diffs)
     
     
     
-    mus_2s <- mapply(seq(x,y,z), mu_lo.bound, mu_hi.bound,mu_diff)
+    mus_2d <- t(mapply(function(x,y,z) seq(x,y,z), mu_lo.bound, mu_hi.bound,mu_diff))
     
     p_mus_2d <-  pnorm(mus+mu_diffs/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm) -
       pnorm(mus-mu_diffs/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm)
     
     
+    p_mus = list()
+    for (n in seq(1, n_mus)) {
+      p_mus[[n]] <- 
+        pnorm(mus_2d[n,] + mu_diff[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n])) -
+        pnorm(mus_2d[n,] - mu_diff[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n]))
+      
+    }
+    p_mus_2d <- do.call(rbind,p_mus)
     
-    
-    
-    ## Matrix multiply mus and sigmas for heatmap
-    # p_select <- p_mus %*% t(p_sigmas)
+
     
     # Assemble dataframe of possible population values
     df_pops <- tibble(mu_dm = rep(mus, length(sigmas)),
