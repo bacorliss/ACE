@@ -50,7 +50,7 @@ is_parallel_proc <- TRUE
 
 
 
-quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 25,
+quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 27,
                                  p_thresh_mu = 1e-8, p_thresh_sigma = 1e-8, 
                                  method = "montecarlo")  {
   #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
@@ -60,20 +60,13 @@ quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 25
   #' @param n_samples: number of samples drawn to evaluate converage error
   #' @param n_obs: 
   #' @return null, exports figures to disk
-  
   # Quick run
   # n_mus = 100; n_sigmas = 100; p_thresh_mu = 1e-6; p_thresh_sigma = 1e-6
-  
   save(list = ls(all.names = TRUE), file = "temp/quant_cred_interval.RData",envir = environment())
   # load(file = "temp/quant_cred_interval.RData")
   
-  # Calculate probability that each pop param set can yield the specified sample mean
-  # p_sample = dt(x = (df_sample$xbar_dm - df_pops$mu_dm)/df_pops$sd_dm, 
-  #               df = df_sample$n_a + df_sample$n_b-2,
-  #               ncp = df_pops$mu_dm/df_pops$sd_dm) * df_sample$diff_xbar_dm / df_sample$sd_dm
-  
-  
-  xbar <- df_sample$xbar_a; ybar <- df_sample$xbar_b
+ 
+  xbar <- -df_sample$xbar_a; ybar <- -df_sample$xbar_b
   m <- df_sample$n_a; n <- df_sample$n_b
   s2x <- df_sample$sd_a^2; s2y <- df_sample$sd_b^2
   shape1 <- .5*(m-1)
@@ -104,158 +97,52 @@ quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 25
   }else if (method=="discrete_pdf") {
     
 
-    
-    # Calculate range for sigma based on how wide the distribution is
-    sigma2_1_lo.bound<- qgamma( p_thresh_sigma, shape = shape1, rate = scale1)
-    sigma2_1_hi.bound <- sqrt(qgamma( 1 - p_thresh_sigma, shape = shape1, rate = scale1))
+    # Calculate range for sigma based on a threshold for pdf
+    # Since distribution is for sigma2 1 and 2 separately, just do sigma2_1 
+    # since we are making variance equal
+    sigma2_1_lo.bound <- qgamma( p_thresh_sigma,     shape = shape1, rate = scale1)
+    sigma2_1_hi.bound <- qgamma( 1 - p_thresh_sigma, shape = shape1, rate = scale1)
     sigma2_1_diff <- (sigma2_1_hi.bound - sigma2_1_lo.bound)/(n_sigmas-1)
-    sigmas2_1 <- seq(sigma_1_lo.bound, sigma_1_hi.bound, sigma_1_diff)
-    sigmas2_dm <- sigmas2_1^2/m + sigmas2_1^2/n
+    sigmas2_1 <- seq(sigma2_1_lo.bound, sigma2_1_hi.bound, sigma2_1_diff)
     # Probability that each bin of sigma will be drawn
     p_sigmas <- pgamma(sigmas2_1+sigma2_1_diff/2, shape = shape1, rate = scale1) - 
               pgamma(sigmas2_1-sigma2_1_diff/2, shape = shape1, rate = scale1)
-      
+    sigmas2_dm <- sigmas2_1/m + sigmas2_1/n
     
     # Calculate mu range for each sigma
     mu_lo.bound <- qnorm(p_thresh_mu,mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm))
     mu_hi.bound <- qnorm(1-p_thresh_mu,mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm))
-    mu_diff <- (mu_hi.bound - mu_lo.bound)/(n_mus-1)
+    mu_diffs <- (mu_hi.bound - mu_lo.bound)/(n_mus-1)
     # mus <-  seq(mu_lo.bound, mu_hi.bound, mu_diffs)
-    
-    
-    
-    mus_2d <- t(mapply(function(x,y,z) seq(x,y,z), mu_lo.bound, mu_hi.bound,mu_diff))
-    
-    p_mus_2d <-  pnorm(mus+mu_diffs/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm) -
-      pnorm(mus-mu_diffs/2, mean = df_sample$xbar_dm, sd = df_sample$sd_dm)
-    
-    
+    mus_2d <- t(mapply(function(x,y,z) seq(x,y,z), mu_lo.bound, mu_hi.bound,mu_diffs))
     p_mus = list()
-    for (n in seq(1, n_mus)) {
+    for (n in seq(1, n_sigmas)) {
       p_mus[[n]] <- 
-        pnorm(mus_2d[n,] + mu_diff[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n])) -
-        pnorm(mus_2d[n,] - mu_diff[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n]))
+        pnorm(mus_2d[n,] + mu_diffs[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n])) -
+        pnorm(mus_2d[n,] - mu_diffs[n]/2, mean = df_sample$xbar_dm, sd = sqrt(sigmas2_dm[n]))
       
     }
     p_mus_2d <- do.call(rbind,p_mus)
     
 
+    p_tot_list  = list()
+    for (n in seq(1, n_sigmas)) {
+     p_tot_list[[n]] = p_sigmas[n] * p_mus_2d[n,]
+    }
+    p_tot_2d <- do.call(rbind,p_tot_list)
     
-    # Assemble dataframe of possible population values
-    df_pops <- tibble(mu_dm = rep(mus, length(sigmas)),
-                      p_mu_dm = rep(p_mus, length(sigmas)),
-                      sigma_dm = sigmas[rep(1:length(mus), each=length(sigmas))],
-                      p_sigma_dm = p_mus[rep(1:length(mus), each=length(sigmas))],
-                      df = df_sample$n_a + df_sample$n_b-2)
-    # Calculate probability of each pop parameter set occurring
-    df_pops$p_select <- df_pops$p_mu_dm * df_pops$p_sigma_dm
-    
-    
-    
-    sum(df_pops$p_select[abs(df_pops$mu_dm) < df_sample$mdm])
-    
-    browser()
-    
-    
-    sum(abs(df_pops$mu_dm) < df_sample$mdm)/num_param_sims
-    
-    
-    # # Calculate chance of xbar being drawn from each pop param set
-    # # df_pops$p_sample <-
-    # # pt(q = (df_sample$xbar_dm + 0.5*df_sample$diff_xbar_dm - df_pops$mu_dm)/ df_pops$sigma_dm,
-    # #    df=df_sample$n_a + df_sample$n_b-2) -
-    # # pt(q = (df_sample$xbar_dm - 0.5*df_sample$diff_xbar_dm - df_pops$mu_dm)/df_pops$sigma_dm,
-    # #    df=df_sample$n_a + df_sample$n_b-2)
-    # df_pops$p_sample <-
-    #   dt(x = (df_sample$xbar_dm - df_pops$mu_dm)/ df_pops$sigma_dm,
-    #      df=df_sample$n_a + df_sample$n_b-2)
-    # 
-    # # Total probability of each pop parameter generating xbar_dm is
-    # # (1) how likely a given pop parameter set is to generate the sample
-    # # (2) how likely the pop parameter set is to occur
-    # df_pops$p_tot = df_pops$p_sample * df_pops$p_select
-    
-    
-    # Prob of pop params getting selected
-    gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill= p_select)) + geom_tile()+ 
-      scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
-      xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
-      scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-                           (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-                             ticks.colour = "black",  direction = "horizontal")) +
-      theme(legend.position="top", legend.title = element_blank(),
-            legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-            legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-            legend.box.spacing = unit(.1,"inch"))
-    gg
-    
-    
-    # # Prob of sample drawn from each pop param
-    # gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill= p_sample)) + geom_tile()+ 
-    #   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
-    #   xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
-    #   geom_vline(xintercept = df_sample$xbar_dm, size = 1, color = "black") +
-    #   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-    #                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-    #                          ticks.colour = "black",  direction = "horizontal")) +
-    #   theme(legend.position="top", legend.title = element_blank(),
-    #         legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-    #         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-    #         legend.box.spacing = unit(.1,"inch"))
-    # gg
-    
-    
-    # # Prob of pop params getting selected
-    # gg<- ggplot(df_pops, aes(mu_dm, sigma_dm, fill = p_tot)) + geom_tile()+ 
-    #   scale_x_continuous(expand=c(0,0)) + scale_y_continuous(expand=c(0,0)) +
-    #   xlab(expression(bar(x)[DM])) + ylab(expression(s[DM])) + theme_classic(base_size=8) +
-    #   geom_vline(xintercept = df_sample$stat, size = 2, color = "orange") +
-    #   scale_fill_gradientn(colors=c("blue","white", "red"), guide = guide_colorbar
-    #                        (raster = T, frame.colour = c("black"), frame.linewidth = .5,
-    #                          ticks.colour = "black",  direction = "horizontal")) +
-    #   theme(legend.position="top", legend.title = element_blank(),
-    #         legend.justification = "left",  legend.key.height = unit(.05, "inch"),
-    #         legend.key.width = unit(.3, "inch"),legend.margin = margin(0, 0, 0, 0),
-    #         legend.box.spacing = unit(.1,"inch"))
-    # gg
-    # 
-    
-    # Sum probability of param sets less than stat and greater than stat
-    p_pass <- sum(df_pops$p_tot[abs(df_pops$mu_dm) < df_sample$stat])
-    p_fail <- sum(df_pops$p_tot[abs(df_pops$mu_dm) > df_sample$stat])
+    cred_rate <- sum(p_tot_2d * (mus_2d <df_sample[[stat_name]]))
+  
     
     df_out <- df_sample
-    df_out[[paste("n_trials_", pop_stat, "_pass",sep="")]] = p_pass 
-    df_out[[paste("n_trials_", pop_stat, "_fail",sep="")]] = p_fail
-    df_out[[paste("credibility_rate_",pop_stat,"_lt_",sample_stat,sep="")]] = p_pass /(p_pass+p_fail)
-    
-    
+    df_out[[paste("n_trials_", stat_name , "_pass",sep="")]] = cred_rate 
+    df_out[[paste("n_trials_", stat_name , "_fail",sep="")]] = 1-cred_rate 
+    df_out[[paste("credibility_rate_", stat_name ,"_lt_",stat_name ,sep="")]] = cred_rate 
     
   }
-  
-  
-  
   
   return(df_out)
 }
-
-
-
-
-quant_cred_intervals <- function(df_samples, df_pops, sample_stat, pop_stat)  {
-  
-  save(list = ls(all.names = TRUE), file = "temp/quant_cred_intervals.RData",envir = environment())
-  # load(file = "temp/quant_cred_intervals.RData")
-  
-  df_list <- list()
-  for (n in seq(1, dim(df_samples)[1],1)) {
-    df_list[[n]] <- quant_cred_interval(df_samples[n,], df_pops, "mdm", "mu_dm") 
-  }
-  df_lin <- do.call("rbind", df_list)
-  
-  return(df_lin)
-}
-
 
 
 
@@ -368,11 +255,11 @@ process_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alph
       ptm <- proc.time()
       df_lin2 <- 
         foreach(n = seq(1, n_xbars*n_sds, 1),
-                .export = c("quant_cred_intervals", "quant_cred_interval"),
+                .export = c("quant_cred_interval"),
                 .combine = rbind,.packages = c("tidyverse")) %dopar% {
                   #calling a function
                   tempMatrix <- 
-                    quant_cred_interval(df_samples[n,], stat_name = stat_name, n_mus = 25, n_sigmas = 25,
+                    quant_cred_interval(df_samples[n,], stat_name = stat_name, n_mus = 50, n_sigmas = 52,
                                         p_thresh_mu = 1e-8, p_thresh_sigma = 1e-8, 
                                         method = method) 
                   
@@ -400,7 +287,7 @@ process_cred_intervals <-function(xbars_a, sds_a, n_a, xbars_b, sds_b, n_b, alph
     
     
     
-    save(list = ls(all.names = TRUE), file = "temp/quant_cred_intervals2.RData",envir = environment())
+    save(list = ls(all.names = TRUE), file = "temp/process_cred_intervals2.RData",envir = environment())
     # load(file = "temp/process_cred_intervals2.RData")
     
     # Convert linear data frame to dataframe of matrices
