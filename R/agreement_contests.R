@@ -15,7 +15,6 @@
 
 
 # Load required packages
-#-------------------------------------------------------------------------------
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 # Load package manager
 p_load(ggplot2)
@@ -235,6 +234,21 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df$is_alpha_1hdt2     <- df$alpha_1 > df$alpha_2
   df_lat$is_alpha_1ldt2 <- "gt" 
   
+  # Critical t value of difference in means
+  df$tstat_1dm <- df$mu_1dm / df$sigma_1dm
+  df$tstat_2dm <- df$mu_2dm / df$sigma_2dm
+  df$is_tstatdm_1ldt2 <- df$tstat_1dm < df$tstat_2dm
+  df_ldt$is_tstatdm_1ldt2 <- "lt"
+  df$is_tstatdm_1hdt2 <- df$tstat_1dm > df$tstat_2dm
+  df_lat$is_tstatdm_1hdt2 <- "gt"
+  # Critical t value for population parameter set
+  df$tcrit_1dm <- qt(1-df$alpha_1, df$n_1a + df$n_1b - 2, lower.tail = TRUE)
+  df$tcrit_2dm <- qt(1-df$alpha_2, df$n_2a + df$n_2b - 2, lower.tail = TRUE)
+  # T ratio is t statistic dividied by critical t
+  df$trat_1dm <- df$tstat_1dm / df$tcrit_1dm
+  df$trat_2dm <- df$tstat_2dm / df$tcrit_2dm
+ 
+
   # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
   # determines whether results are in null region of critical region of t-test
   df$mu_ov_sigma_1dm <- df$mu_1dm / df$sigma_1dm

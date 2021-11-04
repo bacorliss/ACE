@@ -213,7 +213,7 @@ gg<- ggplot(cred_rate, aes(conf.level, mean)) +
   theme_classic(base_size=8) 
 gg
 save_plot(paste(fig_path, "/", fig_num, "_1a mdm error rates.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          gg, ncol = 1, nrow = 1, base_height = 1.6,
           base_asp = 3, base_width = 2, dpi = 600) 
 ft <- lm(mean~0+conf.level, data = cred_rate)
 summary(ft)
