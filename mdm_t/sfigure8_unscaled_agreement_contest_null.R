@@ -53,11 +53,11 @@ fig_name = paste("F", fig_num, "_1_esize_contest_mu_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 20, 
                                    sigmas_1a = 10, 
-                                   mus_1ao  = runif(n_sims, 1, 8), 
+                                   mus_1ao  = runif(n_sims, .5, 3), 
                                    sigmas_1ao = 10,
                                    mus_2a  = 200, 
                                    sigmas_2a = 10,
-                                   mus_2ao  = runif(n_sims, 1, 8), 
+                                   mus_2ao  = runif(n_sims, 2, 4.5), 
                                    sigmas_2ao = 10,
                                    
                                    n_1a = n_obs, n_1b = n_obs,
@@ -68,7 +68,7 @@ df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = FALSE,
+                                   switch_mu_d_12 = TRUE,
                                    switch_sigma_ab_12 = FALSE,
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = FALSE,
@@ -82,7 +82,7 @@ df_unscaled_null[[1]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 
 
 
-# Contest 2) Lower sigma_pooled
+# Contest 2) Lower sigma_d
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
@@ -92,13 +92,13 @@ fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = runif(n_sims, 1, 2),
-                                   mus_1ao  = seq(.6,1.4,length.out = n_sims), 
-                                   sigmas_1ao = runif(n_sims, 2, 8),
+                                   mus_1ao  = seq(.2,1.,length.out = n_sims), 
+                                   sigmas_1ao = runif(n_sims, 3, 5),
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = runif(n_sims, 1, 2),
-                                   mus_2ao  = seq(.6,1.4,length.out = n_sims),
-                                   sigmas_2ao = runif(n_sims, 2, 8),
+                                   mus_2ao  = seq(.2,1.,length.out = n_sims),
+                                   sigmas_2ao = runif(n_sims, 4, 8),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
                                    n_2a = n_obs, n_2b = n_obs, 
@@ -124,20 +124,20 @@ df_unscaled_null[[2]] <- process_esize_simulations(df_init, gt_colname = gt_coln
 # Contest 3) Higher df_pool
 # [Near from zero]
 #------------------------------------------------------------------------------
-n1 <- round(runif(n_sims, 6, 25))
-n2 <- round(runif(n_sims, 15, 40))
+n1 <- round(runif(n_sims, 10, 20))
+n2 <- round(runif(n_sims, 20, 30))
 set.seed(rand.seed)
 gt_colnames = "is_dfdm_1ldt2"
 fig_name = paste("F", fig_num, "_3_esize_", "contest_df_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = seq(0.1,.8,length.out = n_sims),
+                                   mus_1ao  = seq(0.05,.6,length.out = n_sims),
                                    sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = seq(0.1,.8,length.out = n_sims),
+                                   mus_2ao  = seq(0.05,.6,length.out = n_sims),
                                    sigmas_2ao = 1,
                                    
                                    n_1a = n1, n_1b = n1,
@@ -172,18 +172,18 @@ fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = .1,
-                                   mus_1ao  = seq(.05,0.5,length.out = n_sims), 
+                                   mus_1ao  = seq(.05,0.3,length.out = n_sims), 
                                    sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = .1,
-                                   mus_2ao  = seq(.05,0.5,length.out = n_sims),
+                                   mus_2ao  = seq(.05,0.3,length.out = n_sims),
                                    sigmas_2ao = 1,#seq(2,12,length.out = n_sims),
                                    
                                    n_1a = 30, n_1b = 30,
                                    n_2a = 30, n_2b = 30, 
                                    alpha_1 = 0.05/1,
-                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
+                                   alpha_2 = 0.05/runif(n_sims, 5, 8),
                                    
 
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
@@ -220,17 +220,17 @@ fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generateExperiment_Data(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 40, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims,1, 3.5), 
-                                   sigmas_1ao = runif(n_sims,10,12),
+                                   mus_1ao  = runif(n_sims,1, 4.5), 
+                                   sigmas_1ao = runif(n_sims,10,14),
                                    
                                    mus_2a  = 1000,  
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims,5.5, 9), 
-                                   sigmas_2ao = runif(n_sims,12,16),
+                                   mus_2ao  = runif(n_sims,5.5, 8), 
+                                   sigmas_2ao = runif(n_sims,13,16),
                                    
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
-                                   alpha_1 = 0.05/1,
+                                   alpha_1 = 0.05/runif(n_sims, 1, 2),
                                    alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,

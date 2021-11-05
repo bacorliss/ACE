@@ -245,8 +245,8 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   df$tcrit_1dm <- qt(1-df$alpha_1, df$n_1a + df$n_1b - 2, lower.tail = TRUE)
   df$tcrit_2dm <- qt(1-df$alpha_2, df$n_2a + df$n_2b - 2, lower.tail = TRUE)
   # T ratio is t statistic dividied by critical t
-  df$trat_1dm <- df$tstat_1dm / df$tcrit_1dm
-  df$trat_2dm <- df$tstat_2dm / df$tcrit_2dm
+  df$tratio_1dm <- df$tstat_1dm / df$tcrit_1dm
+  df$tratio_2dm <- df$tstat_2dm / df$tcrit_2dm
  
 
   # Calculate ratio of sigma_md/mu_md to determine how close DM is close to zero,
@@ -828,16 +828,17 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
             base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
 
   # Export csv file for agreement between each variable to others
-  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is  
+  # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
+              t_ratio = c(df_init$tratio_1dm, df_init$tratio_2dm),
               mu_ov_sigma = c(df_init$mu_1dm/df_init$sigma_1dm,
                               df_init$mu_2dm/df_init$sigma_2dm))
-  p <- ggplot(df, aes(x = mu_ov_sigma, y = mu_ov_sigma, fill = group)) +
+  p <- ggplot(df, aes(x = t_ratio, y = t_ratio, fill = group)) +
     geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
                    alpha=0.25, bins = 30) +
-    geom_vline(xintercept = -2.6,linetype = "dashed") +
-    geom_vline(xintercept = 2.6, linetype = "dashed") +
-    xlab( expression(mu[DM]*phantom(.)/phantom(.)*sigma[DM])) +
+    geom_vline(xintercept = -1,linetype = "dashed") +
+    geom_vline(xintercept = 1, linetype = "dashed") +
+    xlab( expression(t[stat]*phantom(.)/phantom(.)*abs(phantom(.)*t[crit]*phantom(.)))) +
     ylab( "Freq.") +
     theme_classic(base_size = 8) +
     theme(legend.position = "none") +  
@@ -855,7 +856,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
                , x=0, y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
-  save_plot(paste(fig_path, '/mu_ov_sigma_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, '/t_ratio_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   
 }
