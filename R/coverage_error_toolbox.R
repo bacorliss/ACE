@@ -175,7 +175,7 @@ quant_coverage_error <-  function(df, raw_error = TRUE, rel_error = TRUE, verbos
   #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
-  #'  library, returned from generateExperiment_Data()
+  #'  library, returned from generate_population_configs()
   #' @param n_samples: number of samples drawn to evaluate converage error
   #' @param n_obs: 
   #' @param enforce_grand_mean flag to force the grand mean (mean across all 

@@ -56,7 +56,7 @@ quant_cred_interval <-  function(df_sample, stat_name, n_mus = 25, n_sigmas = 27
   #' @description Calculates the coverage error of x_expar, rx_expar, mdm, and rmdm
   #'
   #' @param df: a single row dataframe generated from agreement_contest
-  #'  library, returned from generateExperiment_Data()
+  #'  library, returned from generate_population_configs()
   #' @param n_samples: number of samples drawn to evaluate converage error
   #' @param n_obs: 
   #' @return null, exports figures to disk

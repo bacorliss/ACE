@@ -55,7 +55,7 @@ sigmas_ab_vect = .001
 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
-df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
+df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
@@ -67,14 +67,14 @@ df_init <- generateExperiment_Data(n_samples = n_samples, n_sims = n_sims, rand.
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = TRUE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_mu_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "mu_1dm",  indvar_pretty = "mu[DM]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "mu_1dm",  indvar_pretty = "mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1)
 
@@ -87,7 +87,7 @@ mus_a_vect = sigmas_ab_vect*10
 mus_b_vect = mus_a_vect;
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_sigma", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_b_vect, 
@@ -99,14 +99,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "sigma[D]",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_sigma_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "sigma_1d", indvar_pretty = "sigma[D]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "sigma_1d", indvar_pretty = "sigma[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1)
 
@@ -120,7 +120,7 @@ mus_ab_vect = 10
 sigmas_ab_vect = .5
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_df", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_ab_vect, 
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_ab_vect, 
@@ -132,14 +132,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "df[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_df_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d",indvar_pretty = "df[D]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "df_1d",indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = -1)
 
@@ -151,7 +151,7 @@ alpha_2 = 0.05/seq(1, 20,1)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_alpha", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 20, 
                                    sigmas_1a = 1, 
                                    mus_1b  = 20, 
@@ -165,14 +165,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    alpha_2 = alpha_2,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_alpha_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "alpha_1",  indvar_pretty = "alpha[DM]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "alpha_1",  indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = -1)
 
@@ -193,7 +193,7 @@ mus_b_vect =  mus_a_vect+10
 sigmas_ab_vect = 0.1*mus_a_vect 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
                                       sigmas_1a = sigmas_ab_vect,
                                       mus_1b  = mus_b_vect,
@@ -206,14 +206,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
 
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames,
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rmu_pearson <-
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rmu_1dm", indvar_pretty = "r*mu[DM]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "rmu_1dm", indvar_pretty = "r*mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = 1)
 
@@ -226,7 +226,7 @@ mus_a_vect = mus_b_vect
 sigmas_ab_vect = 1
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_rsigma", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed, 
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
                                       sigmas_1a = sigmas_ab_vect, 
                                       mus_1b  = mus_b_vect, 
@@ -238,14 +238,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
                                          fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rsigma_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "rsigma_1d", indvar_pretty = "r*sigma[DM]", 
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "rsigma_1d", indvar_pretty = "r*sigma[DM]", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_agreement = 1)
 
@@ -260,7 +260,7 @@ mus_b_vect = 10
 sigmas_ab_vect = 1
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_df", sep = "")
-df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
+df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
@@ -272,14 +272,14 @@ df_init <- generateExperiment_Data(n_samples, n_sims = n_sims, rand.seed = rand.
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "sigma[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_rdf_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "df_1d", indvar_pretty = "df[D]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "df_1d", indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = -1)
 
@@ -291,7 +291,7 @@ alpha_1 = 0.05/seq(1, 10,0.5)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
-df_init <- generateExperiment_Data(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
+df_init <- generate_population_configs(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 50, 
                                    sigmas_1a = 1, 
                                    mus_1b  = 10, 
@@ -305,14 +305,14 @@ df_init <- generateExperiment_Data(n_samples = 1e2, n_sims = n_sims, rand.seed =
                                    alpha_2 = alpha_1,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize <- process_esize_simulations(df_init, gt_colname = gt_colnames, 
+df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
                                       fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable
 df_ralpha_pearson <- 
-  lineplot_indvar_vs_stats(df = df_esize$df_es, indvar = "alpha_1", indvar_pretty = "alpha[DM]",
+  plot_stats_covary_indvar(df = df_esize$df_es, indvar = "alpha_1", indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_agreement = -1)
 

@@ -40,7 +40,7 @@ row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
 mdm_functions <- parse_functions_source("R/aces.R")
 
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
-generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
+generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
                                     mus_2a, sigmas_2a,
@@ -107,7 +107,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
 
 
   # Expand any singleton pop param arguments replicate to number of simulations
-  input_args <- formalArgs(generateExperiment_Data)
+  input_args <- formalArgs(generate_population_configs)
   pargs <-grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
   # For any pop param not equal in length to n_sims, expand
   for (n in seq_along(pargs)) {
@@ -122,7 +122,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # If offset from A groups (ao) specified, calculate params for B and D
   if (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(rmus_1d,rmus_2d)))) {
     df_init <- 
-      pop_params_from_aoffset( n_samples = n_samples, n_sims= n_sims,
+      pop_configs_from_aoffset( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
                                mus_2a = mus_2a, sigmas_2a = sigmas_2a,
                                mus_1ao = mus_1ao, sigmas_1ao = sigmas_1ao, 
@@ -133,7 +133,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
     # If relative offset groups specified, calculate params for B and D
   } else if (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(mus_1ao, mus_2ao)))) {
     df_init <- 
-      pop_params_from_rmu_sigma( n_samples = n_samples, n_sims= n_sims,
+      pop_configs_from_rmu_sigma( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
                                mus_2a = mus_2a, sigmas_2a = sigmas_2a,
                                rmus_1d = rmus_1d, rsigmas_1d = rsigmas_1d, 
@@ -144,14 +144,14 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
     # If group b specified, calculate params for D
   } else {
     df_init   <- 
-      pop_params_from_ab( n_samples = n_samples, n_sims = n_sims, 
+      pop_configs_from_ab( n_samples = n_samples, n_sims = n_sims, 
                           mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
                           mus_1b = mus_1b, sigmas_1b = sigmas_1b, mus_2b = mus_2b, sigmas_2b = sigmas_2b,
                           n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b, 
                           alpha_1 = alpha_1, alpha_2 = alpha_2) 
   }
   # Switch params between groups/experiments if specified with flags
-  df <- pop_params_switches(df = df_init, toggle_sign_rmu_d_hold_sigma = toggle_sign_rmu_d_hold_sigma, 
+  df <- pop_configs_switches(df = df_init, toggle_sign_rmu_d_hold_sigma = toggle_sign_rmu_d_hold_sigma, 
                             toggle_sign_mean_ab = toggle_sign_mean_ab, 
                             switch_group_ab = switch_group_ab,
                             switch_mu_ab_12 = switch_mu_ab_12, 
@@ -301,7 +301,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   # browser();
   # Plot generated population parameters
   if (is_plotted){
-    plot_population_params(df, fig_name = fig_name, fig_path = fig_path, 
+    plot_population_configs(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames)
   } else {
     
@@ -331,7 +331,7 @@ generateExperiment_Data <- function(n_samples, n_sims, rand.seed,
   return(df)
 }
 
-pop_params_from_aoffset <-
+pop_configs_from_aoffset <-
   function( n_samples, n_sims, mus_1a, sigmas_1a, mus_2a, sigmas_2a,
             mus_1ao, sigmas_1ao, mus_2ao, sigmas_2ao,
             n_1a, n_1b, n_2a, n_2b, alpha_1, alpha_2) {
@@ -380,12 +380,11 @@ pop_params_from_aoffset <-
 
 
 
-pop_params_from_rmu_sigma <-
+pop_configs_from_rmu_sigma <-
   function( n_samples, n_sims, mus_1a, sigmas_1a, mus_2a, sigmas_2a,
             rmus_1d, rsigmas_1d, rmus_2d, rsigmas_2d,
             n_1a, n_1b, n_2a, n_2b, alpha_1, alpha_2) {
     
-    # browser();
     
     # Calculate mu and sigma d and b based on relative mus and sigmas
     mus_1d = rmus_1d * mus_1a;  mus_2d = rmus_2d * mus_2a; 
@@ -411,7 +410,7 @@ pop_params_from_rmu_sigma <-
 
 
 
-pop_params_from_ab <- function( n_samples, n_sims, 
+pop_configs_from_ab <- function( n_samples, n_sims, 
                                 mus_1a, sigmas_1a, 
                                 mus_2a, sigmas_2a,
                                 mus_1b, sigmas_1b, 
@@ -455,7 +454,7 @@ pop_params_from_ab <- function( n_samples, n_sims,
 }
 
 
-pop_params_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_sign_mean_ab, 
+pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_sign_mean_ab, 
                                 switch_group_ab, switch_mu_ab_12, switch_rmu_d_12_hold_rsigma,
                                 switch_mu_d_12, switch_sigma_ab_12, switch_rsigma_ab_12_hold_sigma_a,
                                 switch_alpha_12, switch_n_12) {
@@ -721,7 +720,7 @@ pop_params_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_si
 }
 
 
-plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
+plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path){
   #' @description plots characterizing selection of pop. params across simulations.
   #' 1) Plot fraction of pop param sets with exp 1 higher agreement than 
   #' experiment 2 according to each candidate statistic, and test for non random
@@ -738,8 +737,8 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
   #' 
   #' @return no return, exports figures to disk
 
-  # save(list = ls(all.names = TRUE), file = "temp/plot_population_params.RData",envir = environment())
-  # load(file = "temp/plot_population_params.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/plot_population_configs.RData",envir = environment())
+  # load(file = "temp/plot_population_configs.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
   param_fields = c("is_mudm_1ldt2","is_rmudm_1ldt2","is_sigmad_1ldt2",
@@ -862,7 +861,7 @@ plot_population_params <- function(df_init, gt_colnames,fig_name,fig_path){
 }
 
 
-quantify_esize_simulations <- function(df_in, overwrite = TRUE,
+quantify_population_configs <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
                                 parallel_sims = TRUE,  stat_exclude_list = NULL) {
@@ -880,13 +879,14 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
   #' @return df dataframe with pop params and comparison error rates of each candidate statistics.
 
   # Initialize output data frame
-  # parallel_sims = FALSE
   n_sims = dim(df_in)[1]
   df <- df_in
   
-  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulations.RData",envir = environment())
-  # # load(file = "temp/quantify_esize_simulations.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_configs.RData",envir = environment())
+  # # load(file = "temp/quantify_population_configs.RData")
 
+  
+  
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
     
@@ -898,9 +898,9 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER"),
                 .export = c(row_stats_toolbox_fun, mdm_functions,
-                            "quantify_esize_simulation")) %dopar% {
+                            "quantify_population_config")) %dopar% {
         #calling a function
-        tempMatrix <- quantify_esize_simulation(df[n,], include_bf, rand.seed = rand.seed+n,
+        tempMatrix <- quantify_population_config(df[n,], include_bf, rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE,
                                                stat_exclude_list = stat_exclude_list) 
         tempMatrix
@@ -912,7 +912,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
       # Process effect sizes serially and bind rows into one dataframe
       for (n in seq(1,n_sims)) {
         print(n)
-        df_list[[n]] <- quantify_esize_simulation(df_in[n,], include_bf, rand.seed = rand.seed+n, 
+        df_list[[n]] <- quantify_population_config(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE, 
                                             stat_exclude_list = stat_exclude_list) 
       }
@@ -930,7 +930,7 @@ quantify_esize_simulations <- function(df_in, overwrite = TRUE,
 }
 
 
-quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0, 
+quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0, 
                                       parallelize_bf = FALSE, stat_exclude_list = NULL) {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
@@ -946,8 +946,8 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   #' mean and std of each candidate statistic across samples along with their 
   #' comparison error for determining higher agreement.
   
-  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
-  # # load(file = "temp/quantify_esize_simulation.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
+  # # load(file = "temp/quantify_population_config.RData")
   
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
@@ -979,8 +979,8 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   stat_list <- colnames(dfs_1)
   
   
-  # save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
-  # load(file = "temp/quantify_esize_simulation.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
+  # load(file = "temp/quantify_population_config.RData")
   
   dfc <- setNames(data.frame(matrix(ncol = 1, nrow = 1)), paste("exp1_mean_",stat_list[1],sep=''))
   # Means and std of each statistic
@@ -1016,21 +1016,21 @@ quantify_esize_simulation <- function(df, include_bf = FALSE, rand.seed = 0,
   
   if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]]))
     { save(list = ls(all.names = TRUE),
-    file = "temp/quantify_esize_simulation.RData",envir = environment())}
+    file = "temp/quantify_population_config.RData",envir = environment())}
   
   # Carry over data frame metadata
   user_attr <- attr(dfs_1,"user_attributes")
   for (i in seq_along(user_attr)) {attr(df_out,user_attr[i])<-attr(dfs_1,user_attr[i])}
   
   
-  save(list = ls(all.names = TRUE), file = "temp/quantify_esize_simulation.RData",envir = environment())
-  # # load(file = "temp/quantify_esize_simulation.RData")
+  save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
+  # # load(file = "temp/quantify_population_config.RData")
   
   return(df_out)
 }
 
 
-tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TRUE,
+tidy_agreement_contest <- function (df, gt_colname, var_prefix, long_format = TRUE,
                                    ref_colname = NULL) {
   #' @description Converts comparison error rates for all candidate statistics 
   #' from wide format to long format. 
@@ -1052,8 +1052,8 @@ tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TR
   #' 
   #' @return df_tidy tidy (long) version of input dataframe
   
-  # save(list = ls(all.names = TRUE), file = "temp/tidy_esize_simulations.RData",envir = environment())
-  # # load(file = "temp/tidy_esize_simulations.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/tidy_agreement_contest.RData",envir = environment())
+  # # load(file = "temp/tidy_agreement_contest.RData")
   
   # Check if gt_colname exists
   if (length(grep(gt_colname, names(df))) == 0) stop("gt_colname does not exist in dataframe")
@@ -1108,7 +1108,7 @@ tidy_esize_simulations <- function (df, gt_colname, var_prefix, long_format = TR
   return(df_tidy)
 }
 
-pretty_esize_levels<- function(df, var_prefix) {
+pretty_stat_labels<- function(df, var_prefix) {
   #' @description Convert long levels names to shorter ones for pretty print in plots
   #' 
   #' @param df input dataframe
@@ -1117,8 +1117,8 @@ pretty_esize_levels<- function(df, var_prefix) {
   #' 
   #' @return df_pretty converts levels of df into pretty format (for plotting)
   
-  # save(list = ls(all.names = TRUE), file = "temp/pretty_esize_levels.RData",envir = environment())
-  # load(file = "temp/pretty_esize_levels.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/pretty_stat_labels.RData",envir = environment())
+  # load(file = "temp/pretty_stat_labels.RData")
 
   # Get current names for levels and the basenames for them to be matched against
   orig_levels <- levels(df$name)
@@ -1140,7 +1140,7 @@ pretty_esize_levels<- function(df, var_prefix) {
 }
 
 
-plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str, 
+plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str, 
                                    compare_string = "Lesser") {
   #' @description Plot comparison error rates for candidates effect size statistics
   #' 
@@ -1154,8 +1154,8 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   #' 
   #' @return no return, exports figures to disk
   
-  save(list = ls(all.names = TRUE), file = "temp/plot_esize_simulations.RData",envir = environment())
-  # load(file = "temp/plot_esize_simulations.RData")
+  save(list = ls(all.names = TRUE), file = "temp/plot_comparison_error.RData",envir = environment())
+  # load(file = "temp/plot_comparison_error.RData")
   
   # Calculate group means and corrected confidence intervals
   # Note: if it errors here with df_result having one group then plyr package 
@@ -1252,7 +1252,7 @@ plot_esize_simulations <- function(df_pretty, fig_name, fig_path, y_ax_str,
   
 }
 
-process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
+process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, 
                                       stat_exclude_list= c("ldm", "rldm")) {
@@ -1276,8 +1276,8 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
 
-  # save(list = ls(all.names = TRUE), file = "temp/process_esize_simulations.RData",envir = environment())
-  # load(file = "temp/process_esize_simulations.RData")
+  # save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
+  # load(file = "temp/process_agreement_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
   
@@ -1285,23 +1285,23 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
   
   # Quantify effect sizes in untidy matrix
-  df_es <- quantify_esize_simulations(df = df_init,overwrite = TRUE, out_path = out_path,
+  df_es <- quantify_population_configs(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
                                       include_bf = include_bf,parallel_sims = parallel_sims,
                                       stat_exclude_list=stat_exclude_list)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-  df_tidy <- tidy_esize_simulations(df = df_es, gt_colname = gt_colname,
+  df_tidy <- tidy_agreement_contest(df = df_es, gt_colname = gt_colname,
                                     var_prefix = var_prefix,long_format = TRUE,
                                     ref_colname = NULL)
-  df_pretty <- pretty_esize_levels(df = df_tidy, var_prefix = var_prefix)
+  df_pretty <- pretty_stat_labels(df = df_tidy, var_prefix = var_prefix)
   
   # Plot effect size results
   if (is_plotted) {
     df_compare_string <- tibble(lt="Lesser", gt = "Greater")
     df_plotted <- 
-      plot_esize_simulations(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
+      plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
                              compare_string = df_compare_string[[attr(df_init,'df_ldt')[[gt_colname]]]],
                              y_ax_str = y_ax_str)
   }
@@ -1314,7 +1314,7 @@ process_esize_simulations <- function(df_init, gt_colname, y_ax_str, out_path = 
   all_dfs[[3]] <- df_pretty; 
   if (exists("df_plotted")) {all_dfs[[4]] <- df_plotted; }
   
-  # save(list = ls(all.names = TRUE), file = "temp/process_esize_simulations.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
   
   # Some candidate stats may return NaNs, visualize wist histogram of fraction 
   # of NaN samples across simulations
@@ -1361,13 +1361,13 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
   attr(df,"varnames_pretty")
 }
 
-lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_path,
+plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_path,
                                      dir_to_agreement=1, alpha = 0.05) {
   #' @description Plot mean values across samples of candidate statistics versus 
   #' a swept independent variable, and calculates correlation with pearson rho.
   #' 
   #' @param df input dataframe of processed pop. params (returned from 
-  #' process_esize_simulations)
+  #' process_agreement_contest)
   #' @param indvar string of the column name dscribing the indepedent variable, 
   #' will be one of the agreement parameters
   #' @param fig_name base name of exported figure
@@ -1379,21 +1379,27 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   #' candidate statistics versus the indepdent variable.
   
   
-  # save(list = ls(all.names = TRUE), file = "temp/lineplot_indvar_vs_stats.RData",envir = environment())
-  # load(file = "temp/lineplot_indvar_vs_stats.RData")
+  save(list = ls(all.names = TRUE), file = "temp/plot_stats_covary_indvar.RData",envir = environment())
+  # load(file = "temp/plot_stats_covary_indvar.RData")
   # browser();
   
   
-  # Filter for stats metrics
-  col_list <- colnames(df)
+  # Generate the names of all columns that refer to the mean and std of candidate statistics
+  # Only candidate statistics from experiment 1 are used for this analysis, exp 2
+  # are just dummy variables.
   exp1_mean_vars = paste("exp1_mean_", attr(df,"varnames"),sep="")
   exp1_sd_vars   = paste("exp1_sd_", attr(df,"varnames"),sep="")
   
+  
+  
+  
+  # Prepping data frame to plot how each the mean of each candidate statistic 
+  # varies versus independent variable
+  # __________________________________________________________________________
   # Calculate mean value of statistics for each value of indvar
   df$series <- seq(1, dim(df)[1],1)
   df_means <- df %>% gather("variable", "value", exp1_mean_vars)
-  
-  
+
   df_means <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "mean_value") %>%
     select("series", c(all_of(indvar),"variable", "mean_value"))
   df_sd <- pivot_longer(df,exp1_mean_vars, names_to = "variable", values_to = "sd_value")
@@ -1402,7 +1408,8 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   df_means$label <-  factor(as.character(attr(df,"varnames_pretty"))[match(df_means$variable,exp1_mean_vars)],
                             levels = attr(df,"varnames_pretty"))
   
-  
+  # The facet plot below would eror if the candidate statistics vary too much, 
+  # so use log transform when needed
   # Log rescale values if any values are outside of specified range
   apply_log <- function(x) {if ((any(x<1e-5) || any(x>1e5)) && all(x>0)) {x=log10(x)} else{x=x}; return(x)}
   df_means2 = df_means %>% group_by(variable) %>% mutate(scale_mean_value = apply_log(mean_value))
@@ -1413,11 +1420,10 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
                                       paste("log[10](", attr(df,"varnames_pretty"),")",sep=""),
                                       attr(df,"varnames_pretty")))
   
-  
   # Plot facet of how each candidate statistic changes
-  gg <- ggplot(data = df_means2, aes(x = series , y = scale_mean_value)) + 
+  gg <- ggplot(data = df_means2, aes_string(x = indvar, y = "scale_mean_value")) + 
     geom_point(size=.25) + facet_wrap(vars(label),labeller = label_parsed, ncol = 6, scales = "free_y") +
-    ylab("Mean Value") + xlab("Series") +
+    ylab("Mean Value") + xlab(parse(text=indvar_pretty)) +
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
     theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
@@ -1427,9 +1433,10 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
  
 
 
+  ## Examine correlation regression of candidate statistics to independent variable
   # Test: indvar must vary for correlation to be applied
   if (length(unique(df_means[[indvar]]))==1) {
-    simpleError("Indepedent variable does not change, so cannot perform pearson")
+    simpleError("Indepedent variable does not change, so cannot perform pearson correlation")
   }
   
   # Calculate pearson rho for the mean of each candidate stat versus independent var
@@ -1439,7 +1446,8 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
                         pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
                         slope=rep(NA,length(exp1_mean_vars)), 
                         slope_low=rep(NA,length(exp1_mean_vars)),
-                        slope_high=rep(NA,length(exp1_mean_vars)))
+                        slope_high=rep(NA,length(exp1_mean_vars)),
+                        slope_nzero=rep(NA,length(exp1_mean_vars)))
   
   for (n in seq(1,length(exp1_mean_vars),1))  {
     # print(n)
@@ -1461,35 +1469,40 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
       df_mean_stat$pearson_rho_high[n] <- 0
     }
     # Linear regression
-    stat.lm <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_agreement,
+    fit <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_agreement,
                                          y2 = abs(df_sub$mean_value)))
-    sd_slope <- summary(stat.lm)[[4]][2]
-    df_mean_stat$slope[n] = stat.lm$coefficients[2]
-    df_mean_stat$slope_low[n] = df_mean_stat$slope[n] - 1.96*sd_slope
-    df_mean_stat$slope_high[n] = df_mean_stat$slope[n] + 1.96*sd_slope
+    conf_int <- confint(fit, "y1", level = 1-0.05/length(exp1_mean_vars))
+    df_mean_stat$slope[n] = fit$coefficients[2]
+    df_mean_stat$slope_low[n] = conf_int[1]
+    df_mean_stat$slope_high[n] = conf_int[2]
   }
   # Sort variable names and add pretty column
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
   df_mean_stat$label <- factor(attr(df,"varnames_pretty"), levels = attr(df,"varnames_pretty"))
-  df_mean_stat$is_pearson_rho_sig <-  !(0>df_mean_stat$pearson_rho_low & 0<df_mean_stat$pearson_rho_high)
-  df_mean_stat$is_slope_sig <-  !(0>df_mean_stat$slope_low & 0<df_mean_stat$slope_high)
+  df_mean_stat$is_pearson_rho_sig <-  !(df_mean_stat$pearson_rho_low<0 & df_mean_stat$pearson_rho_high>0)
+  df_mean_stat$is_slope_sig <-  !(df_mean_stat$slope_low<0 & df_mean_stat$slope_high>0)
   
+  
+  
+  ## Plot 95% confidence interval of pearson correlation in annotated plot
+  # __________________________________________________________________________
   # Plot notations for positive and negative pearson rho
   # Labels of statistical significance for each group
   sig_labels = rep("",length(attr(df,"varnames")))
   sig_colors = rep("black",length(attr(df,"varnames")))
   sig_sizes = rep(4,length(attr(df,"varnames")))
   siff_vjust = rep(0,length(attr(df,"varnames")))
-  # Set less than random to blue and -
-  sig_labels[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  "-"
-  sig_colors[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  
-    rgb(47, 117, 181,maxColorValue = 255)
-  sig_sizes[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  5
-  siff_vjust[df_mean_stat$pearson_rho_low<0.05 & df_mean_stat$pearson_rho_high<0.05] =  .017
+  # Set less than random to blue and
+  neg_ind <- sign(df_mean_stat$pearson_rho)==-1 & df_mean_stat$is_pearson_rho_sig
+  pos_ind <- sign(df_mean_stat$pearson_rho)==1 & df_mean_stat$is_pearson_rho_sig
+  
+  sig_labels[neg_ind] =  "-"
+  sig_colors[neg_ind] = rgb(47, 117, 181,maxColorValue = 255)
+  sig_sizes[neg_ind] =  5
+  siff_vjust[neg_ind] =  .017
   # Set greater than random to red and +
-  sig_labels[df_mean_stat$pearson_rho_low>0.05 & df_mean_stat$pearson_rho_high>0.05] =  "+"
-  sig_colors[df_mean_stat$pearson_rho_low>0.05 & df_mean_stat$pearson_rho_high>0.05] = 
-    rgb(255, 0, 0,maxColorValue = 255)
+  sig_labels[pos_ind] =  "+"
+  sig_colors[pos_ind] = rgb(255, 0, 0,maxColorValue = 255)
   
   # Plot pearson rho confidence intervals for each candidate stat  
   gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
@@ -1518,24 +1531,6 @@ lineplot_indvar_vs_stats <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "r*mu[DM]", "sigma[D]",
                                                     "r*sigma[D]","df[D]","alpha[DM]"))
   
-  # Calculate mean value of each stat at each point in the series
-  # df_means <- df_runs %>% group_by(param) %>% summarize(Series=1,
-  #   mean_value=mean(value),  is_constant = all(mean(value) == value),
-  #   ymin = min(c(mean_value - 0.1 * mean_value, mean_value-.15)), #
-  #   ymax = max(c(mean_value + 0.1 * mean_value, mean_value+.15))) #
-  
-  
-  # # Faceted line plot of each agreement parameter versus independent variable
-  # gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
-  #   geom_line() +
-  #   facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
-  #   theme_classic(base_size=8) +
-  #   theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) 
-  # # geom_blank(data=df_means, aes(x = Series, y=mean_value, ymin = ymin, ymax = ymax))
-  # gg
-  # save_plot(paste(fig_path, '/', str_replace(fig_name,"\\.[a-z]*$","_params.tiff"), sep = ""), 
-  #           gg, ncol = 1, nrow = 1, base_height = 1.75, base_asp = 4, 
-  #           base_width = 3, dpi = 600)
 
   return(df_mean_stat)
 }
