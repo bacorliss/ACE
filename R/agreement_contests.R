@@ -314,6 +314,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
     )
     df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "sigma[D]", "r*mu[DM]","r*sigma[D]","df[D]","alpha[DM]"))
 
+    
     gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
@@ -946,7 +947,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   #' mean and std of each candidate statistic across samples along with their 
   #' comparison error for determining higher agreement.
   
-  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
   # # load(file = "temp/quantify_population_config.RData")
   
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
@@ -997,15 +998,17 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
 
  
   # Compare magnitude and difference with each statistic between exp 1 and exp 2
+  # Use decision rules that are defined in row_stats_toolbox, stored as attributes 
+  # to dfs_1 and dfs_2
   for (i in seq_along(stat_list)) {
     # Determine if exp 1 has higher agreement/disagreement than (hat) than exp 2
     # Candidates that returns NaNs are automatically designated as not doing this
-    #   (an incorrect wrong designation)
+    #   (a wrong designation)
     dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]] <- 
-      sum(match.fun(attr(dfs_1,"hat")[[stat_list[i]]])
+      sum(match.fun(attr(dfs_1,"ldt")[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
             abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
-    # Calcualte different of effect size between experiments
+    # Calculate different of effect size between experiments
     dfc[[paste("mean_diff_", stat_list[i], "_1ldt2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
       abs(dfc[[paste("exp1_mean_", stat_list[i],sep='')]])
@@ -1023,7 +1026,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   for (i in seq_along(user_attr)) {attr(df_out,user_attr[i])<-attr(dfs_1,user_attr[i])}
   
   
-  save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
   # # load(file = "temp/quantify_population_config.RData")
   
   return(df_out)
@@ -1426,7 +1429,9 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     ylab("Mean Value") + xlab(parse(text=indvar_pretty)) +
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
-    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
+    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) +
+    scale_x_continuous(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
+                                  (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))/2) )
   print(gg)
   save_plot(paste(fig_path, '/', str_replace(fig_name,'\\..*$','_all_stats.png'), sep = ""), 
             gg, ncol = 1, nrow = 1, base_height = 1.75,  base_width = 6.25, dpi = 600)

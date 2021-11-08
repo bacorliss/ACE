@@ -305,101 +305,101 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
   colnames(df) <- stat_list
   df_ldt <- df[1,]
-  df_lat <- df[1,]
+  df_hat <- df[1,]
   df_name <- df[1,]
   df_pretty <- df[1,]
     
   # 1) Mean of the difference of means
   df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
   df_ldt$xbar_dm <- "<"
-  df_lat$xbar_dm <- ">"
+  df_hat$xbar_dm <- ">"
   df_pretty$xbar_dm <- "bar(x)[DM]"
 
   # 2) Rel Means: mean of the difference in means divided by control group mean
   df$rxbar_dm = df$xbar_dm/rowMeans(x_a)
   df_ldt$rxbar_dm <- "<"
-  df_lat$rxbar_dm <- ">"
+  df_hat$rxbar_dm <- ">"
   df_pretty$rxbar_dm <- "r*bar(x)[DM]"
   
   # 3) Std of the difference in means
   df$sd_dm = sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
   df_ldt$sd_dm <- "<"
-  df_lat$sd_dm <- "<"
+  df_hat$sd_dm <- "<"
   df_pretty$sd_dm <- "s[DM]"
   
   # 4) Relative STD: std of difference in means divided by midpoint between group means
   df$rsd_dm = df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
   df_ldt$rsd_dm <- "<"
-  df_lat$rsd_dm <- "<"
+  df_hat$rsd_dm <- "<"
   df_pretty$rsd_dm <- "r*s[DM]"
   
   # 5) Bayes Factor
   df$bf = row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
   df_ldt$bf <- "<"
-  df_lat$bf <- ">"
+  df_hat$bf <- ">"
   df_pretty$bf <- "BF"
   
   # 6) NHST P-value: The more equal experiment will have a larger p-value
   diff_z_score <- row_zscore_2s(x_b, x_a)
   df$pvalue = rowmin_2col(v1 = 2*pnorm(-abs(diff_z_score))*0.05/(1-conf.level),1)
   df_ldt$pvalue <- ">"
-  df_lat$pvalue <- "<"
+  df_hat$pvalue <- "<"
   df_pretty$pvalue <- "p[N]"
   
   # 7) TOST p value (Two tailed equivalence test)
   df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1, conf.level = conf.level)
   df_ldt$tostp <- "<"
-  df_lat$tostp <- ">"
+  df_hat$tostp <- ">"
   df_pretty$tostp <- "p[E]"
   
   # 8) Cohens D
   df$cohend = row_cohend(x_a, x_b)
   df_ldt$cohend <- "<"
-  df_lat$cohend <- ">"
+  df_hat$cohend <- ">"
   df_pretty$cohend <- "Cd"
   
   # 9) most difference in means
   df$mdm = row_mdm(x_a, x_b, conf.level = conf.level)
   df_ldt$mdm <- "<"
-  df_lat$mdm <- ">"
+  df_hat$mdm <- ">"
   df_pretty$mdm <- "delta[M]"
   
   # 10) Relative most difference in means
   df$rmdm = row_rmdm(x_a, x_b, conf.level = conf.level) 
   df_ldt$rmdm <- "<"
-  df_lat$rmdm <- ">"
+  df_hat$rmdm <- ">"
   df_pretty$rmdm <- "r*delta[M]"
   
   # 11) Least Difference in Means
   df$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level=conf.level)
   df_ldt$ldm <- "<"
-  df_lat$ldm <- ">"
+  df_hat$ldm <- ">"
   df_pretty$ldm <- "delta[L]"
   
   # 12) Relative Least Difference in Means
   df$rldm = df$ldm / rowMeans(x_a)
   df_ldt$rldm <- "<"
-  df_lat$rldm <- ">"
+  df_hat$rldm <- ">"
   df_pretty$rldm <- "r*delta[L]"
   
   # 13) Random group
   df$rand = rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
                            nrow = n_samples, ncol = 50))
   df_ldt$rand <- "<"
-  df_lat$rand <- ">"
+  df_hat$rand <- ">"
   df_pretty$rand <- "Rnd"
   
   
   # Drop any statistics requested by user
   df <- df[ , !(names(df) %in% stat_exclude_list)]
   df_ldt <- df_ldt[ , !(names(df_ldt) %in% stat_exclude_list)]
-  df_lat <- df_lat[ , !(names(df_lat) %in% stat_exclude_list)]
+  df_hat <- df_hat[ , !(names(df_hat) %in% stat_exclude_list)]
   df_pretty <- df_pretty[ , !(names(df_pretty) %in% stat_exclude_list)]
   
   # Store attributes within df
   attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
-  attr(df,"hat") <- df_ldt
-  attr(df,"hdt") <- df_lat
+  attr(df,"ldt") <- df_ldt
+  attr(df,"hat") <- df_hat
   attr(df,"varnames") <- colnames(df)
   attr(df,"varnames_pretty") <- df_pretty
   
