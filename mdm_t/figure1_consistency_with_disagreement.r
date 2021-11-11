@@ -31,7 +31,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 #-------------------------------------------------------------------------------
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
-n_samples = 1e3
+n_samples = 5e3
 n_obs = 6
 rand.seed = 1
 gt_colnames = "is_mudm_1ldt2"
@@ -375,7 +375,7 @@ dev.off()
 scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
                df_rdf_pearson$pearson_rho, df_ralpha_pearson$pearson_rho)
 scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
-                   df_rdf_pearson$is_pearson_rho_sig, df_alpha_pearson$is_pearson_rho_sig)
+                   df_rdf_pearson$is_pearson_rho_sig, df_ralpha_pearson$is_pearson_rho_sig)
 # Zero color to white for fields that are not statistically significant
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0

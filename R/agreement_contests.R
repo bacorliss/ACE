@@ -1001,9 +1001,8 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   # Use decision rules that are defined in row_stats_toolbox, stored as attributes 
   # to dfs_1 and dfs_2
   for (i in seq_along(stat_list)) {
-    # Determine if exp 1 has higher agreement/disagreement than (hat) than exp 2
-    # Candidates that returns NaNs are automatically designated as not doing this
-    #   (a wrong designation)
+    # Determine if exp 1 has lower disagreement than (ldt) than exp 2
+    # Candidates that returns NaNs are automatically designated as a wrong designation
     dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]] <- 
       sum(match.fun(attr(dfs_1,"ldt")[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
@@ -1055,7 +1054,7 @@ tidy_agreement_contest <- function (df, gt_colname, var_prefix, long_format = TR
   #' 
   #' @return df_tidy tidy (long) version of input dataframe
   
-  # save(list = ls(all.names = TRUE), file = "temp/tidy_agreement_contest.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/tidy_agreement_contest.RData",envir = environment())
   # # load(file = "temp/tidy_agreement_contest.RData")
   
   # Check if gt_colname exists
@@ -1422,6 +1421,7 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   levels(df_means2$label ) <-  as.character(ifelse(df_is_scaled$is_scaled, 
                                       paste("log[10](", attr(df,"varnames_pretty"),")",sep=""),
                                       attr(df,"varnames_pretty")))
+
   
   # Plot facet of how each candidate statistic changes
   gg <- ggplot(data = df_means2, aes_string(x = indvar, y = "scale_mean_value")) + 
@@ -1429,9 +1429,14 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     ylab("Mean Value") + xlab(parse(text=indvar_pretty)) +
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
-    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) )) +
-    scale_x_continuous(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
-                                  (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))/2) )
+    theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
+  if (dir_to_agreement==1) {
+    gg <- gg + scale_x_reverse(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
+     (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))) )
+  }else {
+    gg<- gg+ scale_x_continuous(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
+                                           (max(df_means2[[indvar]]) - min(df_means2[[indvar]])))) 
+  }
   print(gg)
   save_plot(paste(fig_path, '/', str_replace(fig_name,'\\..*$','_all_stats.png'), sep = ""), 
             gg, ncol = 1, nrow = 1, base_height = 1.75,  base_width = 6.25, dpi = 600)
@@ -1484,11 +1489,11 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   # Sort variable names and add pretty column
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
   df_mean_stat$label <- factor(attr(df,"varnames_pretty"), levels = attr(df,"varnames_pretty"))
-  df_mean_stat$is_pearson_rho_sig <-  !(df_mean_stat$pearson_rho_low<0 & df_mean_stat$pearson_rho_high>0)
-  df_mean_stat$is_slope_sig <-  !(df_mean_stat$slope_low<0 & df_mean_stat$slope_high>0)
-  
-  
-  
+  df_mean_stat$is_pearson_rho_sig <-  (df_mean_stat$pearson_rho_low<0 & df_mean_stat$pearson_rho_high<0) |
+    (df_mean_stat$pearson_rho_low>0 & df_mean_stat$pearson_rho_high>0)
+  df_mean_stat$is_slope_sig <-  (df_mean_stat$slope_low<0 & df_mean_stat$slope_high<0) |
+    (df_mean_stat$slope_low>0 & df_mean_stat$slope_high>0)
+
   ## Plot 95% confidence interval of pearson correlation in annotated plot
   # __________________________________________________________________________
   # Plot notations for positive and negative pearson rho
