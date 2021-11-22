@@ -39,6 +39,7 @@ source("R/aces.R")
 row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
 mdm_functions <- parse_functions_source("R/aces.R")
 
+
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
 generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     # Control group pop. parameters
@@ -70,6 +71,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     
                                     fig_name = "test.tiff",
                                     fig_path = "Figure/",
+                                    agreement = "ldt",
                                     gt_colnames, is_plotted = TRUE,
                                     tol = 1e-15) {
   #' @description Generate simulated experiment data for two experiments with 
@@ -166,7 +168,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # hat: Exp 1 higher agreement than exp 2
   df_ldt = data.frame(is_mud_1ldt2 = 0)
   # hdt: Exp 2 higher disagreement than exp 2
-  df_lat = data.frame(is_mud_1hdt2 = 0)
+  df_lat = data.frame(is_mud_1hat2 = 0)
   
   # Mean of the difference
   # df$mu_1d <- df$mu_1b - df$mu_1a
@@ -174,30 +176,30 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Is: Exp2 mu[d] > Exp1 mu[d]
   df$is_mud_1ldt2 <-  abs(df$mu_1d) < abs(df$mu_2d)
   df_ldt$is_mud_1ldt2 <- "lt"
-  df$is_mud_1hdt2 <- !df$is_mud_1ldt2
-  df_lat$is_mud_1hdt2 <- "gt"
+  df$is_mud_1hat2 <- !df$is_mud_1ldt2
+  df_lat$is_mud_1hat2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
   df$is_sigmad_1ldt2 <-  df$sigma_1d < df$sigma_2d
   df_ldt$is_sigmad_1ldt2 <- "lt"
-  df$is_sigmad_1hdt2 <- df$is_sigmad_1ldt2
-  df_lat$is_sigmad_1hdt2 <- "lt"
+  df$is_sigmad_1hat2 <- df$is_sigmad_1ldt2
+  df_lat$is_sigmad_1hat2 <- "lt"
   
   # Degrees of freedom of the difference
   df$df_1d <- df$n_1a + df$n_1b - 2
   df$df_2d <- df$n_2a + df$n_2b - 2
   df$is_dfd_1ldt2 <- df$df_1d > df$df_2d
   df_ldt$is_dfd_1ldt2 <- "gt"
-  df$is_dfd_1hdt2 <- df$is_dfd_1ldt2
-  df_lat$is_dfd_1hdt2 <- "gt"
+  df$is_dfd_1hat2 <- df$is_dfd_1ldt2
+  df_lat$is_dfd_1hat2 <- "gt"
   
   # Degrees of freedom of the difference in means
   df$is_dfdm_1ldt2 <- df$df_1d > df$df_2d
   df_ldt$is_dfdm_1ldt2 <- "gt"
-  df$is_dfdm_1hdt2 <- df$is_dfdm_1ldt2
-  df_lat$is_dfdm_1hdt2 <- "gt"
+  df$is_dfdm_1hat2 <- df$is_dfdm_1ldt2
+  df_lat$is_dfdm_1hat2 <- "gt"
   
   # Pooled standard deviation
   df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
@@ -206,8 +208,8 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                             (df$n_2a-1 + df$n_2b-1 ))
   df$is_sigmapool_1ldt2 <- df$sigma_1pool < df$sigma_2pool
   df_ldt$is_sigmapool_1ldt2 <- "lt"
-  df$is_sigmapool_1hdt2 <-  df$is_sigmapool_1ldt2
-  df_lat$is_sigmapool_1hdt2 <- "lt"
+  df$is_sigmapool_1hat2 <-  df$is_sigmapool_1ldt2
+  df_lat$is_sigmapool_1hat2 <- "lt"
   
   # Mean and std of difference in means (taken from mean of D since we had the option
   # to invert the sign for D earlier in code)
@@ -215,23 +217,23 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$mu_2dm <- df$mu_2d
   df$is_mudm_1ldt2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
   df_ldt$is_mudm_1ldt2 <- "lt"
-  df$is_mudm_1hdt2 <-  !df$is_mudm_1ldt2
-  df_lat$is_mudm_1hdt2 <- "gt"
+  df$is_mudm_1hat2 <-  !df$is_mudm_1ldt2
+  df_lat$is_mudm_1hat2 <- "gt"
   
   # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/df$n_1a + df$sigma_1b^2/df$n_1b)
   df$sigma_2dm <- sqrt(df$sigma_2a^2/df$n_2a + df$sigma_2b^2/df$n_2b)
   df$is_sigmadm_1ldt2 <-  df$sigma_1dm < df$sigma_2dm
   df_ldt$is_sigmadm_1ldt2 <- "lt"
-  df$is_sigmadm_1hdt2 <- df$is_sigmadm_1ldt2
-  df_lat$is_sigmadm_1hdt2 <- "lt"
+  df$is_sigmadm_1hat2 <- df$is_sigmadm_1ldt2
+  df_lat$is_sigmadm_1hat2 <- "lt"
   
   # ALPHA: significance level
   # Higher significance level, higher agreement
   df$is_alpha_1ldt2     <- df$alpha_1 > df$alpha_2
   df_ldt$is_alpha_1ldt2 <- "gt"
   # Higher significance level, higher disagreement
-  df$is_alpha_1hdt2     <- df$alpha_1 > df$alpha_2
+  df$is_alpha_1hat2     <- df$alpha_1 > df$alpha_2
   df_lat$is_alpha_1ldt2 <- "gt" 
   
   # Critical t value of difference in means
@@ -239,8 +241,8 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$tstat_2dm <- df$mu_2dm / df$sigma_2dm
   df$is_tstatdm_1ldt2 <- df$tstat_1dm < df$tstat_2dm
   df_ldt$is_tstatdm_1ldt2 <- "lt"
-  df$is_tstatdm_1hdt2 <- df$tstat_1dm > df$tstat_2dm
-  df_lat$is_tstatdm_1hdt2 <- "gt"
+  df$is_tstatdm_1hat2 <- df$tstat_1dm > df$tstat_2dm
+  df_lat$is_tstatdm_1hat2 <- "gt"
   # Critical t value for population parameter set
   df$tcrit_1dm <- qt(1-df$alpha_1, df$n_1a + df$n_1b - 2, lower.tail = TRUE)
   df$tcrit_2dm <- qt(1-df$alpha_2, df$n_2a + df$n_2b - 2, lower.tail = TRUE)
@@ -259,8 +261,8 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
   df$is_rmudm_1ldt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
   df_ldt$is_rmudm_1ldt2 <- "lt"
-  df$is_rmudm_1hdt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
-  df_lat$is_rmudm_1hdt2 <- "gt"
+  df$is_rmudm_1hat2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
+  df_lat$is_rmudm_1hat2 <- "gt"
   
   # Relative sigma of difference
   # browser()
@@ -270,24 +272,24 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
   df$is_rsigmad_1ldt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
   df_ldt$is_rsigmad_1ldt2 <- "lt"
-  df$is_rsigmad_1hdt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
-  df_lat$is_rsigmad_1hdt2 <- "lt"
+  df$is_rsigmad_1hat2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
+  df_lat$is_rsigmad_1hat2 <- "lt"
   
   # Relative Pooled Sigma
   df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
   df$is_rsigmapool_1ldt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
   df_ldt$is_rsigmapool_1ldt2 <- "lt"
-  df$is_rsigmapool_1hdt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
-  df_lat$is_rsigmapool_1hdt2 <- "lt"
+  df$is_rsigmapool_1hat2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
+  df_lat$is_rsigmapool_1hat2 <- "lt"
   
   # sigma of the difference of means distribution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a)
   df$is_rsigmadm_1ldt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
   df_ldt$is_rsigmadm_1ldt2 <- "lt"
-  df$is_rsigmadm_1hdt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
-  df_lat$is_rsigmadm_1hdt2 <- "lt"
+  df$is_rsigmadm_1hat2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
+  df_lat$is_rsigmadm_1hat2 <- "lt"
   
   # Population parameter differences
   df$mean_mud_2m1 <- df$mu_2dm - df$mu_1dm
@@ -302,7 +304,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Plot generated population parameters
   if (is_plotted){
     plot_population_configs(df, fig_name = fig_name, fig_path = fig_path, 
-                           gt_colnames = gt_colnames)
+                           gt_colnames = gt_colnames, agreement = agreement)
   } else {
     
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
@@ -313,8 +315,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                      Value = c(df$mu_1dm, df$sigma_1d, df$rmu_1dm, df$rsigma_1d, df$df_1d,df$alpha_1)
     )
     df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "sigma[D]", "r*mu[DM]","r*sigma[D]","df[D]","alpha[DM]"))
-
-    
+    # Plot facet of each agreement parameter over series
     gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
@@ -721,12 +722,12 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
 }
 
 
-plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path){
+plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agreement){
   #' @description plots characterizing selection of pop. params across simulations.
-  #' 1) Plot fraction of pop param sets with exp 1 higher agreement than 
+  #' 1) Plot fraction of pop param sets with exp 1 higher dis/agreement than 
   #' experiment 2 according to each candidate statistic, and test for non random
   #'  correlation between agreement parameters.
-  #' 2) Plot histogram of mu[DM]/sigma[DM] to viusualize whether selected pop. 
+  #' 2) Plot histogram of mu[DM]/sigma[DM] to visualize whether selected pop. 
   #' params fall within null or critical region (threshold ~2.5 stds from mean).
   #'
   #' @param df_init initial dataframe of pop params, each row is a set
@@ -738,14 +739,14 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path){
   #' 
   #' @return no return, exports figures to disk
 
-  # save(list = ls(all.names = TRUE), file = "temp/plot_population_configs.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/plot_population_configs.RData",envir = environment())
   # load(file = "temp/plot_population_configs.RData")
   
   # Output csv of agreement of input parameters to each individual input parameter
-  param_fields = c("is_mudm_1ldt2","is_rmudm_1ldt2","is_sigmad_1ldt2",
-                   "is_rsigmad_1ldt2", "is_dfdm_1ldt2", "is_alpha_1ldt2")
-  # Alt sigmas: is_sigmapool_1ldt2,is_rsigmapool_1ldt2; is_sigmad_1ldt2, is_rsigmad_1ldt2
-  
+  param_fields = paste(c("is_mudm_1","is_rmudm_1","is_sigmad_1", "is_rsigmad_1",
+                         "is_dfdm_1", "is_alpha_1"), agreement,"2",sep="")
+
+
   # bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
   if (!all(sapply(gt_colnames, function(x) any(x==param_fields)))) {stop("gt_colnames is not correctly worded")}
   
@@ -796,13 +797,13 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path){
   }
   df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df","alpha"))
   
-  
+  upper_agreement = toupper(agreement)
   # Plot confidence interval of success rate for each parameter and their agreement
   gg <- ggplot(df_params, aes(x = group,  y = estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
-    ylab(expression(Frac.~Exp[1]~LDT~Exp[2]~~~~~~~~~~~~phantom("."))) +
+    ylab(bquote(Frac.~Exp[1]~.(upper_agreement)~Exp[2]~~~~~~~~~~~~phantom("."))) +
     xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
@@ -865,7 +866,8 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path){
 quantify_population_configs <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
-                                parallel_sims = TRUE,  stat_exclude_list = NULL) {
+                                parallel_sims = TRUE,  stat_exclude_list = NULL,
+                                agreement = "ldt") {
   #' @description Given a data frame of pop. params and input data for each 
   #' experiment group, quantify mean values and comparison error of various 
   #' candidate statistics over repeated samples.
@@ -887,7 +889,6 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
   # # load(file = "temp/quantify_population_configs.RData")
 
   
-  
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
     
@@ -903,7 +904,8 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         #calling a function
         tempMatrix <- quantify_population_config(df[n,], include_bf, rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE,
-                                               stat_exclude_list = stat_exclude_list) 
+                                               stat_exclude_list = stat_exclude_list,
+                                               agreement = agreement) 
         tempMatrix
       }
       #stop cluster
@@ -915,7 +917,8 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         print(n)
         df_list[[n]] <- quantify_population_config(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE, 
-                                            stat_exclude_list = stat_exclude_list) 
+                                            stat_exclude_list = stat_exclude_list,
+                                            agreement = agreement) 
       }
       df <- bind_rows(df_list)
     }
@@ -932,7 +935,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
 
 
 quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE, stat_exclude_list = NULL) {
+                                      parallelize_bf = FALSE, stat_exclude_list = NULL, agreement = "ldt") {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
   #' 
@@ -1003,20 +1006,20 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   for (i in seq_along(stat_list)) {
     # Determine if exp 1 has lower disagreement than (ldt) than exp 2
     # Candidates that returns NaNs are automatically designated as a wrong designation
-    dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]] <- 
-      sum(match.fun(attr(dfs_1,"ldt")[[stat_list[i]]])
+    dfc[[paste("fract_", stat_list[i], "_1",agreement, "2", sep='')]] <- 
+      sum(match.fun(attr(dfs_1, agreement)[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
             abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
     # Calculate different of effect size between experiments
-    dfc[[paste("mean_diff_", stat_list[i], "_1ldt2", sep='')]] <-
+    dfc[[paste("mean_diff_", stat_list[i], "_1",agreement,"2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
       abs(dfc[[paste("exp1_mean_", stat_list[i],sep='')]])
   }
 
-  
+
   df_out <- cbind(df, dfc)
   
-  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1ldt2", sep='')]]))
+  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1",agreement, "2", sep='')]]))
     { save(list = ls(all.names = TRUE),
     file = "temp/quantify_population_config.RData",envir = environment())}
   
@@ -1257,7 +1260,8 @@ plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str,
 process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, 
-                                      stat_exclude_list= c("ldm", "rldm")) {
+                                      stat_exclude_list= c("ldm", "rldm"),
+                                      agreement = "ldt") {
   #' @description 
   #' 
   #' @param df_init dataframe of population param sets by row
@@ -1278,7 +1282,7 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
 
-  # save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
   # load(file = "temp/process_agreement_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
@@ -1290,7 +1294,8 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
   df_es <- quantify_population_configs(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
                                       include_bf = include_bf,parallel_sims = parallel_sims,
-                                      stat_exclude_list=stat_exclude_list)
+                                      stat_exclude_list=stat_exclude_list,
+                                      agreement = agreement)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
@@ -1304,7 +1309,7 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
     df_compare_string <- tibble(lt="Lesser", gt = "Greater")
     df_plotted <- 
       plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
-                             compare_string = df_compare_string[[attr(df_init,'df_ldt')[[gt_colname]]]],
+                             compare_string = df_compare_string[[attr(df_init,paste("df_",agreement,sep=""))[[gt_colname]]]],
                              y_ax_str = y_ax_str)
   }
   
@@ -1364,9 +1369,9 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
 }
 
 plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_path,
-                                     dir_to_agreement=1, alpha = 0.05) {
+                                     dir_to_better=1, alpha = 0.05) {
   #' @description Plot mean values across samples of candidate statistics versus 
-  #' a swept independent variable, and calculates correlation with pearson rho.
+  #' a swept independent variable, and calculates correlation with spearman rho.
   #' 
   #' @param df input dataframe of processed pop. params (returned from 
   #' process_agreement_contest)
@@ -1374,10 +1379,10 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   #' will be one of the agreement parameters
   #' @param fig_name base name of exported figure
   #' @param fig_path path of eported figure
-  #' @param dir_to_agreement which direction leads to higher agreements (+1,-1)
+  #' @param dir_to_better which direction leads to higher agreements (+1,-1)
   #' @param alpha confidence level
   #' 
-  #' @return df_mean_stat dataframe of pearson correlation and regression of each 
+  #' @return df_mean_stat dataframe of spearman correlation and regression of each 
   #' candidate statistics versus the indepdent variable.
   
   
@@ -1430,9 +1435,9 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
     theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
-  if (dir_to_agreement==1) {
-    gg <- gg + scale_x_reverse(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
-     (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))) )
+  if (dir_to_better==1) {
+    gg <- gg + scale_x_reverse(breaks=round(seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
+     (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))),2) )
   }else {
     gg<- gg+ scale_x_continuous(breaks=seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
                                            (max(df_means2[[indvar]]) - min(df_means2[[indvar]])))) 
@@ -1446,14 +1451,14 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   ## Examine correlation regression of candidate statistics to independent variable
   # Test: indvar must vary for correlation to be applied
   if (length(unique(df_means[[indvar]]))==1) {
-    simpleError("Indepedent variable does not change, so cannot perform pearson correlation")
+    simpleError("Indepedent variable does not change, so cannot perform spearman correlation")
   }
   
-  # Calculate pearson rho for the mean of each candidate stat versus independent var
+  # Calculate spearman rho for the mean of each candidate stat versus independent var
   df_mean_stat = tibble(variable = exp1_mean_vars, 
-                        pearson_rho=rep(NA,length(exp1_mean_vars)),
-                        pearson_rho_low=rep(NA,length(exp1_mean_vars)), 
-                        pearson_rho_high=rep(NA,length(exp1_mean_vars)), 
+                        spearman_rho=rep(NA,length(exp1_mean_vars)),
+                        spearman_rho_low=rep(NA,length(exp1_mean_vars)), 
+                        spearman_rho_high=rep(NA,length(exp1_mean_vars)), 
                         slope=rep(NA,length(exp1_mean_vars)), 
                         slope_low=rep(NA,length(exp1_mean_vars)),
                         slope_high=rep(NA,length(exp1_mean_vars)),
@@ -1463,23 +1468,35 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     # print(n)
     df_sub = subset(df_means, df_means$variable == exp1_mean_vars[n])
     
-    #Calculate pearson rho if stat varies, assign zero if not
+    #Calculate Spearman rho if stat varies, assign zero if not
     if (length(unique((abs(df_sub$mean_value)))) > 1) {
-      # Pearson correlation
-      ci_pearson = ci_cor(data.frame(y1 = abs(df_sub[[indvar]])*-dir_to_agreement, 
-                                     y2 = abs(df_sub$mean_value) ), 
-                          method = "pearson", type = "normal", 
-                          probs = c(alpha/length(exp1_mean_vars), 1-alpha/length(exp1_mean_vars)))
-      df_mean_stat$pearson_rho[n] = ci_pearson[[3]]
-      df_mean_stat$pearson_rho_low[n] = ci_pearson[[2]][1]
-      df_mean_stat$pearson_rho_high[n] = ci_pearson[[2]][2]
+      # Spearman correlation
+      tryCatch({
+      ci_spearman = ci_cor(x = abs(df_sub[[indvar]])*-dir_to_better, 
+                          y = abs(df_sub$mean_value), R = 1e5,
+                          method = "spearman", type = "bootstrap", boot_type = "basic", 
+                          probs = c(alpha/(2*length(exp1_mean_vars)), 
+                                    1-alpha/(2*length(exp1_mean_vars))))
+      ci_high = ci_spearman[[2]][2]
+      ci_low = ci_spearman[[2]][1]
+      ci_est = ci_spearman[[3]]
+      }, error = function(e) {if (e$message=="length(ci) == 2L is not TRUE") 
+        {ci_high <- 0; ci_low <- 0; ci_est <- 0}
+        else {stop("plot_stats_covary_indvar:ci_cor: unrecognized error")
+        }}
+      )
+      
+      
+      df_mean_stat$spearman_rho[n] = ci_est
+      df_mean_stat$spearman_rho_low[n] = ci_low
+      df_mean_stat$spearman_rho_high[n] = ci_high
     } else { 
-      df_mean_stat$pearson_rho[n]    <- 0
-      df_mean_stat$pearson_rho_low[n]  <- 0
-      df_mean_stat$pearson_rho_high[n] <- 0
+      df_mean_stat$spearman_rho[n]    <- 0
+      df_mean_stat$spearman_rho_low[n]  <- 0
+      df_mean_stat$spearman_rho_high[n] <- 0
     }
     # Linear regression
-    fit <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_agreement,
+    fit <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_better,
                                          y2 = abs(df_sub$mean_value)))
     conf_int <- confint(fit, "y1", level = 1-0.05/length(exp1_mean_vars))
     df_mean_stat$slope[n] = fit$coefficients[2]
@@ -1489,22 +1506,22 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   # Sort variable names and add pretty column
   df_mean_stat <- df_mean_stat[match(exp1_mean_vars, df_mean_stat$variable),]
   df_mean_stat$label <- factor(attr(df,"varnames_pretty"), levels = attr(df,"varnames_pretty"))
-  df_mean_stat$is_pearson_rho_sig <-  (df_mean_stat$pearson_rho_low<0 & df_mean_stat$pearson_rho_high<0) |
-    (df_mean_stat$pearson_rho_low>0 & df_mean_stat$pearson_rho_high>0)
+  df_mean_stat$is_spearman_rho_sig <-  (df_mean_stat$spearman_rho_low<0 & df_mean_stat$spearman_rho_high<0) |
+    (df_mean_stat$spearman_rho_low>0 & df_mean_stat$spearman_rho_high>0)
   df_mean_stat$is_slope_sig <-  (df_mean_stat$slope_low<0 & df_mean_stat$slope_high<0) |
     (df_mean_stat$slope_low>0 & df_mean_stat$slope_high>0)
 
-  ## Plot 95% confidence interval of pearson correlation in annotated plot
+  ## Plot 95% confidence interval of spearman correlation in annotated plot
   # __________________________________________________________________________
-  # Plot notations for positive and negative pearson rho
+  # Plot notations for positive and negative spearman rho
   # Labels of statistical significance for each group
   sig_labels = rep("",length(attr(df,"varnames")))
   sig_colors = rep("black",length(attr(df,"varnames")))
   sig_sizes = rep(4,length(attr(df,"varnames")))
   siff_vjust = rep(0,length(attr(df,"varnames")))
   # Set less than random to blue and
-  neg_ind <- sign(df_mean_stat$pearson_rho)==-1 & df_mean_stat$is_pearson_rho_sig
-  pos_ind <- sign(df_mean_stat$pearson_rho)==1 & df_mean_stat$is_pearson_rho_sig
+  neg_ind <- sign(df_mean_stat$spearman_rho)==-1 & df_mean_stat$is_spearman_rho_sig
+  pos_ind <- sign(df_mean_stat$spearman_rho)==1 & df_mean_stat$is_spearman_rho_sig
   
   sig_labels[neg_ind] =  "-"
   sig_colors[neg_ind] = rgb(47, 117, 181,maxColorValue = 255)
@@ -1514,12 +1531,12 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
   sig_labels[pos_ind] =  "+"
   sig_colors[pos_ind] = rgb(255, 0, 0,maxColorValue = 255)
   
-  # Plot pearson rho confidence intervals for each candidate stat  
-  gg <- ggplot(data = df_mean_stat, aes(x = label, y = pearson_rho)) + 
+  # Plot spearman rho confidence intervals for each candidate stat  
+  gg <- ggplot(data = df_mean_stat, aes(x = label, y = spearman_rho)) + 
     geom_point(shape=1, size=1) + ylim(-1,1) +
     geom_hline(yintercept=0,linetype="dashed") +
-    geom_linerange(aes(ymin = pearson_rho_low, ymax = pearson_rho_high)) +
-    ylab("Pearson's r") + xlab("Statistic") +
+    geom_linerange(aes(ymin = spearman_rho_low, ymax = spearman_rho_high)) +
+    ylab(expression(Spearman*"'"*s~rho)) + xlab("Statistic") +
     scale_x_discrete(labels= parse(text = as.character(df_mean_stat$label))) +
     geom_text(y = 1.17+siff_vjust, aes(label = sig_labels), 
               color = sig_colors, size = sig_sizes, vjust=0.5, hjust=0.5) +

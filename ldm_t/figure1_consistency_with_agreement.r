@@ -23,7 +23,7 @@ source("R/aces.R")
 source("R/agreement_contests.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
-base_dir = "mdm_t"
+base_dir = "ldm_t"
 fig_num = "1" 
 fig_path = paste(base_dir,"/figure/F",fig_num, sep="")
 dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
@@ -44,14 +44,14 @@ include_bf = TRUE
 #
 #-------------------------------------------------------------------------------
 
-# Unscaled Mu: spearman rho of abs(mu_d1) versus abs(mean of each stat)
+# Unscaled Mu: Pearson rho of abs(mu_d1) versus abs(mean of each stat)
 #------------------------------------------------------------------------------
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
-mus_d_vect = seq(5.00, .1,-0.25)
+mus_d_vect = seq(.1,4.85,0.25)
 mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
-sigmas_ab_vect = 1e-4
+sigmas_ab_vect = .001
 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
@@ -71,15 +71,16 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = TRUE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path, is_plotted = FALSE)
+                                    fig_path = fig_path, is_plotted = FALSE,
+                                    stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_mu_spearman <- 
+df_mu_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "mu_1dm",  indvar_pretty = "mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_better = 1)
 
 
-# Unscaled Sigma: spearman rho of sigma versus abs(mean of each stat)
+# Unscaled Sigma: Pearson rho of sigma versus abs(mean of each stat)
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
 sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
@@ -103,15 +104,16 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "sigma[D]",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-                                         fig_path = fig_path, is_plotted = FALSE)
+                                         fig_path = fig_path, is_plotted = FALSE,
+                                         stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_sigma_spearman <- 
+df_sigma_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "sigma_1d", indvar_pretty = "sigma[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_better = 1)
 
 
-# Unscaled Sample Size:   spearman rho of sigma versus abs(mean of each stat)
+# Unscaled Sample Size:   Pearson rho of sigma versus abs(mean of each stat)
 # Sweep sigma_1d, mu_1d = 10
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
@@ -136,9 +138,10 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                       y_ax_str = "df[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
-                                      fig_path = fig_path, is_plotted = FALSE)
+                                      fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_df_spearman <- 
+df_df_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "df_1d",indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_better = -1)
@@ -146,19 +149,19 @@ df_df_spearman <-
 # Unscaled Alpha:   increasing alpha increases agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-alpha_1 = 0.05/seq(1, 20,1)
-alpha_2 = 0.05/seq(1, 20,1)
+alpha_1 = 0.05/seq(20, 1,-1)
+alpha_2 = 0.05/seq(20, 1,-1)
 n_sims = length(alpha_1)
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_alpha", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 20, 
                                    sigmas_1a = 1, 
-                                   mus_1b  = 20, 
+                                   mus_1b  = 40, 
                                    sigmas_1b = 1,
                                    mus_2a  = 10, 
                                    sigmas_2a = 1, 
-                                   mus_2b  = 10,  
+                                   mus_2b  = 20,  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = alpha_1,
@@ -169,12 +172,13 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
-                                      fig_path = fig_path, is_plotted = FALSE)
+                                      fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_alpha_spearman <- 
+df_alpha_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "alpha_1",  indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = -1)
+                           fig_path = fig_path,  dir_to_better = 1)
 
 
 
@@ -188,7 +192,7 @@ df_alpha_spearman <-
 # Relative Mean:  decreasing rmu has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-mus_a_vect =  seq(10,20*10,0.2*10); n_sims = length(mus_a_vect) 
+mus_a_vect =  seq(20*10, 10,-0.2*10); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+10
 sigmas_ab_vect = 0.1*mus_a_vect 
 gt_colnames = "is_mudm_1ldt2"
@@ -210,9 +214,10 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-                                         fig_path = fig_path, is_plotted = FALSE)
+                                         fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_rmu_spearman <-
+df_rmu_pearson <-
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "rmu_1dm", indvar_pretty = "r*mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_better = 1)
@@ -242,9 +247,10 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
-                                         fig_path = fig_path, is_plotted = FALSE)
+                                         fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_rsigma_spearman <- 
+df_rsigma_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "rsigma_1d", indvar_pretty = "r*sigma[DM]", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, dir_to_better = 1)
@@ -276,13 +282,14 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                       y_ax_str = "sigma[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
-                                      fig_path = fig_path, is_plotted = FALSE)
+                                      fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_rdf_spearman <- 
+df_rdf_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "df_1d", indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path,  dir_to_better = -1)
-# 
+
 
 # Relative Alpha:   increasing alpha increases agreement
 #------------------------------------------------------------------------------
@@ -309,12 +316,13 @@ df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames,
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
-                                      fig_path = fig_path, is_plotted = FALSE)
+                                      fig_path = fig_path, is_plotted = FALSE,
+                                      stat_exclude_list = NULL)
 # Plot stat values over independent variable
-df_ralpha_spearman <- 
+df_ralpha_pearson <- 
   plot_stats_covary_indvar(df = df_esize$df_es, indvar = "alpha_1", indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = -1)
+                           fig_path = fig_path,  dir_to_better = 1)
 
 
 
@@ -348,16 +356,16 @@ add_underline <- function(cells,lwd){
 
 # Unscaled Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_mu_spearman$spearman_rho, df_sigma_spearman$spearman_rho,
-               df_df_spearman$spearman_rho, df_alpha_spearman$spearman_rho)
-scores_sig = cbind(df_mu_spearman$is_spearman_rho_sig, df_sigma_spearman$is_spearman_rho_sig,
-                   df_df_spearman$is_spearman_rho_sig, df_alpha_spearman$is_spearman_rho_sig)
+scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
+               df_df_pearson$pearson_rho, df_alpha_pearson$pearson_rho)
+scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
+                   df_df_pearson$is_pearson_rho_sig, df_alpha_pearson$is_pearson_rho_sig)
 # Zero color to white for fields that are not statistically significant
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0
 
-png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_spearman_unscaled_units.png",sep=""),    
-    width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_unscaled_units.png",sep=""),    
+    width = 1.9*300, height = 2.35*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5)},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(200,200),sepcolor="white",
@@ -372,16 +380,16 @@ dev.off()
 
 # Relative Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_rmu_spearman$spearman_rho, df_rsigma_spearman$spearman_rho,
-               df_rdf_spearman$spearman_rho, df_ralpha_spearman$spearman_rho)
-scores_sig = cbind(df_rmu_spearman$is_spearman_rho_sig, df_rsigma_spearman$is_spearman_rho_sig,
-                   df_rdf_spearman$is_spearman_rho_sig, df_ralpha_spearman$is_spearman_rho_sig)
+scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
+               df_rdf_pearson$pearson_rho, df_ralpha_pearson$pearson_rho)
+scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
+                   df_rdf_pearson$is_pearson_rho_sig, df_ralpha_pearson$is_pearson_rho_sig)
 # Zero color to white for fields that are not statistically significant
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0
 
-png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_spearman_relative_scale_units.tif",sep=""),    
-    width = 1.75*300, height = 2*300, res = 300, pointsize = 8)  
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_pearson_relative_scale_units.tif",sep=""),    
+    width = 1.9*300, height = 2.35*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5);},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),

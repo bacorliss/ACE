@@ -136,13 +136,9 @@ row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
 }
 
 row_mdm <- function(m_c, m_e, conf.level) {
-  # browser();
-  
-  # mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_tdist(m_e[i,], m_c[i,], conf.level = conf.level))
   mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_credint(m_e[i,], m_c[i,],
           conf.level = conf.level, relative = FALSE))
-  # mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_confint(m_e[i,], m_c[i,],
-  #         conf.level = conf.level, relative = FALSE))
+
   return(mdm)
 }
 
@@ -157,18 +153,22 @@ row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95) {
   #' @param m_e experiment group
   #' 
   #' @return vector of rmdm values, one for each row of m_c and m_e
-  
-    # rmdms <- sapply(1:dim(m_c)[1], function(i)
-    # rmdm_tdist(x = m_c[i,], y = m_e[i,], conf.level = conf.level,
-    #                   method = "fieller"))
-    
     rmdms <-  sapply(1:dim(m_c)[1], function(i)
       mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
-    
-  # rmdms <-  sapply(1:dim(m_c)[1], function(i)
-  #   mdm_confint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
-   
   return(rmdms)
+}
+
+row_ldm <- function(m_c, m_e, conf.level) {
+  ldm <- sapply(1:dim(m_c)[1], function(i)  
+    ldm_credint(m_e[i,], m_c[i,], conf.level = conf.level, relative = FALSE))
+  
+  return(ldm)
+}
+
+row_rldm <- function(m_c, m_e, conf.level = 0.95) {
+  rldms <-  sapply(1:dim(m_c)[1], function(i)
+    ldm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+  return(rldms)
 }
 
 
@@ -189,10 +189,6 @@ row_bayesf_2s <- function(m_c, m_e, parallelize = FALSE, paired = FALSE) {
 }
 
 
-row_ldm_2s_zdist <- function(m_c, m_e, conf.level = 0.95) {
-  ldm <- sapply(1:dim(m_c)[1], function(i)  lacb_tdist_2sample(x=m_c[i,], y=m_e[i,], conf.level = conf.level))
-  return(ldm)
-}
 
 row_tost_2s_slow <- function (m_c,m_e) {
   
@@ -371,13 +367,13 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$rmdm <- "r*delta[M]"
   
   # 11) Least Difference in Means
-  df$ldm = row_ldm_2s_zdist(x_a, x_b, conf.level=conf.level)
+  df$ldm = row_ldm(x_a, x_b, conf.level = conf.level)
   df_ldt$ldm <- "<"
   df_hat$ldm <- ">"
   df_pretty$ldm <- "delta[L]"
   
   # 12) Relative Least Difference in Means
-  df$rldm = df$ldm / rowMeans(x_a)
+  df$rldm = row_rldm(x_a, x_b, conf.level = conf.level)
   df_ldt$rldm <- "<"
   df_hat$rldm <- ">"
   df_pretty$rldm <- "r*delta[L]"
