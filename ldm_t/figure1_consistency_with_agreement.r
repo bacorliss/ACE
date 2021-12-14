@@ -356,10 +356,10 @@ add_underline <- function(cells,lwd){
 
 # Unscaled Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_mu_pearson$pearson_rho, df_sigma_pearson$pearson_rho,
-               df_df_pearson$pearson_rho, df_alpha_pearson$pearson_rho)
-scores_sig = cbind(df_mu_pearson$is_pearson_rho_sig, df_sigma_pearson$is_pearson_rho_sig,
-                   df_df_pearson$is_pearson_rho_sig, df_alpha_pearson$is_pearson_rho_sig)
+scores = cbind(df_mu_pearson$spearman_rho, df_sigma_pearson$spearman_rho,
+               df_df_pearson$spearman_rho, df_alpha_pearson$spearman_rho)
+scores_sig = cbind(df_mu_pearson$is_spearman_rho_sig, df_sigma_pearson$is_spearman_rho_sig,
+                   df_df_pearson$is_spearman_rho_sig, df_alpha_pearson$is_spearman_rho_sig)
 # Zero color to white for fields that are not statistically significant
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0
@@ -380,10 +380,10 @@ dev.off()
 
 # Relative Heatmap Summary
 #-------------------------------------------------------------------------------
-scores = cbind(df_rmu_pearson$pearson_rho, df_rsigma_pearson$pearson_rho,
-               df_rdf_pearson$pearson_rho, df_ralpha_pearson$pearson_rho)
-scores_sig = cbind(df_rmu_pearson$is_pearson_rho_sig, df_rsigma_pearson$is_pearson_rho_sig,
-                   df_rdf_pearson$is_pearson_rho_sig, df_ralpha_pearson$is_pearson_rho_sig)
+scores = cbind(df_rmu_pearson$spearman_rho, df_rsigma_pearson$spearman_rho,
+               df_rdf_pearson$spearman_rho, df_ralpha_pearson$spearman_rho)
+scores_sig = cbind(df_rmu_pearson$is_spearman_rho_sig, df_rsigma_pearson$is_spearman_rho_sig,
+                   df_rdf_pearson$is_spearman_rho_sig, df_ralpha_pearson$is_spearman_rho_sig)
 # Zero color to white for fields that are not statistically significant
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0

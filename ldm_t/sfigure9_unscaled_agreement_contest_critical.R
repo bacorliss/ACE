@@ -50,7 +50,7 @@ df_unscaled_crit = list();
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_mudm_1hat2"
+gt_colnames = "is_mudm_1lat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 20, 
@@ -76,14 +76,14 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path,gt_colnames=gt_colnames,
-                                   agreement = "hat")
+                                   agreement = "lat")
 df_unscaled_crit[[1]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "abs(~mu[DM]*phantom(.))",
                                                    include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path,
                                                    stat_exclude_list = NULL,
-                                                   agreement = "hat")
+                                                   agreement = "lat")
 
 
 
@@ -120,7 +120,8 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                   fig_path = fig_path,gt_colnames=gt_colnames)  
+                                   fig_path = fig_path,gt_colnames=gt_colnames,
+                                   agreement = "lat")  
 df_unscaled_crit[[2]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "sigma[D]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
@@ -163,7 +164,8 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_alpha_12 = FALSE,
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path, gt_colnames=gt_colnames)  
+                                   fig_path = fig_path, gt_colnames=gt_colnames,
+                                   agreement = "lat") 
 df_unscaled_crit[[3]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]",
                                                    include_bf = include_bf, parallel_sims = TRUE,
@@ -213,7 +215,8 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_alpha_12 = TRUE,
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path, gt_colnames=gt_colnames)  
+                                   fig_path = fig_path, gt_colnames=gt_colnames,
+                                   agreement = "lat")  
 df_unscaled_crit[[4]] <-
   process_agreement_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
@@ -265,7 +268,8 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_alpha_12 = TRUE,
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames) 
+                                   gt_colnames=gt_colnames,
+                                   agreement = "lat")
 df_unscaled_crit[[5]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,

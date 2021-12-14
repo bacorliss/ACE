@@ -386,6 +386,13 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_li
   df_pretty$rand <- "Rnd"
   
   
+  # t_statistic
+  
+  # t_critical
+  
+  # t_ratio: t_statistic/t_ratio
+  
+  
   # Drop any statistics requested by user
   df <- df[ , !(names(df) %in% stat_exclude_list)]
   df_ldt <- df_ldt[ , !(names(df_ldt) %in% stat_exclude_list)]
