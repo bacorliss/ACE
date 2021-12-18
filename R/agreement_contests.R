@@ -857,7 +857,7 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
                , x=0, y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
-  save_plot(paste(fig_path, '/t_ratio_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+  save_plot(paste(fig_path, '/predicted_t-ratio_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
   
 }
@@ -922,6 +922,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
       }
       df <- bind_rows(df_list)
     }
+    # browser();
     
     # Save dataframe results to a file
     saveRDS(df, file = paste(out_path,'/', data_file_name, sep=""))
@@ -999,7 +1000,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
     dfc[[paste("exp12_nincluded_", stat_list[i],sep='')]] <- sum(!is.nan(dfs_1[[stat_list[i]]]) & !is.nan(dfs_2[[stat_list[i]]]))
   }
 
- 
+  
   # Compare magnitude and difference with each statistic between exp 1 and exp 2
   # Use decision rules that are defined in row_stats_toolbox, stored as attributes 
   # to dfs_1 and dfs_2
@@ -1027,7 +1028,19 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   user_attr <- attr(dfs_1,"user_attributes")
   for (i in seq_along(user_attr)) {attr(df_out,user_attr[i])<-attr(dfs_1,user_attr[i])}
   
+  # Record average t-ratio for the samples generated
+  # Simulations need to cover the parameter space
+  # We define the parameter space is how "null" the results are, and use the
+  # t-ratio to measure
+  t_scores_1 <- row_tscore_2s(x_1a, x_1b)
+  t_crits_1 <- qt(p = df$alpha_1, df = df$n_1a + df$n_1b -1, lower.tail = TRUE) 
+  t_scores_2 <- row_tscore_2s(x_2a, x_2b)
+  t_crits_2 <- qt(p = df$alpha_2, df = df$n_2a + df$n_2b - 1, lower.tail = TRUE) 
+  df_out$exp1_t_ratio_mean <- mean(t_scores_1/t_crits_1)
+  df_out$exp2_t_ratio_mean <- mean(t_scores_2/t_crits_2)
+
   
+  # browser()
   # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
   # # load(file = "temp/quantify_population_config.RData")
   
@@ -1257,6 +1270,43 @@ plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str,
   
 }
 
+
+plot_mean_t_ratio_samples <- function(df_init, fig_path,fig_name) {
+  
+  save(list = ls(all.names = TRUE), file = "temp/plot_mean_t_ratio_samples.RData",envir = environment())
+  # load(file = "temp/plot_mean_t_ratio_samples.RData")
+  
+  # Plot histogram of t_stat/t_critical to demonstrate how far from zero D is
+  df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
+              t_ratio = c(df_init$exp1_t_ratio_mean, df_init$exp2_t_ratio_mean))
+  p <- ggplot(data=df, aes(x = t_ratio, y = t_ratio, fill = group)) +
+    geom_histogram(aes(y=stat(count / sum(count))), position = "identity", 
+                   alpha=0.25, bins = 30) +
+    geom_vline(xintercept = -1,linetype = "dashed") +
+    geom_vline(xintercept = 1, linetype = "dashed") +
+    xlab( expression(bar(t)[stat]*phantom(.)/phantom(.)*abs(phantom(.)*t[crit]*phantom(.)))) +
+    ylab( "Freq.") +
+    theme_classic(base_size = 8) +
+    theme(legend.position = "none") +  
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),expand = c(0, 0))
+  ymax <- max(ggplot_build(p)$data[[1]]$ymax)
+  # KS Test between both groups as they are plotted to see if hist. are different
+  fill_id <- levels(as.factor(ggplot_build(p)$data[[1]]$fill))
+  ks_p_val <- ks.test(subset(ggplot_build(p)$data[[1]], fill == fill_id[1])$y, 
+                      subset(ggplot_build(p)$data[[1]], fill == fill_id[2])$y, 
+                      alternative = "two.sided", exact = FALSE)
+  p <- p + expand_limits(y = c(0, 1.1* ymax)) + 
+    annotate("label",label=ifelse(ks_p_val$p.value>0.05, 
+                                  sprintf('p = %.3f', ks_p_val$p.value),
+                                  sprintf('p = %.2e', ks_p_val$p.value))
+             , x=0, y=1.07*ymax, 
+             size=2, fill = "white",label.size = NA)
+  # print(p)
+  save_plot(paste(fig_path, fig_name, sep = ""), p, ncol = 1, nrow = 1, 
+            base_height = 1.5, base_asp = 3, base_width = 1.2, dpi = 600)
+  
+}
+
 process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, 
@@ -1312,6 +1362,9 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
       plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
                              compare_string = df_compare_string[[attr(df_init,paste("df_",agreement,sep=""))[[gt_colname]]]],
                              y_ax_str = y_ax_str)
+    
+    plot_mean_t_ratio_samples(df = df_es, fig_path = fig_path, fig_name = paste("t-ratio_", fig_name, sep=""))
+      
   }
   
   # Package dataframes throughout processing into single list for return
