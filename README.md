@@ -1,5 +1,9 @@
 # Analysis of Conservative Effects (ACE)
-## Research repository for the most and least differnece in means
+## Code repository for research code for calculating the following statistics
+1. Most difference in means (d<sub>m</sub>)
+1. Relative Most difference in means (rd<sub>m</sub>)
+1. Least difference in means (d<sub>L</sub>)
+1. Relative least difference in means (rd<sub>L</sub>)
 
 Note: run "set_wd_here.R" in base directoy first to set working directory to the base folder for the repository. All code assumes that is the location for the workign directory.
 
