@@ -16,7 +16,7 @@ p_load(RColorBrewer)
 p_load(dplyr)
 p_load(cowplot)
 
-source("R/credibility_testing.R")
+source("R/credibility_rate_toolbox.R")
 
 
 

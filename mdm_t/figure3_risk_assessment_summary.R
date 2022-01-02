@@ -1,13 +1,9 @@
 
 
 
-#' Collate agreement contests for unscaled and relative agreement,
-#' Where the comparison error is calculated for each candidate statistic in a 
-#' series of investigations where only one agreemen parameter is varied as 
-#' Indepedent variable.
-#' Runs each investigation if the output data does not exist.
-#' DIsplays comparison error rates in a heatmap table, with error rates normalized
-#' to an apriori selected gold standard 
+#' Runs a collection of risk assessments for test how often each candidate statistic 
+#' incorrectly predicts which of two results have greater noteworthiness (higher
+#' evidence of practical significance)
 
 if (!require("pacman")) {install.packages("pacman")}; library(pacman)
 p_load(ggplot2)
@@ -53,12 +49,12 @@ add_underline <- function(cells,lwd){
 
 if (!file.exists(file.path(data_path, "df_unscaled_null.RDS"))) {
   print("SFig 8: unscaled agreement contest null")
-  source(file.path(base_dir, "sfigure8_unscaled_agreement_contest_null.R"))
+  source(file.path(base_dir, "sfigure8_unscaled_risk_assessment_null.R"))
   } else {load(file = file.path(data_path, "df_unscaled_null.RDS"))}
 
 if (!file.exists(file.path(data_path, "df_unscaled_crit.RDS"))) {
   print("SFig 9: unscaled agreement contest crit")
-  source(file.path(base_dir, "sfigure9_unscaled_agreement_contest_critical.R"))
+  source(file.path(base_dir, "sfigure9_unscaled_risk_assessment_critical.R"))
   } else {load(file = file.path(data_path, "df_unscaled_crit.RDS"))}
 
 
@@ -83,7 +79,7 @@ scale_score_norm <- sapply(scale_norm_ind, function(ind,len)
 # Zero color to white for fields that are not statistically significant
 zeroed_scale_scores <- scale_scores
 zeroed_scale_scores[!scale_scores_sig] <- 0
-png(paste(sum_fig_path, "/F", fig_num, "_disagreement_contest raw scale.png",sep=""),    
+png(paste(sum_fig_path, "/F", fig_num, "_disrisk_assessment raw scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scale_scores_sig,1.5);}, # makeRects(scale_score_norm,1.5)}, 
@@ -105,12 +101,12 @@ dev.off()
 
 if (!file.exists(file.path(data_path, "df_relative_null.RDS"))) {
   print("SFig 10: relative agreement contest null")
-  source(file.path(base_dir, "sfigure10_relative_agreement_contest_null.R"))
+  source(file.path(base_dir, "sfigure10_relative_risk_assessment_null.R"))
   } else {load(file = file.path(data_path, "df_relative_null.RDS"))}
 
 if (!file.exists(file.path(data_path, "df_relative_crit.RDS"))) {
   print("SFig 11: relative agreement contest crit")
-  source(file.path(base_dir, "sfigure11_relative_agreement_contest_crit.R"))
+  source(file.path(base_dir, "sfigure11_relative_risk_assessment_crit.R"))
   } else {load(file = file.path(data_path, "df_relative_crit.RDS"))}
 
 fig_num = "2" 
@@ -142,7 +138,7 @@ rscale_score_norm <- sapply(relative_norm_ind, function(ind,len)
 # Zero color to white for fields that are not statistically significant
 zeroed_rscale_scores <- rscale_scores
 zeroed_rscale_scores[!rscale_scores_sig] <- 0
-png(paste(sum_fig_path,"/F", fig_num, "_disagreement_contest relative scale.png",sep=""),    
+png(paste(sum_fig_path,"/F", fig_num, "_disrisk_assessment relative scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(rscale_scores_sig,1.5);}, # makeRects(rscale_score_norm,1.5)}, 
