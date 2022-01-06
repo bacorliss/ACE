@@ -1,5 +1,5 @@
 # Analysis of Conservative Effects (ACE)
-Official repository for (https://arxiv.org/abs/2201.01239) found at a different repository: https://github.com/bac7wj/ACES <p>
+The official repository for (https://arxiv.org/abs/2201.01239) is found at a different repository: https://github.com/bac7wj/ACES <p>
 This repository is under continuous development for research. <p>
 This repository contains code necessary to compute the following statistics <p>
 1. Most difference in means (&delta;<sub>M</sub>)
@@ -10,14 +10,14 @@ This repository contains code necessary to compute the following statistics <p>
 Note: run "set_wd_here.R" in base directoy first to set working directory to the base folder for the repository. All code assumes that is the location for the workign directory.
 
 Folder Structure
-1. __R/__: general r code for calculating mdm, ldm, agreement contests, row effect size metrics etc.
+1. __R/__: general r code for calculating statistics, integrated risk analysis, and correlation tests
    1. __aces.R__: functions to calculate most difference in means and least difference in means statistics
    2. __agreement_contests.R__: simulation toolbox to test candidate measures in identifying experiments with higher agreement
    3. __coverage_error_toolbox.R__: simulation toolbox to test coverage error of mdm and rmdm (coverage error is the complement of coverage probability used for confidence intervals, code tests how often the mdm and rmdm is wrongly less than the pop. difference in means and rel. differnece in means).
    4. __credibility_rate_toolbox.R__: simulation toolbox to test coverage error of mdm and rmdm (coverage error is the complement of coverage probability used for confidence intervals, code tests how often the mdm and rmdm is wrongly less than the pop. difference in means and rel. differnece in means).
    5. __parallel_utils.R__: helper functions for parallel processing.
    6. __row_stats_toolbox.R__: helper functions for parallel processing.
-3. __mdm_t/__: scripts used to generate figures for the most difference 
+3. __mdm_t/__: scripts used to generate figures for &delta;<sub>M</sub> and r&delta;<sub>M</sub> manuscript (https://arxiv.org/abs/2201.01239)
    1. __figure1_intro_example.R__: A series of examples to illustrate the three parameters of unscaled agreement and relative agreement. Each example compares the difference in means or relative difference in means between a hypothetical control and experiment group.
    2. __figure2_covary_with_disagreement_SF2-5.R__: Sample a series of population parameter configurations of a control and experiment group where one parameter of agreement is swept towards increasing disagreement. Candidate statistics means are calculated based on repeated samples. Correlation between mean value of each statistic and the agreement parameters are calculated and visualized in a heat map table. 
    3. __figure2_illustrative_disagreement_examples.R__: A series of examples to illustrate the three parameters of unscaled agreement and relative agreement. Each example compares the difference in means or relative difference in means between a hypothetical control and experiment group.
