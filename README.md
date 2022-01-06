@@ -1,11 +1,11 @@
 # Analysis of Conservative Effects (ACE)
 Official repository for (https://arxiv.org/abs/2201.01239) found at a different repository: https://github.com/bac7wj/ACES <p>
 This repository is under continuous development for research. <p>
-Code repository for research code for calculating the following statistics. 
-1. Most difference in means (d<sub>m</sub>)
-2. Relative Most difference in means (rd<sub>m</sub>)
-3. Least difference in means (d<sub>L</sub>)
-4. Relative least difference in means (rd<sub>L</sub>)
+This repository contains code necessary to compute the following statistics <p>
+1. Most difference in means (&delta;<sub>M</sub>)
+2. Relative most difference in means (r&delta;<sub>M</sub>)
+3. Least difference in means (&delta;<sub>L</sub>)
+4. Relative Least difference in means (r&delta;<sub>L</sub>)
 
 Note: run "set_wd_here.R" in base directoy first to set working directory to the base folder for the repository. All code assumes that is the location for the workign directory.
 
