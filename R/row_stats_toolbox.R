@@ -245,26 +245,14 @@ row_tost_2s <- function (m_c,m_e,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.l
 
 
 ## Test data
-# # 
-m_c = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
-m_e = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
-# 
-# # Z score and test
-# z = rowzScore(m_c, m_e)
-# p_row_ztest = 2*pnorm(-abs(z))
-# p_actual_ztest = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$p.value)
-# 
-# # t score and test
-# t = rowtScore(m_c, m_e)
-# p_a = 2*pt(-abs(t), df = 98)
-# 
-# t_formal = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$stat)
-# p_formal = sapply(1:nrow(m_c),function(x) t.test(m_c[x,],m_e[x,])$p.value)
+# m_c = matrix(rnorm(1000, mean=10, sd=1), ncol = 50, nrow=20)
+# m_e = matrix(rnorm(1000, mean=15, sd=1), ncol = 50, nrow=20)
 
 
 
 
-quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, stat_exclude_list=NULL, conf.level = 0.95) {
+quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, 
+                               stat_exclude_list=NULL, conf.level = 0.95) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 

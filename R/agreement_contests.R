@@ -234,7 +234,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df_ldt$is_alpha_1ldt2 <- "gt"
   # Higher significance level, higher disagreement
   df$is_alpha_1lat2     <- df$alpha_1 > df$alpha_2
-  df_lat$is_alpha_1ldt2 <- "gt" 
+  df_lat$is_alpha_1lat2 <- "gt" 
   
   # Critical t value of difference in means
   df$tstat_1dm <- df$mu_1dm / df$sigma_1dm
@@ -296,6 +296,14 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$mean_rmud_2m1 <- (df$mu_2dm/df$mu_2a) - (df$mu_1dm/df$mu_1a)
   df$mean_sigmadm_2m1 <- df$sigma_2dm - df$sigma_1dm
   df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
+  
+  # Caclulate Power
+  df$power_1 <- pwr.t2n.test(n1 = df$n_1a, n2 = df$n_1a, d = df$mu_1d/df$sigma_1dm, 
+                             sig.level = df$alpha_1, power = NULL,
+                             alternative = "two.sided")$power
+  df$power_2 <- pwr.t2n.test(n1 = df$n_2a, n2 = df$n_2a, d = df$mu_2d/df$sigma_2dm, 
+                             sig.level = df$alpha_2, power = NULL,
+                             alternative = "two.sided")$power
   
   attr(df,"df_ldt") <- df_ldt
   attr(df,"df_lat") <- df_lat
