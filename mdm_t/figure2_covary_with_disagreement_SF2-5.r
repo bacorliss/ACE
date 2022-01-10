@@ -1,9 +1,9 @@
 
 
 
-#' Sample a series of population parameter sets of a control and experiment group
+#' Sample a series of population parameter configurations of a control and experiment group
 #' where one parameter of agreement is swept towards increasing disagreement. 
-#' Candidate statistics are quantified based on repeated samples.
+#' Candidate statistics means are calculated based on repeated samples.
 #' Correlation between mean value of each statistic and the agreement parameters 
 #' are calculated and visualized in a heat map table. 
 

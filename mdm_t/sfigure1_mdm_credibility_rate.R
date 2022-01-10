@@ -16,7 +16,7 @@ p_load(RColorBrewer)
 p_load(dplyr)
 p_load(cowplot)
 
-source("R/credibility_testing.R")
+source("R/credibility_rate_toolbox.R")
 
 
 
@@ -24,7 +24,7 @@ source("R/credibility_testing.R")
 #-------------------------------------------------------------------------------
 base_dir = "mdm_t"
 # Script Parameters
-fig_num = "5"
+fig_num = "4"
 fig_path = file.path(getwd(), paste(base_dir, "/figure/SF",fig_num,sep=""))
 dir.create(fig_path, showWarnings = FALSE,recursive = TRUE)
 n_samples <- 1e3
@@ -52,10 +52,10 @@ n_samples <- 5*250/alpha
 # Run simulations calculating error of mdm with mu and sigma swept
 df_results <- 
   process_cred_intervals(xbars_a = 100, sds_a = sds_a, n_a = n_obs, 
-                         xbars_b = 100 + xbars_dm, sds_b = sds_b, n_b = n_obs, alpha = alpha,
-                         n_samples = n_samples, out_path = paste(fig_path, "/mdm_cred_xbar_vs_s.rds",sep=""),
-                         overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                         stat_name = "rmdm", method = "montecarlo")
+                        xbars_b = 100 + xbars_dm, sds_b = sds_b, n_b = n_obs, alpha = alpha,
+                        n_samples = n_samples, out_path = paste(fig_path, "/mdm_cred_xbar_vs_s.rds",sep=""),
+                        overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
+                        stat_name = "mdm", method = "montecarlo")
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#
@@ -98,7 +98,7 @@ df_results <-
                          xbars_b = 100 + xbars_dm, sds_b = sds_b, n_b = n_obs, alpha = alpha,
                          n_samples = n_samples, out_path = paste(fig_path, "/mdm_cred_xbar_vs_s.rds",sep=""),
                          overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                         stat_name = "rmdm", method = "montecarlo")
+                         stat_name = "mdm", method = "montecarlo")
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#
@@ -140,7 +140,7 @@ df_results <-
                          xbars_b = 100 + xbars_dm, sds_b = sds_b, n_b = n_obs, alpha = alpha,
                          n_samples = n_samples, out_path = paste(fig_path, "/mdm_cred_xbar_vs_s.rds",sep=""),
                          overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                         stat_name = "rmdm", method = "montecarlo")
+                         stat_name = "mdm", method = "montecarlo")
 
 # 1A: Error rate of MDM < mu
 #------------------------------------------------------------------------------#
@@ -194,15 +194,15 @@ for (n in seq(1, length(alphas))) {
                            xbars_b = 100 + xbars_dm, sds_b = sds_b, n_b = n_obs, alpha = alphas[n],
                            n_samples = n_samples[n], out_path = paste(fig_path, "/mdm_cred_xbar_vs_s.rds",sep=""),
                            overwrite=overwrite, is_parallel_proc = TRUE, raw_error = TRUE, rel_error = FALSE,
-                           stat_name = "rmdm", method = "montecarlo")
+                           stat_name = "mdm", method = "montecarlo")
   cred_rate$mean[n] = mean(df_results$cred_rate) 
   cred_rate$std[n] = sd(df_results$cred_rate)
   cred_rate$n[n] = prod(dim(df_results$cred_rate))
 }
 
-save(list = ls(all.names = TRUE), file = "temp/sfigrue5_rmdm_credibility.RData",
+save(list = ls(all.names = TRUE), file = "temp/sfigrue4_mdm_credibility.RData",
      envir = environment())
-load(file = "temp/sfigrue5_rmdm_credibility.RData")
+load(file = "temp/sfigrue4_mdm_credibility.RData")
 cred_rate$conf.level = 1-alphas
 
 
@@ -213,7 +213,7 @@ gg<- ggplot(cred_rate, aes(conf.level, mean)) +
   theme_classic(base_size=8) 
 gg
 save_plot(paste(fig_path, "/", fig_num, "_1a mdm error rates.tiff",sep=""),
-          gg, ncol = 1, nrow = 1, base_height = 2.2,
+          gg, ncol = 1, nrow = 1, base_height = 1.6,
           base_asp = 3, base_width = 2, dpi = 600) 
 ft <- lm(mean~0+conf.level, data = cred_rate)
 summary(ft)
