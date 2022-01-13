@@ -298,12 +298,12 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$mean_rsigmadm_2m1 <- df$sigma_2dm/df$mu_2a - df$sigma_1dm/df$mu_1a
   
   # Caclulate Power
-  df$power_1 <- pwr.t2n.test(n1 = df$n_1a, n2 = df$n_1a, d = df$mu_1d/df$sigma_1dm, 
-                             sig.level = df$alpha_1, power = NULL,
-                             alternative = "two.sided")$power
-  df$power_2 <- pwr.t2n.test(n1 = df$n_2a, n2 = df$n_2a, d = df$mu_2d/df$sigma_2dm, 
-                             sig.level = df$alpha_2, power = NULL,
-                             alternative = "two.sided")$power
+  # df$power_1 <- pwr.t2n.test(n1 = df$n_1a, n2 = df$n_1a, d = df$mu_1d/df$sigma_1dm, 
+  #                            sig.level = df$alpha_1, power = NULL,
+  #                            alternative = "two.sided")$power
+  # df$power_2 <- pwr.t2n.test(n1 = df$n_2a, n2 = df$n_2a, d = df$mu_2d/df$sigma_2dm, 
+  #                            sig.level = df$alpha_2, power = NULL,
+  #                            alternative = "two.sided")$power
   
   attr(df,"df_ldt") <- df_ldt
   attr(df,"df_lat") <- df_lat

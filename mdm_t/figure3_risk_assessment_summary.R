@@ -49,12 +49,12 @@ add_underline <- function(cells,lwd){
 
 if (!file.exists(file.path(data_path, "df_unscaled_null.RDS"))) {
   print("SFig 8: unscaled agreement contest null")
-  source(file.path(base_dir, "sfigure8_unscaled_risk_assessment_null.R"))
+  source(file.path(base_dir, "sfigure6-7_unscaled_risk_assessment_null.R"))
   } else {load(file = file.path(data_path, "df_unscaled_null.RDS"))}
 
 if (!file.exists(file.path(data_path, "df_unscaled_crit.RDS"))) {
   print("SFig 9: unscaled agreement contest crit")
-  source(file.path(base_dir, "sfigure9_unscaled_risk_assessment_critical.R"))
+  source(file.path(base_dir, "sfigure8-9_unscaled_risk_assessment_critical.R"))
   } else {load(file = file.path(data_path, "df_unscaled_crit.RDS"))}
 
 
@@ -101,12 +101,12 @@ dev.off()
 
 if (!file.exists(file.path(data_path, "df_relative_null.RDS"))) {
   print("SFig 10: relative agreement contest null")
-  source(file.path(base_dir, "sfigure10_relative_risk_assessment_null.R"))
+  source(file.path(base_dir, "sfigure10-11_relative_risk_assessment_null.R"))
   } else {load(file = file.path(data_path, "df_relative_null.RDS"))}
 
 if (!file.exists(file.path(data_path, "df_relative_crit.RDS"))) {
   print("SFig 11: relative agreement contest crit")
-  source(file.path(base_dir, "sfigure11_relative_risk_assessment_crit.R"))
+  source(file.path(base_dir, "sfigure12-13_relative_risk_assessment_crit.R"))
   } else {load(file = file.path(data_path, "df_relative_crit.RDS"))}
 
 fig_num = "2" 
