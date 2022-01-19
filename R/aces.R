@@ -9,7 +9,7 @@ p_load(docstring)
 # p_load(cubature)
 
 
-mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 250/(1-conf.level), 
+mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE){
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
@@ -61,7 +61,7 @@ mdm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 250/(1-conf.lev
 
 
 
-ldm_credint <- function(x, y, conf.level = 0.9, num_param_sims = 250/(1-conf.level), 
+ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE, keepSign = FALSE){
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
