@@ -139,6 +139,9 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
             axis.text.x = element_text(colour = grp_color))
     gg3
     
+    save_plot(paste(fig_path, "/F", fig_num, "_", base_name,"_D", ".tiff", sep = ""),
+              gg3, dpi = 600, base_height = ggsize[1], base_width = ggsize[2]*1.1)
+    
   } else {y_label = expression(mu[DM]); denominator = 1; 
   
   # browser()
@@ -167,10 +170,12 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
           axis.text.y = element_text(size=yaxis_font_size),
           axis.text.x = element_text(colour = grp_color))
   gg3
-  }
   
   save_plot(paste(fig_path, "/F", fig_num, "_", base_name,"_D", ".tiff", sep = ""),
             gg3, dpi = 600, base_height = ggsize[1], base_width = ggsize[2])
+  }
+  
+ 
   print(t(dfo))
   
   ggplots = list(gg1, gg2, gg3);
@@ -186,10 +191,12 @@ plot_experiments <- function(xa1,xb1,xa2,xb2, fig_num, fig_path, base_name,
 # Absolute Scale
 
 #-------------------------------------------------------------------------------
+raw_dm_ylims = c(0,3.5)
+raw_dm_ybreaks = seq(0,3,1)
 
 # Decreased mean offset for experiment 2
 set.seed(0)
-na1=15; nb1=15; na2=15; nb2=15;
+na1=20; nb1=20; na2=20; nb2=20;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
@@ -197,20 +204,20 @@ b2 <- rnorm(nb2, mean = 0, sd = 1)
 
 # Normalize points
 xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.3^2/2) + 9
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.3^2/2) + 10.5
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.3^2/2) + 11
 xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.3^2/2) + 9
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.3^2/2) + 12.5
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.3^2/2) + 9.8
 # Plot experiments and Difference of Means
 gg_mu <- plot_experiments(xa1, xb1, xa2, xb2, fig_num=fig_num, fig_path=fig_path, base_name="unsc_mu", 
-                 ylims = c(6,14), dm_ylims = c(0,4.1), dm_ybreaks=seq(0,4,2))
+                 ylims = c(6,14), dm_ylims = raw_dm_ylims, dm_ybreaks=raw_dm_ybreaks)
 
 
 # Increase alpha
 #------------------------------------------------------------------------------
 # Keep group 1, change alpha only
 gg_mu_alpha <- plot_experiments(xa1, xb1, xa1, xb1, fig_num=fig_num, fig_path=fig_path, base_name="unsc_alpha", 
-                                ylims = c(6,14), dm_ylims = c(0,4.1), dm_ybreaks=seq(0,4,2),
-                                conf.level.2 = 1-0.05/100000)
+                                ylims = c(6,14), dm_ylims = raw_dm_ylims, dm_ybreaks=raw_dm_ybreaks,
+                                conf.level.2 = 1-0.05/10000000000)
 # Steal jitter positions from mu_plot1 to use for alpha_plot2 to show they are 
 # exactly the same points
 q1 <- ggplot_build(gg_mu$gg1)
@@ -224,25 +231,25 @@ save_plot(paste(fig_path, "/F",fig_num, "_", "unsc_alpha","_E2", ".tiff", sep = 
 
 # Increased std experiment 2
 #-------------------------------------------------------------------------------
-xa3 <- (a2-mean(a2))/sd(a2)*sqrt(2.5^2/2) + 9
-xb3 <- (b2-mean(b2))/sd(b2)*sqrt(2.5^2/2) + 10.5
+xa3 <- (a2-mean(a2))/sd(a2)*sqrt(3^2/2) + 9
+xb3 <- (b2-mean(b2))/sd(b2)*sqrt(3^2/2) + 11
 # Plot experiments and Difference of Means
 plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name="unsc_sigma", 
-                 ylims = c(6,14), dm_ylims = c(0,4.1), dm_ybreaks=seq(0,4,2))
+                 ylims = c(6,14), dm_ylims = raw_dm_ylims, dm_ybreaks=raw_dm_ybreaks)
 
 
 # Increased sample size for experiment 2
 #-------------------------------------------------------------------------------
 rand_seed <- 0
-na2=5; nb2=5;
+na2=3; nb2=3;
 a3 <- rnorm(na2, mean = 0, sd = 1)
 b3 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
 xa3 <- (a3-mean(a3))/sd(a3)*sqrt(1.3^2/2) + 9
-xb3 <- (b3-mean(b3))/sd(b3)*sqrt(1.3^2/2) + 10.5
+xb3 <- (b3-mean(b3))/sd(b3)*sqrt(1.3^2/2) + 11
 # Plot experiments and Difference of Means
 plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name="unsc_df", 
-                 ylims = c(6,14), dm_ylims = c(0,4.1), dm_ybreaks=seq(0,4,2))
+                 ylims = c(6,14), dm_ylims = raw_dm_ylims, dm_ybreaks=raw_dm_ybreaks)
 
 
 
@@ -261,23 +268,23 @@ plot_experiments(xa1,xb1,xa3,xb3, fig_num=fig_num, fig_path=fig_path, base_name=
 
 #-------------------------------------------------------------------------------
 
-dm_ylims = c(0,0.5)
+dm_ylims = c(0,0.4)
 dm_ybreaks = seq(0, 0.4, 0.1)
 
 
 # Relative mu
 #-------------------------------------------------------------------------------
 set.seed(0)
-na1=15; nb1=15; na2=15; nb2=15;
+na1=20; nb1=20; na2=20; nb2=20;
 a1 <- rnorm(na1, mean = 0, sd = 1)
 b1 <- rnorm(nb1, mean = 0, sd = 1)
 a2 <- rnorm(na2, mean = 0, sd = 1)
 b2 <- rnorm(nb2, mean = 0, sd = 1)
 # Normalize points
-xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.8^2/2) + 10
-xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.8^2/2) + 12
-xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.40^2/2)/15 + 0.5
-xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.40^2/2)/15 + 0.7
+xa1 <- (a1-mean(a1))/sd(a1)*sqrt(1.5^2/2) + 10
+xb1 <- (b1-mean(b1))/sd(b1)*sqrt(1.5^2/2) + 12
+xa2 <- (a2-mean(a2))/sd(a2)*sqrt(1.1^2/2)/15 + .5
+xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1.1^2/2)/15 + .54
 # Plot experiments and Difference of Means
 ggs_rmu <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rmu",data_scale = "relative")
@@ -289,7 +296,7 @@ save_plot(paste(fig_path, "/F",fig_num, "_", "rel_rmu","_E1", ".tiff", sep = "")
 # ---------------------
 gg_ralpha <- plot_experiments(xa1,xb1,xa1/3.5,xb1/3.5, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_alpha",data_scale = "relative",
-                 conf.level.2 = 1-0.05/1000)
+                 conf.level.2 = 1-0.05/1000000000)
 #Overwrite the figure for group 2 so it has exactly same placement as group 1
 q1 <- ggplot_build(gg1)
 q2 <- ggplot_build(gg_ralpha$gg2 + coord_cartesian(ylim = c(2.28,4.2)))
@@ -313,7 +320,7 @@ xb2 <- (b2-mean(b2))/sd(b2)*sqrt(1^2/2)/0.12e5 + 2.64e-4
 ggplots <- plot_experiments(xa1,xb1,xa2,xb2, fig_num=fig_num, fig_path=fig_path, dm_ylims = dm_ylims,
                  dm_ybreaks = dm_ybreaks, base_name="rel_rsigma", data_scale = "relative")
 gg2 <- ggplots$gg2 + 
-  geom_blank(data=data.frame(x=c(1, 1),y=c(1.8e-4, 4.5e-4)), aes(x=x, y=y)) +
+  geom_blank(data=data.frame(x=c(1, 1),y=c(1.8e-4, 4.3e-4)), aes(x=x, y=y)) +
   scale_y_continuous(breaks = c(2e-4, 3e-4, 4e-4), labels=function(x)
   {str_replace(formatC(x, format = "e", digits = 0), 'e([-+])0','e\\1')})
 print(gg2)

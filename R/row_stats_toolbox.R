@@ -154,6 +154,7 @@ row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95) {
 }
 
 row_ldm <- function(m_c, m_e, conf.level) {
+  # browser()
   ldm <- sapply(1:dim(m_c)[1], function(i)  
     ldm_credint(m_e[i,], m_c[i,], conf.level = conf.level, relative = FALSE))
   
@@ -161,6 +162,7 @@ row_ldm <- function(m_c, m_e, conf.level) {
 }
 
 row_rldm <- function(m_c, m_e, conf.level = 0.95) {
+  # browser()
   rldms <-  sapply(1:dim(m_c)[1], function(i)
     ldm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
   return(rldms)

@@ -4,13 +4,36 @@
 # or difference between two distributions.
 
 # Load package manager
-if (!require("pacman")) {install.packages("pacman")}; library(pacman)
-p_load(docstring)
+# if (!require("pacman")) {install.packages("pacman")}; library(pacman)
+# # p_load(docstring)
 # p_load(cubature)
 
 
 mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
                         plot=FALSE, relative = FALSE, sharedVar=FALSE){
+  #' @description calculates the (raw/relative) most difference in means, a 
+  #' statistic that estimates the largest absolute difference in means supported
+  #' by the data. Uses credibility interval.
+  #' Citation: https://arxiv.org/abs/2201.01239
+  #' 
+  #' Equation:
+  #' mdm <- Qraw(1-a_dm)
+  #' - where Qraw() is the quantile function of the posterior summarizing |u_dm|, 
+  #'   and a_dm is the significance level
+  #'   u_dm = u_x - u_y
+  #'   
+  #' rmdm <- Qrel(1-a_dm)
+  #' - where Qrel() is the quantile function of the posterior summarizing |ru_dm|, 
+  #'   and a_dm is the significance level
+  #' 
+  #' @param x vector of measurements from group 1 (experiment)
+  #' @param y vector of measurements from group 2  (control)
+  #' @param conf.level confidence level
+  #' @param num_param_sims number of monte carlo trials to calcualte ldm
+  #' @param plot plot data
+  #' @param relative FALSE: calculates mdm, TRUE: calculates rmdm
+  #' @return value of mdm or rmdm
+
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
   xbar <- mean(x)
@@ -62,7 +85,26 @@ mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
 
 
 ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
-                        plot=FALSE, relative = FALSE, sharedVar=FALSE, keepSign = FALSE){
+                        plot=FALSE, relative = FALSE, sharedVar=FALSE, keepSign = TRUE){
+  #' @description calculates the (raw/relative) least difference in means, a 
+  #' statistic that estimates the smallest difference in means supported by the 
+  #' data. Uses credibility interval.
+  #' 
+  #' Equation:
+  #' ldm <- sign(x_bar - ybar) * (sign(b_lo) == sign(b_hi)) * max(abs( c(b_lo, b_hi) ))
+  #'         original effect sign * force zero if interval includes zero * select closest bound to 0
+  #' 
+  #' Where b_lo and b_hi are credible bounds for u_dm whjen relative= FALSE and
+  #'   r_u_dm when realtive=TRUE
+  #' 
+  #' @param x vector of measurements from group a, experiment 1
+  #' @param y vector of measurements from group a, experiment 1
+  #' @param conf.level vector of measurements from group a, experiment 1
+  #' @param num_param_sims vector of measurements from group a, experiment 1
+  #' @param plot string of number label used for basename of all figures
+  #' @param relative path to export figures to disk
+  #' @param keepSign base name for exported figures
+  #' @return value of ldm ro rldm
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
   xbar <- mean(x)
@@ -93,39 +135,37 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
     cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
   }
   
-  lower <- uniroot(function(x){ cdf(x) - (1-conf.level)},
+  b_lo <- uniroot(function(x){ cdf(x) - (1-conf.level)},
                    lower = 0,
                    upper = max(c(abs(x),abs(y))),
                    extendInt = "yes")$root
   
-  upper <- uniroot(function(x){ cdf(x) - conf.level},
+  b_hi <- uniroot(function(x){ cdf(x) - conf.level},
                    lower = 0,
                    upper = max(c(abs(x),abs(y))),
                    extendInt = "yes")$root
-  
-  # solve $F(c) - F(-c) = .95
-  lower_ab <- uniroot(function(x){ cdf(x) - cdf(-x) - (1-conf.level)},
-                   lower = 0,
-                   upper = max(c(abs(x),abs(y))),
-                   extendInt = "yes")$root
-  
-  
-  ldm <- (sign(lower) == sign(upper)) * lower_ab
+
+  ldm <- sign(xbar - ybar) * (sign(b_lo) == sign(b_hi)) * min(abs( c(b_lo, b_hi) ))
   
   # Keep sign of effect size if requested, since sign matters for practical sig.
-  if (keepSign && lower<0 && upper<0) {ldm <- -ldm}
+  if (!keepSign) {ldm <- abs(ldm)}
   
-  if(plot & !relative){
-    hist(mu1Sims - mu2Sims)
-    abline(v=upper,col="red")
-    abline(v=-upper,col="red")
-  }else if(plot & relative){
-    hist((mu1Sims - mu2Sims)/mu2Sims)
-    abline(v=upper,col="red")
-    abline(v=-upper,col="red")
-  }
+  # if(plot & !relative){
+  #   hist(mu1Sims - mu2Sims)
+  #   abline(v=upper,col="red")
+  #   abline(v=-upper,col="red")
+  # }else if(plot & relative){
+  #   hist((mu1Sims - mu2Sims)/mu2Sims)
+  #   abline(v=upper,col="red")
+  #   abline(v=-upper,col="red")
+  # }
+  # browser();
   return(ldm)
 }
+
+
+
+
 
 
 

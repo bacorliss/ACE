@@ -7,7 +7,7 @@ source("R/row_stats_toolbox.R")
 
 
 
-base_dir = "mdm_t"
+base_dir = "ldm_t"
 fig_num = "3" 
 dir.create(file.path(getwd(), base_dir,"figure"), showWarnings = FALSE)
 fig_path = paste(getwd(),"/",base_dir,"/figure/F",fig_num, sep="")
@@ -29,11 +29,15 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
   #' Compute stats from data frame, one from each row, based on mean,std, and n 
   #' from each group
   #' #
+  save(list = ls(all.names = TRUE), file = "temp/calc_stats.RData",envir = environment())
+  # load(file = "temp/calc_stats.RData")
   # browser();
+  
   df_stat = data.frame(
                       x = factor(seq(1,dim(df)[1], 1)),
+                      rldm = rep(0,dim(df)[1]), 
                       rmdm = rep(0,dim(df)[1]), 
-                      mdm_ov_xbar = rep(0,dim(df)[1]),
+                      ldm = rep(0,dim(df)[1]),
                       mdm = rep(0,dim(df)[1]), 
                       cd = rep(0,dim(df)[1]),
                       p_nhst = rep(0,dim(df)[1]), 
@@ -42,9 +46,10 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
                       bf = rep(0,dim(df)[1]),
                       xbar_dm = rep(0,dim(df)[1]), rxbar_dm = rep(0,dim(df)[1]),
                       wtt_lo = rep(0,dim(df)[1]),  wtt_hi = rep(0,dim(df)[1]), 
-                      wtt_rlo = rep(0,dim(df)[1]), wtt_rhi = rep(0,dim(df)[1]))
+                      wtt_rlo = rep(0,dim(df)[1]), wtt_rhi = rep(0,dim(df)[1]),
+                      mdm_ov_xbar = rep(0,dim(df)[1]))
   xbar_str = paste("x","\U00AF",sep="")
-  ybar_str = paste("x","\U00AF",sep="")
+  ybar_str = paste("y","\U00AF",sep="")
   alphadm_str = paste("\U03B1","DM",sep="")
   for (n in seq(1, dim(df)[1]) ) {
     # Simulate data points for input into functions
@@ -65,9 +70,14 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
                                   1 - parse_fract(df[[alphadm_str]][n]))$p.value
     df_stat$mdm[n] <- row_mdm(xa, xb, conf.level = 
                                         1 - parse_fract(df[[alphadm_str]][n]))
+    df_stat$ldm[n] <- row_ldm(xa, xb, conf.level = 
+                                1 - parse_fract(df[[alphadm_str]][n]))
     df_stat$rmdm[n] <- 
       row_rmdm(m_c = xa, m_e = xb, conf.level = 1 - parse_fract(df[[alphadm_str]][n]))
   
+    df_stat$rldm[n] <- 
+      row_rldm(m_c = xa, m_e = xb, conf.level = 1 - parse_fract(df[[alphadm_str]][n]))
+    
     df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbar_str]][n])
     
     df_stat$p_equiv[n] <- row_tost_2s(xa, xb, conf.level = 
@@ -93,7 +103,6 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
   gg = ggplot(data = df_stat, aes(x=x, y = rxbar_dm)) +
     geom_pointrange(size = .4, aes(ymin = wtt_rlo, ymax = wtt_rhi)) + 
     geom_hline(yintercept=0, size = .5) +
-   
     ylab( parse(text=paste("Relative~CI~of~mu[DM]"))) + xlab("Study #") +
     theme_classic(base_size=8)
   print(gg)
@@ -110,26 +119,14 @@ calc_stats <- function(df, out_path, csv_name, p2_relrange) {
 
 
 
-# Total Cholesterol, Null Results
-raw_chol_null <- read_excel("mdm_t/atherosclerosis_review.xlsx", sheet = "Chol Null", skip = 1)
-chol_null <- raw_chol_null[-seq(min(which(is.na(raw_chol_null$sX))), dim(raw_chol_null)[1], 1),]
-df_stat_chol_null <- calc_stats(chol_null, fig_path,"chol_null.csv", p2_relrange = 0.3)
-
-
 # Total CHolesterol, crit Results
-raw_chol_crit <- read_excel("mdm_t/atherosclerosis_review.xlsx", sheet = "Chol Crit", skip=1)
+raw_chol_crit <- read_excel("ldm_t/applied_examples.xlsx", sheet = "Chol Crit", skip=1)
 chol_crit <- raw_chol_crit[-seq(min(which(is.na(raw_chol_crit$sX))), dim(raw_chol_crit)[1], 1),]
 df_stat_chol_crit <- calc_stats(chol_crit, fig_path,"chol_crit.csv", p2_relrange = 0.3)
 
 
 
 # Plaque Size, Null Results
-raw_plaq_null <- read_excel("mdm_t/atherosclerosis_review.xlsx", sheet = "Plaque Null", skip=1)
-plaq_null <- raw_plaq_null[-seq(min(which(is.na(raw_plaq_null$sX))), dim(raw_plaq_null)[1], 1),]
-df_stat_plaq_null <- calc_stats(plaq_null, fig_path,"plaq_null.csv", p2_relrange = 0.4)
-
-
-# Plaque Size, Null Results
-raw_plaq_crit <- read_excel("mdm_t/atherosclerosis_review.xlsx", sheet = "Plaque Crit", skip=1)
+raw_plaq_crit <- read_excel("ldm_t/applied_examples.xlsx", sheet = "Plaque Crit", skip=1)
 plaq_crit <- raw_plaq_crit[-seq(min(which(is.na(raw_plaq_crit$sX))), dim(raw_plaq_crit)[1], 1),]
 df_stat_plaq_crit <- calc_stats(plaq_crit, fig_path,"plaq_crit.csv", p2_relrange = 0.4)
