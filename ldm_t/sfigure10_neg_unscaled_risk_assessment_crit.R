@@ -25,7 +25,7 @@ source("R/agreement_contests.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "ldm_t"
-fig_num = "9" 
+fig_num = "10" 
 fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 dir.create(file.path(getwd(), fig_path), showWarnings = FALSE, recursive = TRUE)
 
@@ -41,8 +41,11 @@ include_bf = TRUE
 scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
                            "_scale_contest_results.csv",sep="")
 
-df_unscaled_crit = list();
 
+if (file.exists(file.path(base_dir, "/temp/df_unscaled_neg.RDS"))) {
+  load(file = paste(base_dir, "/temp/df_unscaled_neg.RDS",sep=""))
+  } else {  df_unscaled_neg = list();
+}
 
 
 # Contest 1) Lower mu_d
@@ -53,31 +56,31 @@ set.seed(rand.seed)
 gt_colnames = "is_mudm_1lat2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = 2, 
-                                   mus_1ao  = runif(n_sims, 1, 3), 
-                                   sigmas_1ao = 2,
-                                   mus_2a  = 300, 
-                                   sigmas_2a = 2,
-                                   mus_2ao  = runif(n_sims, 3, 5), 
-                                   sigmas_2ao = 2,
-                                   
-                                   n_1a = n_obs, n_1b = n_obs,
-                                   n_2a = n_obs, n_2b = n_obs,
-                                   alpha_1 = 0.05, alpha_2 = 0.05,
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = TRUE,
-                                   switch_group_ab = TRUE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = TRUE,
-                                   switch_sigma_ab_12 = FALSE,
-                                   switch_alpha_12 = FALSE,
-                                   switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path,gt_colnames=gt_colnames,
-                                   agreement = "lat")
-df_unscaled_crit[[1]] <- 
+                                       mus_1a  = 10, 
+                                       sigmas_1a = 2, 
+                                       mus_1ao  = -runif(n_sims, 1, 3), 
+                                       sigmas_1ao = 2,
+                                       mus_2a  = 300, 
+                                       sigmas_2a = 2,
+                                       mus_2ao  = -runif(n_sims, 3, 5), 
+                                       sigmas_2ao = 2,
+                                       
+                                       n_1a = n_obs, n_1b = n_obs,
+                                       n_2a = n_obs, n_2b = n_obs,
+                                       alpha_1 = 0.05, alpha_2 = 0.05,
+                                       
+                                       toggle_sign_rmu_d_hold_sigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = TRUE,
+                                       switch_sigma_ab_12 = FALSE,
+                                       switch_alpha_12 = FALSE,
+                                       switch_n_12 = FALSE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                       fig_path = fig_path,gt_colnames=gt_colnames,
+                                       agreement = "lat")
+df_unscaled_neg[[1]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames, 
                             y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
@@ -99,12 +102,12 @@ fig_name = paste("F", fig_num, "_2_esize_", "_2_esize_contest_sigma_far_zero", s
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = 0.5,
-                                   mus_1ao  = seq(0.7, 1, n_sims), 
+                                   mus_1ao  = -seq(0.7, 1, n_sims), 
                                    sigmas_1ao = runif(n_sims, 0.4, 1),
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 0.5,
-                                   mus_2ao  = seq(0.7, 1, n_sims),
+                                   mus_2ao  = -seq(0.7, 1, n_sims),
                                    sigmas_2ao = runif(n_sims, 0.9, 1.8),
                                    
                                    n_1a = n_obs, n_1b = n_obs,
@@ -112,7 +115,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = TRUE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -122,7 +125,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                    fig_path = fig_path,gt_colnames=gt_colnames,
                                    agreement = "lat")  
-df_unscaled_crit[[2]] <- 
+df_unscaled_neg[[2]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "sigma[D]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
@@ -145,12 +148,12 @@ fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = 1,
-                                   mus_1ao  = seq(1.2,3,length.out = n_sims),
+                                   mus_1ao  = -seq(1.2,3,length.out = n_sims),
                                    sigmas_1ao = 1,
                                    
                                    mus_2a  = 100, 
                                    sigmas_2a = 1,
-                                   mus_2ao  = seq(1.2,3,length.out = n_sims),
+                                   mus_2ao  = -seq(1.2,3,length.out = n_sims),
                                    sigmas_2ao = 1,
                                    
                                    n_1a = n1, n_1b = n1,
@@ -158,7 +161,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = TRUE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -168,7 +171,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames,
                                    agreement = "lat") 
-df_unscaled_crit[[3]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_unscaled_neg[[3]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]",
                                                    include_bf = include_bf, parallel_sims = TRUE,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -195,12 +198,12 @@ fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = .1,
-                                   mus_1ao  = seq(.6, 1.5,length.out = n_sims), 
+                                   mus_1ao  = -seq(.6, 1.5,length.out = n_sims), 
                                    sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
                                    
                                    mus_2a  = 500, 
                                    sigmas_2a = .1,
-                                   mus_2ao  = seq(.6, 1.5,length.out = n_sims),
+                                   mus_2ao  = -seq(.6, 1.5,length.out = n_sims),
                                    sigmas_2ao = 1,#seq(2,12,length.out = n_sims),
                                    
                                    n_1a = 30, n_1b = 30,
@@ -210,7 +213,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = TRUE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = FALSE,
@@ -220,7 +223,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames,
                                    agreement = "lat")  
-df_unscaled_crit[[4]] <-
+df_unscaled_neg[[4]] <-
   process_agreement_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -250,12 +253,12 @@ fig_name = paste("F", fig_num, "_4_esize_contest_free_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
                                    sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims, 3.8, 5), 
+                                   mus_1ao  = -runif(n_sims, 3.8, 5), 
                                    sigmas_1ao = runif(n_sims, 1, 1.75),
                                    
                                    mus_2a  = 100,
                                    sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims, 4.5, 6), 
+                                   mus_2ao  = -runif(n_sims, 4.5, 6), 
                                    sigmas_2ao = runif(n_sims, 2.25, 3),
                                    
                                    n_1a = n1, n_1b = n1,
@@ -264,7 +267,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
                                    toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = TRUE,
+                                   toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
                                    switch_mu_d_12 = TRUE,
@@ -274,25 +277,25 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames,
                                    agreement = "lat")
-df_unscaled_crit[[5]] <- 
+df_unscaled_neg[[5]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
                             agreement = "lat")
-df_unscaled_crit[[6]] <- 
+df_unscaled_neg[[6]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
                             agreement = "lat")
-df_unscaled_crit[[7]] <- 
+df_unscaled_neg[[7]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
                             agreement = "lat")
-df_unscaled_crit[[8]] <- 
+df_unscaled_neg[[8]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
@@ -301,4 +304,4 @@ df_unscaled_crit[[8]] <-
 
 
 dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)
-save(df_unscaled_crit, file = paste(base_dir, "/temp/df_unscaled_crit.RDS",sep=""))
+save(df_unscaled_neg, file = paste(base_dir, "/temp/df_unscaled_neg.RDS",sep=""))

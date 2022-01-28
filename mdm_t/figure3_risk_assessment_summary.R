@@ -61,20 +61,15 @@ if (!file.exists(file.path(data_path, "df_unscaled_crit.RDS"))) {
 # Heatmap of unscaled data
 #-------------------------------------------------------------------------------
 dfs_unscaled <- c(df_unscaled_null,df_unscaled_crit)
-scale_norm_ind = rep(c(1,3,3,7,1,3,3,7),2)
 
 # Extract means for each group and subtract from 0.5 (random)
 scale_means_from_0.5 <- sapply(dfs_unscaled, function(x) x$df_plotted$mean) - 0.5
 scale_scores <- sweep(scale_means_from_0.5, 2, abs(apply(scale_means_from_0.5,2,min)), FUN = '/')
 
-
 # Export csv
 rownames(scale_scores) <- attr(df_unscaled_null[[1]]$df_es, "varnames")
 # Identity which cells are statistically significant from random
 scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5) 
-# Identity which cells are used for normalization
-scale_score_norm <- sapply(scale_norm_ind, function(ind,len) 
-  ifelse(1:len == ind, TRUE,FALSE), length(attr(df_unscaled_null[[1]]$df_es, "varnames")))
 
 # Zero color to white for fields that are not statistically significant
 zeroed_scale_scores <- scale_scores
@@ -82,7 +77,7 @@ zeroed_scale_scores[!scale_scores_sig] <- 0
 png(paste(sum_fig_path, "/F", fig_num, "_disrisk_assessment raw scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scale_scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {add_underline(scale_scores_sig,1.5);}, # makeRects(scale_score_norm,1.5)}, 
+          add.expr = {add_underline(scale_scores_sig,1.5);}, 
           col = my_palette,  Rowv = F, Colv = F, sepwidth = c(0,0),
           labRow =  sapply(attr(df_unscaled_null[[1]]$df_es, "varnames"),
                            function(x) parse(text=x)),labCol = "",
@@ -116,24 +111,17 @@ fig_num = "2"
 #-------------------------------------------------------------------------------
 # Export summary stats for relative scale data
 dfs_relative <- c(df_relative_null,df_relative_crit)
-relative_norm_ind = rep(c(2,4,4,7,2,4,4,7),2)
+# relative_norm_ind = rep(c(2,4,4,7,2,4,4,7),2)
 
 # Extract means for each group and subtract from 0.5 (random)
 relative_means_from_0.5 <- sapply(dfs_relative, function(x) x$df_plotted$mean) - 0.5
 # scale_means_from_0.5 <- sapply(dfs_unscaled, function(x) x$df_plotted$mean) - 0.5
 rscale_scores <- sweep(relative_means_from_0.5, 2, abs(apply(relative_means_from_0.5,2,min)), FUN = '/')
 
-
-
-# rscale_means_from_0.5 <- 0.5 - sapply(dfs_rscale, function(x) get(x)$df_plotted$mean)
-# rscale_scores <- -t(t(relative_means_from_0.5)/
-#                      relative_means_from_0.5[cbind(relative_norm_ind,seq_along(relative_norm_ind))])
 # Export csv
 rownames(rscale_scores) <- attr(df_relative_null[[1]]$df_es,"varnames")
 # Get statistical significance
 rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5) 
-rscale_score_norm <- sapply(relative_norm_ind, function(ind,len) 
-  ifelse(1:len == ind, TRUE,FALSE), length(attr(df_relative_null[[1]]$df_es,"varnames_pretty")))
 
 # Zero color to white for fields that are not statistically significant
 zeroed_rscale_scores <- rscale_scores
@@ -141,7 +129,7 @@ zeroed_rscale_scores[!rscale_scores_sig] <- 0
 png(paste(sum_fig_path,"/F", fig_num, "_disrisk_assessment relative scale.png",sep=""),    
     width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
-          add.expr = {add_underline(rscale_scores_sig,1.5);}, # makeRects(rscale_score_norm,1.5)}, 
+          add.expr = {add_underline(rscale_scores_sig,1.5);},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),
           labRow =  sapply(attr(df_relative_null[[1]]$df_es,"varnames_pretty"),
                            function(x) parse(text=x)),labCol = "",
