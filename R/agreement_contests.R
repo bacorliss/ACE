@@ -407,8 +407,8 @@ pop_configs_from_rmu_sigma <-
     # Calculate mu for group b
     mus_1b =  mus_1d + mus_1a;  mus_2b =  mus_2d + mus_2a;
       
-    sigmas_1d = rsigmas_1d * (mus_1a + 0/2*mus_1d)
-    sigmas_2d = rsigmas_2d * (mus_2a + 0/2*mus_2d)
+    sigmas_1d = rsigmas_1d * mus_1a 
+    sigmas_2d = rsigmas_2d * mus_2a 
     
     sigmas_1b = sqrt(sigmas_1d^2 - sigmas_1a^2)
     sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
