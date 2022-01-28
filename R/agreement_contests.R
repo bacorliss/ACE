@@ -107,7 +107,10 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   #' @param is_plotted flag to export figures about pop. param sets to disk
   #' @return df dataframe with generated pop. param sets
 
-
+  save(list = ls(all.names = TRUE), file = "temp/generate_population_configs.RData",envir = environment())
+  # load(file = "temp/generate_population_configs.RData")
+  
+  
   # Expand any singleton pop param arguments replicate to number of simulations
   input_args <- formalArgs(generate_population_configs)
   pargs <-grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
@@ -117,7 +120,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   }
 
   # Record some parameter values for simulations
-  set.seed(rand.seed + 1)
+  set.seed(rand.seed)
   
   # browser();
   
@@ -395,13 +398,17 @@ pop_configs_from_rmu_sigma <-
             rmus_1d, rsigmas_1d, rmus_2d, rsigmas_2d,
             n_1a, n_1b, n_2a, n_2b, alpha_1, alpha_2) {
     
+    save(list = ls(all.names = TRUE), file = "temp/pop_configs_from_rmu_sigma.RData",envir = environment())
+    # load(file = "temp/pop_configs_from_rmu_sigma.RData")
+    
     
     # Calculate mu and sigma d and b based on relative mus and sigmas
     mus_1d = rmus_1d * mus_1a;  mus_2d = rmus_2d * mus_2a; 
+    # Calculate mu for group b
     mus_1b =  mus_1d + mus_1a;  mus_2b =  mus_2d + mus_2a;
       
-    sigmas_1d = rsigmas_1d * (mus_1a + 1/2*mus_1d)
-    sigmas_2d = rsigmas_2d * (mus_2a + 1/2*mus_2d)
+    sigmas_1d = rsigmas_1d * (mus_1a + 0/2*mus_1d)
+    sigmas_2d = rsigmas_2d * (mus_2a + 0/2*mus_2d)
     
     sigmas_1b = sqrt(sigmas_1d^2 - sigmas_1a^2)
     sigmas_2b = sqrt(sigmas_2d^2 - sigmas_2a^2)
@@ -836,6 +843,7 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
   save_plot(paste(fig_path, '/gt_',fig_name, ".tiff", sep = ""), gg, ncol = 1, nrow = 1, 
             base_height = 1.5, base_asp = 3, base_width = 2, dpi = 600)
 
+
   # Export csv file for agreement between each variable to others
   # Plot histogram of mu[D]/sigma[D] to demonstrate how far from zero D is
   df <-tibble(group = as.factor(c(rep(1,dim(df_init)[1]),rep(2,dim(df_init)[1]))),
@@ -862,7 +870,7 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
     annotate("label",label=ifelse(ks_p_val$p.value>0.05, 
                                   sprintf('p = %.3f', ks_p_val$p.value),
                                   sprintf('p = %.2e', ks_p_val$p.value))
-               , x=0, y=1.07*ymax, 
+               , x=mean(range(df$t_ratio)), y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
   save_plot(paste(fig_path, '/predicted_t-ratio_',fig_name, sep = ""), p, ncol = 1, nrow = 1, 
@@ -960,7 +968,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   #' comparison error for determining higher agreement.
   
   save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
-  # # load(file = "temp/quantify_population_config.RData")
+  # load(file = "temp/quantify_population_config.RData")
   
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
@@ -1307,7 +1315,7 @@ plot_mean_t_ratio_samples <- function(df_init, fig_path,fig_name) {
     annotate("label",label=ifelse(ks_p_val$p.value>0.05, 
                                   sprintf('p = %.3f', ks_p_val$p.value),
                                   sprintf('p = %.2e', ks_p_val$p.value))
-             , x=0, y=1.07*ymax, 
+             , x=mean(range(df$t_ratio)), y=1.07*ymax, 
              size=2, fill = "white",label.size = NA)
   # print(p)
   save_plot(paste(fig_path, fig_name, sep = ""), p, ncol = 1, nrow = 1, 

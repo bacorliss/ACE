@@ -105,6 +105,7 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
   #' @param relative path to export figures to disk
   #' @param keepSign base name for exported figures
   #' @return value of ldm ro rldm
+  
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
   xbar <- mean(x)
@@ -135,16 +136,18 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
     cdf <- ecdf((mu1Sims - mu2Sims)/mu2Sims)
   }
   
-  b_lo <- uniroot(function(x){ cdf(x) - (1-conf.level)},
+  # TODO use prctile function
+  b_lo <- uniroot(function(x){ cdf(x) - conf.level},
                    lower = 0,
                    upper = max(c(abs(x),abs(y))),
                    extendInt = "yes")$root
   
-  b_hi <- uniroot(function(x){ cdf(x) - conf.level},
-                   lower = 0,
-                   upper = max(c(abs(x),abs(y))),
-                   extendInt = "yes")$root
+  b_hi <- uniroot(function(x){ cdf(x) - (1-conf.level)},
+                  lower = 0,
+                  upper = max(c(abs(x),abs(y))),
+                  extendInt = "yes")$root
 
+  
   ldm <- sign(xbar - ybar) * (sign(b_lo) == sign(b_hi)) * min(abs( c(b_lo, b_hi) ))
   
   # Keep sign of effect size if requested, since sign matters for practical sig.
