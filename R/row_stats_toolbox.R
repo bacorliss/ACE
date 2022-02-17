@@ -176,9 +176,20 @@ row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
 
 
 
-row_bayesf_2s <- function(m_c, m_e, parallelize = FALSE, paired = FALSE) {
+row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
+  #' @description Calculates bayes factor across rows for two groups.
+  #' @param m_c matrix of observations from control group where rows are separate
+  #'  samples
+  #' @param m_e matrix of observations from experiment group where rows are 
+  #' separate samples 
+  #' @param nullInterval null region bound for Bayes factor in Standardized units
+  #' @param paired boolean for paired data
+  #' 
+  #' @return vector of bayes factor 1xN samples
+
   # Ignore diagnostic messages during function call.
-  wrap_fun <-  function(x1,x2)   {extractBF(ttestBF(x = x1,  y = x2), onlybf = TRUE)}
+  wrap_fun <-  function(x1,x2)   
+    {extractBF(ttestBF(x = x1,  y = x2, nullInterval = nullInterval, paired  = paired), onlybf = TRUE)}
 
   bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
 
@@ -187,34 +198,44 @@ row_bayesf_2s <- function(m_c, m_e, parallelize = FALSE, paired = FALSE) {
 
 
 
-row_tost_2s_slow <- function (m_c,m_e) {
-  
-  n1 <- dim(m_c)[2]
-  n2 <- dim(m_e)[2] 
-  
-  tost_fun <- function(x1,x2) 
-    as.data.frame(dataTOSTtwo(
-      data.frame(
-        grp=as.factor(c(rep(1,n1),rep(2,n2))), 
-        value=c(x1, x2)),
-      deps="value", group = "grp", var_equal = FALSE, low_eqbound = -1e6,
-      high_eqbound = 1e6, eqbound_type = "d", alpha = 0.05,
-      desc = FALSE, plots = FALSE)$tost)$'p[0]'
-  
-  tost_p <- sapply(1:dim(m_c)[1], function(i)   tost_fun(m_c[i,], m_e[i,]))
- 
-}
+# row_tost_2s_slow <- function (m_c,m_e, low_eqbound, high_eqbound, conf.level) {
+#   
+#   n1 <- dim(m_c)[2]
+#   n2 <- dim(m_e)[2] 
+#   
+#   tost_fun <- function(x1,x2) 
+#     as.data.frame(dataTOSTtwo(
+#       data.frame(
+#         grp=as.factor(c(rep(1,n1),rep(2,n2))), 
+#         value=c(x1, x2)),
+#       deps="value", group = "grp", var_equal = FALSE, low_eqbound = -1e6,
+#       high_eqbound = 1e6, eqbound_type = "d", alpha = 1-conf.level,
+#       desc = FALSE, plots = FALSE)$tost)$'p[0]'
+#   
+#   tost_p <- sapply(1:dim(m_c)[1], function(i)   tost_fun(m_c[i,], m_e[i,]))
+#  
+# }
 
 
 row_sgpv <- function(m_c, m_e, null.lo, null.hi){
+  #' @description Calculates second generation p-values across rows for two groups.
+  #' @param m_c matrix of observations from control group where rows are separate
+  #'  samples
+  #' @param m_e matrix of observations from experiment group where rows are 
+  #' separate samples 
+  #' @param null.lo null region bound for Bayes factor in Standardized units
+  #' @param null.hi list of variables to exclude
+  #' 
+  #' @return vector of p-values, 1xN, where N is number of samples
   df_ci <- row_confint_t(m_c, m_e)
+
   p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo = null.lo, null.hi = null.hi)$p.delta
   return(p_sg)
 }
 
 
 
-row_tost_2s <- function (m_c,m_e,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.level = 0.95) {
+row_tost_2s <- function (m_c, m_e, eqbounds = NULL, conf.level = 0.95) {
   
   n1 <- dim(m_c)[2]
   n2 <- dim(m_e)[2] 
@@ -223,10 +244,10 @@ row_tost_2s <- function (m_c,m_e,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.l
   s_dm <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
 
   
-  t_lower  <-  ( rowMeans(m_c) - rowMeans(m_e) -low_eqbound)  / s_dm 
+  t_lower  <-  ( rowMeans(m_c) - rowMeans(m_e) - eqbounds[1])  / s_dm 
   p_low <- rowmin_2col((1 - pt(t_lower, df = n1+n2-1)) * 0.05/(1-conf.level),1)
   
-  t_upper <-  ( rowMeans(m_c) - rowMeans(m_e) - high_eqbound)  / s_dm 
+  t_upper <-  ( rowMeans(m_c) - rowMeans(m_e) - eqbounds[2])  / s_dm 
   p_high <- rowmin_2col(pt(t_upper, df = n1+n2-1) * 0.05/(1-conf.level),1)
   # Quick max value of two vectors
   p_tost_fast <- rowmax_2col(p_low,p_high)
@@ -241,6 +262,12 @@ row_tost_2s <- function (m_c,m_e,low_eqbound = -1e-3,high_eqbound = 1e-3, conf.l
   #   t.test(m_c[i,], m_e[i,], alternative = "less", mu = high_eqbound,
   #          paired = FALSE, var.equal = FALSE, conf.level = 0.95)$p.value)
   # p_tost_slow <- rowmax_2col( p_lower, p_upper)
+  
+  
+  # pe = TOSTtwo.raw(mean(xa), mean(xb), sd(xa), sd(xb), length(xa), length(xb), 
+  #             low_eqbound = -1e-3, high_eqbound = 1e-3, alpha = parse_fract(df[[alphadm_str]][n]),
+  #             var.equal = FALSE, plot = FALSE, verbose = FALSE)
+  
   
   return(p_tost_fast)
 }
@@ -278,7 +305,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_d = n_a + n_b - 2
   
   # Initialize data frames so that
-  stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp",
+  stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp", "p2",
                  "cohend", "mdm", "rmdm", "ldm", "rldm", "rand")
   
   # browser();
@@ -315,7 +342,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_pretty$rsd_dm <- "r*s[DM]"
   
   # 5) Bayes Factor
-  df$bf <- row_bayesf_2s(x_a, x_b, parallelize = parallelize_bf, paired = FALSE)
+  df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, nullInterval = c(-1,1))
   df_ldt$bf <- "<"
   df_lat$bf <- ">"
   df_pretty$bf <- "BF"
@@ -329,11 +356,20 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_pretty$pvalue <- "p[N]"
   
   # 7) TOST p value (Two tailed equivalence test)
-  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -.1,high_eqbound = .1, conf.level = conf.level)
+  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -1*df$sd_dm,high_eqbound = 1*df$sd_dm,
+                          conf.level = conf.level)
   df_ldt$tostp <- "<"
   df_lat$tostp <- ">"
   df_pretty$tostp <- "p[E]"
   
+  
+  # 8) Second Generation P value
+  df$p2 <- row_sgpv(x_a, x_b, null_lo = -1*df$sd_dm, null_hi = 1*df$sd_dm)
+  df_ldt$p2 <- "<"
+  df_lat$p2 <- ">"
+  df_pretty$p2 <- "P[delta]"
+  
+
   # 8) Cohens D
   df$cohend <- row_cohend(x_a, x_b)
   df_ldt$cohend <- "<"

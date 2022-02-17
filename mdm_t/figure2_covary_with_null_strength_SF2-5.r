@@ -2,7 +2,7 @@
 
 
 #' Sample a series of population parameter configurations of a control and experiment group
-#' where one parameter of agreement is swept towards increasing disagreement. 
+#' where one parameter of agreement is swept towards increasing null strength. 
 #' Candidate statistics means are calculated based on repeated samples.
 #' Correlation between mean value of each statistic and the agreement parameters 
 #' are calculated and visualized in a heat map table. 
@@ -69,7 +69,7 @@ df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, r
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = TRUE,
+                                    include_bf = include_bf, parallel_sims = FALSE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, is_plotted = FALSE)
 # Plot stat values over independent variable

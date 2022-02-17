@@ -170,6 +170,54 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
 
 
 
+credint <- function(x,y, conf.level= 0.95, num_param_sims = 250/(1-conf.level), 
+                    sharedVar=FALSE, relative = FALSE) {
+  # x control group
+  # y experiment group
+  
+  xbar <- mean(x)
+  ybar <- mean(y)
+  s2x <- var(x)
+  s2y <- var(y)
+  m <- length(x)
+  n <- length(y)
+  if(sharedVar){
+    shape <- .5*(m + n - 2)
+    scale <- .5*((m-1)*s2x + (n-1)*s2y)
+    ssSims <- 1/rgamma(num_param_sims, shape = shape, rate = scale)
+    mux_sims <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ssSims/m))
+    muy_sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ssSims/n))
+  }else{ # different variances
+    shape1 <- .5*(m-1)
+    scale1 <- .5*(m-1)*s2x
+    shape2 <- .5*(n-1)
+    scale2 <- .5*(n-1)*s2y
+    ss1Sims <- 1/rgamma(n = num_param_sims, shape = shape1, rate = scale1)
+    ss2Sims <- 1/rgamma(n = num_param_sims, shape = shape2, rate = scale2)
+    mux_sims  <- rnorm(n = num_param_sims, mean = xbar, sd = sqrt(ss1Sims/m))
+    muy_sims <- rnorm(n = num_param_sims, mean = ybar, sd = sqrt(ss2Sims/n))
+  }
+  if(!relative){
+    cdf <- ecdf(muy_sims - mux_sims)
+  }else{
+    cdf <- ecdf((muy_sims - mux_sims)/mux_sims)
+  }
+  
+
+  b_lo <- uniroot(function(x){ cdf(x) - (1-conf.level)/2},
+                  lower = 0,
+                  upper = max(c(abs(x),abs(y))),
+                  extendInt = "yes")$root
+  
+  b_hi <- uniroot(function(x){ cdf(x) - (1-(1-conf.level)/2)},
+                  lower = 0,
+                  upper = max(c(abs(x),abs(y))),
+                  extendInt = "yes")$root
+  
+  return(c(b_lo, b_hi))
+  
+}
+
 
 
 
