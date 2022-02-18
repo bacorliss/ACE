@@ -175,6 +175,7 @@ row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
 }
 
 
+quiet <- function(x) { sink(tempfile()); on.exit(sink()); invisible(force(x)) } 
 
 row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
   #' @description Calculates bayes factor across rows for two groups.
@@ -186,13 +187,12 @@ row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
   #' @param paired boolean for paired data
   #' 
   #' @return vector of bayes factor 1xN samples
-
+  
   # Ignore diagnostic messages during function call.
   wrap_fun <-  function(x1,x2)   
-    {extractBF(ttestBF(x = x1,  y = x2, nullInterval = nullInterval, paired  = paired), onlybf = TRUE)}
-
-  bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,]))
-
+    {extractBF(ttestBF(x = x1,  y = x2, nullInterval = nullInterval, paired  = paired), onlybf = TRUE)}[1]
+  capture.output(type="message",bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,])))
+  
   return(bfx)
 }
 
@@ -342,7 +342,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_pretty$rsd_dm <- "r*s[DM]"
   
   # 5) Bayes Factor
-  df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, nullInterval = c(-1,1))
+  df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, nullInterval = c(-1,1)/df$sd_dm)
   df_ldt$bf <- "<"
   df_lat$bf <- ">"
   df_pretty$bf <- "BF"
@@ -356,7 +356,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_pretty$pvalue <- "p[N]"
   
   # 7) TOST p value (Two tailed equivalence test)
-  df$tostp <- row_tost_2s(x_b, x_a,low_eqbound = -1*df$sd_dm,high_eqbound = 1*df$sd_dm,
+  df$tostp <- row_tost_2s(x_b, x_a, eqbounds = c(-1, 1),
                           conf.level = conf.level)
   df_ldt$tostp <- "<"
   df_lat$tostp <- ">"
@@ -364,9 +364,9 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   
   
   # 8) Second Generation P value
-  df$p2 <- row_sgpv(x_a, x_b, null_lo = -1*df$sd_dm, null_hi = 1*df$sd_dm)
-  df_ldt$p2 <- "<"
-  df_lat$p2 <- ">"
+  df$p2 <- row_sgpv(x_a, x_b, null.lo = -1, null.hi = 1)
+  df_ldt$p2 <- ">"
+  df_lat$p2 <- "<"
   df_pretty$p2 <- "P[delta]"
   
 

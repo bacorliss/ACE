@@ -914,7 +914,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
       registerDoParallel(cl)
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
-                      c("BayesFactor","TOSTER"),
+                      c("BayesFactor","TOSTER", "sgpv"),
                 .export = c(row_stats_toolbox_fun, mdm_functions,
                             "quantify_population_config")) %dopar% {
         #calling a function
