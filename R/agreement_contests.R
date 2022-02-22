@@ -883,7 +883,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
                                 parallel_sims = TRUE,  stat_exclude_list = NULL,
-                                agreement = "ldt") {
+                                agreement = "ldt", delta, is_delta_relative = FALSE) {
   #' @description Given a data frame of pop. params and input data for each 
   #' experiment group, quantify mean values and comparison error of various 
   #' candidate statistics over repeated samples.
@@ -896,14 +896,13 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
   #' @param parallel_sims flag to parallelize simulation across CPU cores (recommended)
   #' 
   #' @return df dataframe with pop params and comparison error rates of each candidate statistics.
-
+  
   # Initialize output data frame
   n_sims = dim(df_in)[1]
   df <- df_in
   
   # save(list = ls(all.names = TRUE), file = "temp/quantify_population_configs.RData",envir = environment())
   # # load(file = "temp/quantify_population_configs.RData")
-
   
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
@@ -921,7 +920,8 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         tempMatrix <- quantify_population_config(df[n,], include_bf, rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE,
                                                stat_exclude_list = stat_exclude_list,
-                                               agreement = agreement) 
+                                               agreement = agreement, delta = delta,
+                                               is_delta_relative = is_delta_relative) 
         tempMatrix
       }
       #stop cluster
@@ -934,7 +934,8 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         df_list[[n]] <- quantify_population_config(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE, 
                                             stat_exclude_list = stat_exclude_list,
-                                            agreement = agreement) 
+                                            agreement = agreement, delta = delta,
+                                            is_delta_relative = is_delta_relative) 
       }
       df <- bind_rows(df_list)
     }
@@ -952,7 +953,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
 
 
 quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE, stat_exclude_list = NULL, agreement = "ldt") {
+                                      parallelize_bf = FALSE, stat_exclude_list = NULL, agreement = "ldt", delta, is_delta_relative = FALSE) {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
   #' 
@@ -991,11 +992,16 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
                 ncol = df$n_2b)
   
   
-  
+  # Caculate delta or relative delta
+  # if (is_delta_relative) { deltas = df$mu_1a * delta}
+
   # Calculate effect sizes for both experiments
-  dfs_1 <- quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+  dfs_1 <- 
+    quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+                       delta = delta, is_delta_relative = is_delta_relative,
                                      stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_1)
   dfs_2 <- quantify_row_stats(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
+                              delta = delta, is_delta_relative = is_delta_relative,
                                      stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
   stat_list <- colnames(dfs_1)
   
@@ -1327,7 +1333,7 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, 
                                       stat_exclude_list= c("ldm", "rldm"),
-                                      agreement = "ldt") {
+                                      agreement = "ldt", delta, is_delta_relative) {
   #' @description 
   #' 
   #' @param df_init dataframe of population param sets by row
@@ -1347,7 +1353,7 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' analysis
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
-
+  
   save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
   # load(file = "temp/process_agreement_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
@@ -1361,7 +1367,8 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
                                       data_file_name = paste(fig_name,".rds",sep = ""),
                                       include_bf = include_bf,parallel_sims = parallel_sims,
                                       stat_exclude_list=stat_exclude_list,
-                                      agreement = agreement)
+                                      agreement = agreement, delta = delta,
+                                      is_delta_relative = is_delta_relative)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary

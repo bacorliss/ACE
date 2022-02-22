@@ -75,7 +75,7 @@ scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5)
 zeroed_scale_scores <- scale_scores
 zeroed_scale_scores[!scale_scores_sig] <- 0
 png(paste(sum_fig_path, "/F", fig_num, "_disrisk_assessment raw scale.png",sep=""),    
-    width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
+    width = 5.75*300, height = 2.17*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scale_scores_sig,1.5);}, 
           col = my_palette,  Rowv = F, Colv = F, sepwidth = c(0,0),
@@ -127,7 +127,7 @@ rscale_scores_sig <- !sapply(dfs_relative, function(x) x$df_plotted$is_mean_0.5)
 zeroed_rscale_scores <- rscale_scores
 zeroed_rscale_scores[!rscale_scores_sig] <- 0
 png(paste(sum_fig_path,"/F", fig_num, "_disrisk_assessment relative scale.png",sep=""),    
-    width = 5.63*300, height = 2.5*300, res = 300, pointsize = 8)  
+    width = 5.75*300, height = 2.17*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_rscale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(rscale_scores_sig,1.5);},
           col = my_palette,  Rowv=F, Colv=F, sepwidth=c(0,0),

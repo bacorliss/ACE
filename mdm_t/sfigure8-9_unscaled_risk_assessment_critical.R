@@ -80,7 +80,7 @@ df_unscaled_crit[[1]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                                    y_ax_str = "abs(~mu[DM]*phantom(.))",
                                                    include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                                   fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 
 
 
@@ -122,7 +122,7 @@ df_unscaled_crit[[2]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                                    y_ax_str = "sigma[D]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                                   fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 
 
 
@@ -165,7 +165,7 @@ df_unscaled_crit[[3]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                                    y_ax_str = "df[D]",
                                                    include_bf = include_bf, parallel_sims = TRUE,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                                   fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 
 
 
@@ -215,7 +215,7 @@ df_unscaled_crit[[4]] <-
   process_agreement_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 
 
 
@@ -267,22 +267,22 @@ df_unscaled_crit[[5]] <-
   process_agreement_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_crit[[6]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_crit[[7]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_crit[[8]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 
 
 dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)

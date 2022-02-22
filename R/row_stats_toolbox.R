@@ -89,7 +89,7 @@ row_confint_z  <- function(m_c,m_e, conf.level = 0.95) {
 }
 
 row_confint_t  <- function(m_c,m_e, conf.level = 0.95) {
-  ci <- sapply(1:dim(m_c)[1], function(i)  t.test(x=m_e[i,], y=m_c[i,])$conf.int)
+  ci <- sapply(1:dim(m_c)[1], function(i)  t.test(x=m_e[i,], y=m_c[i,], conf.level = conf.level) $conf.int)
   df_ci <- data.frame(conf.lo = ci[1,], conf.hi = ci[2,])
   return(df_ci)
 }
@@ -177,7 +177,7 @@ row_macb_tdist_2sample  <- function(m_c, m_e, ...) {
 
 quiet <- function(x) { sink(tempfile()); on.exit(sink()); invisible(force(x)) } 
 
-row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
+row_bayesf_2s <- function(m_c, m_e, deltas = NULL, paired = FALSE) {
   #' @description Calculates bayes factor across rows for two groups.
   #' @param m_c matrix of observations from control group where rows are separate
   #'  samples
@@ -187,11 +187,16 @@ row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
   #' @param paired boolean for paired data
   #' 
   #' @return vector of bayes factor 1xN samples
-  
+  #' 
   # Ignore diagnostic messages during function call.
-  wrap_fun <-  function(x1,x2)   
+  
+  # If only one delta specified, make it delta for all rows
+  if (length(deltas)==1) {deltas <- rep(deltas, dim(m_c)[2])}
+  
+  wrap_fun <-  function(x1,x2, nullInterval)   
     {extractBF(ttestBF(x = x1,  y = x2, nullInterval = nullInterval, paired  = paired), onlybf = TRUE)}[1]
-  capture.output(type="message",bfx <- sapply(1:dim(m_c)[1], function(i) wrap_fun(m_c[i,], m_e[i,])))
+  capture.output(type="message",bfx <- sapply(1:dim(m_c)[1], function(i) 
+    wrap_fun(m_c[i,], m_e[i,], c(-deltas[i],deltas[i]))))
   
   return(bfx)
 }
@@ -217,7 +222,7 @@ row_bayesf_2s <- function(m_c, m_e, nullInterval = NULL, paired = FALSE) {
 # }
 
 
-row_sgpv <- function(m_c, m_e, null.lo, null.hi){
+row_sgpv <- function(m_c, m_e,  null.los, null.his, conf.level){
   #' @description Calculates second generation p-values across rows for two groups.
   #' @param m_c matrix of observations from control group where rows are separate
   #'  samples
@@ -227,27 +232,35 @@ row_sgpv <- function(m_c, m_e, null.lo, null.hi){
   #' @param null.hi list of variables to exclude
   #' 
   #' @return vector of p-values, 1xN, where N is number of samples
-  df_ci <- row_confint_t(m_c, m_e)
+  #' 
 
-  p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo = null.lo, null.hi = null.hi)$p.delta
+  df_ci <- row_confint_t(m_c, m_e, conf.level = conf.level)
+  
+  p_sg <- sgpvalue( df_ci$conf.lo, df_ci$conf.hi, null.lo = null.los,
+                    null.hi = null.his)$p.delta
   return(p_sg)
 }
 
 
 
-row_tost_2s <- function (m_c, m_e, eqbounds = NULL, conf.level = 0.95) {
-  
+row_tost_2s <- function (m_c, m_e, deltas = NULL, conf.level = 0.95) {
+
   n1 <- dim(m_c)[2]
   n2 <- dim(m_e)[2] 
   s1 <- rowSds(m_c)
   s2 <- rowSds(m_e)
   s_dm <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
 
+  # If only one delta specified, make it delta for all rows
+  if (length(deltas)==1) {deltas <- rep(deltas, dim(m_c)[2])}
+  # Deltas define lower and upper bound for each sample
+  lo_bounds <- -deltas
+  hi_bounds <- deltas
   
-  t_lower  <-  ( rowMeans(m_c) - rowMeans(m_e) - eqbounds[1])  / s_dm 
+  t_lower  <-  ( rowMeans(m_c) - rowMeans(m_e) - lo_bounds)  / s_dm 
   p_low <- rowmin_2col((1 - pt(t_lower, df = n1+n2-1)) * 0.05/(1-conf.level),1)
   
-  t_upper <-  ( rowMeans(m_c) - rowMeans(m_e) - eqbounds[2])  / s_dm 
+  t_upper <-  ( rowMeans(m_c) - rowMeans(m_e) - hi_bounds)  / s_dm 
   p_high <- rowmin_2col(pt(t_upper, df = n1+n2-1) * 0.05/(1-conf.level),1)
   # Quick max value of two vectors
   p_tost_fast <- rowmax_2col(p_low,p_high)
@@ -281,7 +294,8 @@ row_tost_2s <- function (m_c, m_e, eqbounds = NULL, conf.level = 0.95) {
 
 
 quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE, 
-                               stat_exclude_list=NULL, conf.level = 0.95) {
+                               stat_exclude_list=NULL, conf.level = 0.95, delta,
+                               is_delta_relative) {
   #' @description Given two matrices of measurements, with rows representing 
   #' samples and columns observations, calculates a collection of effect size
   #' statistics and reports the mean and standard deviation across samples (only 
@@ -296,6 +310,10 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   #' @param parallelize_bf flag for parallel processing of Bayes Factor 
   #' (since current implementation in R is slow)
   #' @param exclude_list list of variables to exclude
+  #' @param delta the half width of the null region used for many of the 
+  #' statistics, including tostp, p2, and bf. Null region assumed to be zero
+  #' centered, so a null region of [-1,1] has a delta of 1.Units assumed to be in
+  #' units of effect size, so no normalized to pooled standard deviation.
   #' 
   #' @return dataframe of mean and standard deviation for each effect size statistic
   
@@ -303,13 +321,15 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   n_b = dim(x_b)[2]
   n_samples = dim(x_a)[1]
   df_d = n_a + n_b - 2
+
+  # Deltas defines distance from zero in unscaled or relative units
+  if (is_delta_relative) {deltas = delta*rowMeans(x_a)}
+  else { deltas = rep(delta,n_a)}
   
-  # Initialize data frames so that
-  stat_list <- c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue", "tostp", "p2",
-                 "cohend", "mdm", "rmdm", "ldm", "rldm", "rand")
-  
-  # browser();
-  
+  # Initialize data frames so that only included stats are columns
+  stat_list <- setdiff(c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue",
+                         "tostp", "p2", "cohend", "mdm", "rmdm", "ldm", "rldm",
+                         "rand"), stat_exclude_list)
   df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
   colnames(df) <- stat_list
   df_ldt <- df[1,]
@@ -318,101 +338,121 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   df_pretty <- df[1,]
     
   # 1) Mean of the difference of means
-  df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
-  df_ldt$xbar_dm <- "<"
-  df_lat$xbar_dm <- ">"
-  df_pretty$xbar_dm <- "bar(x)[DM]"
-
+  if (is.element("xbar_dm", stat_list)) {
+    df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
+    df_ldt$xbar_dm <- "<"
+    df_lat$xbar_dm <- ">"
+    df_pretty$xbar_dm <- "bar(x)[DM]"
+  }
+  
   # 2) Rel Means: mean of the difference in means divided by control group mean
-  df$rxbar_dm <- df$xbar_dm/rowMeans(x_a)
-  df_ldt$rxbar_dm <- "<"
-  df_lat$rxbar_dm <- ">"
-  df_pretty$rxbar_dm <- "r*bar(x)[DM]"
+  if (is.element("rxbar_dm", stat_list)) {
+    df$rxbar_dm <- df$xbar_dm/rowMeans(x_a)
+    df_ldt$rxbar_dm <- "<"
+    df_lat$rxbar_dm <- ">"
+    df_pretty$rxbar_dm <- "r*bar(x)[DM]"
+  }
   
   # 3) Std of the difference in means
-  df$sd_dm <- sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
-  df_ldt$sd_dm <- "<"
-  df_lat$sd_dm <- "<"
-  df_pretty$sd_dm <- "s[DM]"
+  if (is.element("sd_dm", stat_list)) {
+    df$sd_dm <- sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
+    df_ldt$sd_dm <- "<"
+    df_lat$sd_dm <- "<"
+    df_pretty$sd_dm <- "s[DM]"
+  }
   
   # 4) Relative STD: std of difference in means divided by midpoint between group means
-  df$rsd_dm <- df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
-  df_ldt$rsd_dm <- "<"
-  df_lat$rsd_dm <- "<"
-  df_pretty$rsd_dm <- "r*s[DM]"
+  if (is.element("rsd_dm", stat_list)) {
+    df$rsd_dm <- df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
+    df_ldt$rsd_dm <- "<"
+    df_lat$rsd_dm <- "<"
+    df_pretty$rsd_dm <- "r*s[DM]"
+  }
   
   # 5) Bayes Factor
-  df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, nullInterval = c(-1,1)/df$sd_dm)
-  df_ldt$bf <- "<"
-  df_lat$bf <- ">"
-  df_pretty$bf <- "BF"
+  if (is.element("bf", stat_list)) {
+    df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, deltas = deltas/df$sd_dm)
+    # Delta is specified in units relative to standard deviation for BF
+    df_ldt$bf <- "<"
+    df_lat$bf <- ">"
+    df_pretty$bf <- "BF"
+  }
   
   # 6) NHST P-value: The more equal experiment will have a larger p-value
   # diff_z_score <- row_zscore_2s(x_b, x_a)
-  # df$pvalue = rowmin_2col(v1 = 2*pnorm(-abs(diff_z_score))*0.05/(1-conf.level),1)
-  df$pvalue <- row_ttest_2s(x_b, x_a, conf.level = conf.level)
-  df_ldt$pvalue <- ">"
-  df_lat$pvalue <- "<"
-  df_pretty$pvalue <- "p[N]"
+  if (is.element("pvalue", stat_list)) {
+    df$pvalue <- row_ttest_2s(x_b, x_a, conf.level = conf.level)
+    df_ldt$pvalue <- ">"
+    df_lat$pvalue <- "<"
+    df_pretty$pvalue <- "p[N]"
+  }
   
   # 7) TOST p value (Two tailed equivalence test)
-  df$tostp <- row_tost_2s(x_b, x_a, eqbounds = c(-1, 1),
-                          conf.level = conf.level)
-  df_ldt$tostp <- "<"
-  df_lat$tostp <- ">"
-  df_pretty$tostp <- "p[E]"
-  
+  if (is.element("tostp", stat_list)) {
+    df$tostp <- row_tost_2s(x_b, x_a, deltas = deltas,
+                            conf.level = conf.level)
+    df_ldt$tostp <- "<"
+    df_lat$tostp <- ">"
+    df_pretty$tostp <- "p[E]"
+  }
   
   # 8) Second Generation P value
-  df$p2 <- row_sgpv(x_a, x_b, null.lo = -1, null.hi = 1)
-  df_ldt$p2 <- ">"
-  df_lat$p2 <- "<"
-  df_pretty$p2 <- "P[delta]"
+  if (is.element("p2", stat_list)) {
+    df$p2 <- row_sgpv(x_a, x_b, null.los = -deltas, null.his = deltas, conf.level = conf.level)
+    df_ldt$p2 <- ">"
+    df_lat$p2 <- "<"
+    df_pretty$p2 <- "p[delta]"
+  }
   
-
   # 8) Cohens D
-  df$cohend <- row_cohend(x_a, x_b)
-  df_ldt$cohend <- "<"
-  df_lat$cohend <- ">"
-  df_pretty$cohend <- "Cd"
+  if (is.element("cohend", stat_list)) {
+    df$cohend <- row_cohend(x_a, x_b)
+    df_ldt$cohend <- "<"
+    df_lat$cohend <- ">"
+    df_pretty$cohend <- "Cd"
+  }
   
   # 9) most difference in means
-  df$mdm <- row_mdm(x_a, x_b, conf.level = conf.level)
-  df_ldt$mdm <- "<"
-  df_lat$mdm <- ">"
-  df_pretty$mdm <- "delta[M]"
+  if (is.element("mdm", stat_list)) {
+    df$mdm <- row_mdm(x_a, x_b, conf.level = conf.level)
+    df_ldt$mdm <- "<"
+    df_lat$mdm <- ">"
+    df_pretty$mdm <- "delta[M]"
+  }
   
   # 10) Relative most difference in means
-  df$rmdm <- row_rmdm(x_a, x_b, conf.level = conf.level) 
-  df_ldt$rmdm <- "<"
-  df_lat$rmdm <- ">"
-  df_pretty$rmdm <- "r*delta[M]"
+  if (is.element("rmdm", stat_list)) {
+    df$rmdm <- row_rmdm(x_a, x_b, conf.level = conf.level) 
+    df_ldt$rmdm <- "<"
+    df_lat$rmdm <- ">"
+    df_pretty$rmdm <- "r*delta[M]"
+  }
   
   # 11) Least Difference in Means
-  df$ldm <- row_ldm(x_a, x_b, conf.level = conf.level)
-  df_ldt$ldm <- "<"
-  df_lat$ldm <- ">"
-  df_pretty$ldm <- "delta[L]"
+  if (is.element("ldm", stat_list)) {
+    df$ldm <- row_ldm(x_a, x_b, conf.level = conf.level)
+    df_ldt$ldm <- "<"
+    df_lat$ldm <- ">"
+    df_pretty$ldm <- "delta[L]"
+  }
   
   # 12) Relative Least Difference in Means
-  df$rldm <- row_rldm(x_a, x_b, conf.level = conf.level)
-  df_ldt$rldm <- "<"
-  df_lat$rldm <- ">"
-  df_pretty$rldm <- "r*delta[L]"
+  if (is.element("rldm", stat_list)) {
+    df$rldm <- row_rldm(x_a, x_b, conf.level = conf.level)
+    df_ldt$rldm <- "<"
+    df_lat$rldm <- ">"
+    df_pretty$rldm <- "r*delta[L]"
+  }
   
   # 13) Random group
-  df$rand <- rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
-                           nrow = n_samples, ncol = 50))
-  df_ldt$rand <- "<"
-  df_lat$rand <- ">"
-  df_pretty$rand <- "Rnd"
+  if (is.element("rand", stat_list)) {
+    df$rand <- rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
+                               nrow = n_samples, ncol = 50))
+    df_ldt$rand <- "<"
+    df_lat$rand <- ">"
+    df_pretty$rand <- "Rnd"
+  }
   
-  
-  # Drop any statistics requested by user
-  df <- df[ , !(names(df) %in% stat_exclude_list)]
-  df_ldt <- df_ldt[ , !(names(df_ldt) %in% stat_exclude_list)]
-  df_lat <- df_lat[ , !(names(df_lat) %in% stat_exclude_list)]
-  df_pretty <- df_pretty[ , !(names(df_pretty) %in% stat_exclude_list)]
   
   # Store attributes within df
   attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
@@ -420,9 +460,7 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   attr(df,"lat") <- df_lat
   attr(df,"varnames") <- colnames(df)
   attr(df,"varnames_pretty") <- df_pretty
-  
-  
-  # dfs = list("df" = df, "df_ldt" = df_ldt)
+
   return(df)
 }
 

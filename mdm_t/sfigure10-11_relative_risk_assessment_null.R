@@ -39,7 +39,7 @@ include_bf = TRUE
 rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
                             "_rscale_contest_results.csv",sep="")
 df_relative_null = list();
-
+delta = 0.1
 
 
 ###############################################################################
@@ -87,7 +87,7 @@ df_relative_null[[1]] <-
                             y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 
 
 
@@ -129,7 +129,7 @@ df_relative_null[[2]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                     y_ax_str = "r*sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path)
+                                    fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 
 
 
@@ -173,7 +173,7 @@ df_relative_null[[3]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                                    y_ax_str = "df[D]", 
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 
 
 
@@ -215,7 +215,7 @@ df_relative_null[[4]] <- process_agreement_contest(df_init, gt_colname = gt_coln
                                                    y_ax_str = "alpha[DM]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path)
+                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 
 
 
@@ -260,22 +260,22 @@ df_relative_null[[5]] <-
   process_agreement_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 df_relative_null[[6]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "r*sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 df_relative_null[[7]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]", 
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 df_relative_null[[8]] <- 
   process_agreement_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
-                            fig_path = fig_path)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
 
 
 
