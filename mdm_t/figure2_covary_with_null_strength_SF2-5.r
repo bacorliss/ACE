@@ -49,10 +49,10 @@ delta = 1
 #------------------------------------------------------------------------------
 # Fixed mu_d, but as it increases, rmu_d decreases
 set.seed(rand.seed)
-mus_d_vect = seq(5.00, .1,-0.25)
+mus_d_vect = seq(10, 1,-0.25)
 mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
-sigmas_ab_vect = 1e-4
+sigmas_ab_vect = 1
 
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
@@ -84,7 +84,7 @@ df_mu_spearman <-
 # Unscaled Sigma: spearman rho of sigma versus abs(mean of each stat)
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-sigmas_ab_vect = seq(5.01,.01,-0.25); n_sims = length(sigmas_ab_vect)
+sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
 mus_a_vect = sigmas_ab_vect*10
 mus_b_vect = mus_a_vect;
 gt_colnames = "is_mudm_1ldt2"
@@ -120,7 +120,7 @@ df_sigma_spearman <-
 set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
 mus_ab_vect = 10
-sigmas_ab_vect = .5
+sigmas_ab_vect = 1
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_df", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
@@ -193,7 +193,7 @@ df_alpha_spearman <-
 # Relative Mean:  decreasing rmu has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-mus_a_vect =  seq(10,20*10,0.2*10); n_sims = length(mus_a_vect) 
+mus_a_vect =  seq(20, 20*10, 2); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+10
 sigmas_ab_vect = 0.1*mus_a_vect 
 gt_colnames = "is_mudm_1ldt2"
@@ -227,9 +227,9 @@ df_rmu_spearman <-
 # Relative sigma: decreasing rsigma has higher agreement
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-mus_b_vect =  seq(10,20,0.5); n_sims = length(mus_b_vect) 
+mus_b_vect =  seq(10, 20, 0.5); n_sims = length(mus_b_vect) 
 mus_a_vect = mus_b_vect
-sigmas_ab_vect = 1
+sigmas_ab_vect = 5
 gt_colnames = "is_mudm_1ldt2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_rsigma", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed, 
@@ -302,11 +302,11 @@ fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
 df_init <- generate_population_configs(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 50, 
                                    sigmas_1a = 1, 
-                                   mus_1b  = 50.5, 
+                                   mus_1b  = 50, 
                                    sigmas_1b = 1,
                                    mus_2a  = 50, 
                                    sigmas_2a = 1, 
-                                   mus_2b  = 50.5,  
+                                   mus_2b  = 50,  
                                    sigmas_2b = 1,
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = alpha_1,
@@ -365,7 +365,7 @@ scores_sig = cbind(df_mu_spearman$is_spearman_rho_sig, df_sigma_spearman$is_spea
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0
 
-png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_spearman_unscaled_units.png",sep=""),    
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "-1_spearman_unscaled.png",sep=""),    
     width = 2*300, height = 2.15*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5)},
@@ -389,7 +389,7 @@ scores_sig = cbind(df_rmu_spearman$is_spearman_rho_sig, df_rsigma_spearman$is_sp
 zeroed_scores = scores
 zeroed_scores[!scores_sig] <- 0
 
-png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "_spearman_relative_scale_units.tif",sep=""),    
+png(paste(base_dir, "/figure/F", fig_num, "/F", fig_num, "-2_spearman_relative.tif",sep=""),    
     width = 2*300, height = 2.15*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scores_sig,1.5);},

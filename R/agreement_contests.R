@@ -58,7 +58,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     n_1a, n_1b, n_2a, n_2b,
                                     alpha_1 = 0.05, alpha_2 = 0.05,
                             
-                                    toggle_sign_rmu_d_hold_sigma = FALSE,
+                                    toggle_sign_rmu_d_hold_rsigma = FALSE,
                                     toggle_sign_mean_ab = FALSE,
                                     switch_group_ab = FALSE,
                                     switch_mu_ab_12 = FALSE,
@@ -97,7 +97,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   #' @param mus_2ao mu offset between group a and b experiment 2
   #' @param sigmas_2ao sigma offset between group a and b experiment 2
   #' @param switch_group_ab flag to randomly switch group a and b assigments
-  #' @param toggle_sign_rmu_d_hold_sigma flag to randomly switch direction of change from a to b
+  #' @param toggle_sign_rmu_d_hold_rsigma flag to randomly switch direction of change from a to b
   #' @param switch_exp_12 flag to randomly switch experiment 1 and 2 assignments
   #' @param fig_name base string name of output figures saved to disk
   #' @param fig_path path to output figures saved to disk
@@ -156,7 +156,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                           alpha_1 = alpha_1, alpha_2 = alpha_2) 
   }
   # Switch params between groups/experiments if specified with flags
-  df <- pop_configs_switches(df = df_init, toggle_sign_rmu_d_hold_sigma = toggle_sign_rmu_d_hold_sigma, 
+  df <- pop_configs_switches(df = df_init, toggle_sign_rmu_d_hold_rsigma = toggle_sign_rmu_d_hold_rsigma, 
                             toggle_sign_mean_ab = toggle_sign_mean_ab, 
                             switch_group_ab = switch_group_ab,
                             switch_mu_ab_12 = switch_mu_ab_12, 
@@ -471,7 +471,7 @@ pop_configs_from_ab <- function( n_samples, n_sims,
 }
 
 
-pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_sign_mean_ab, 
+pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_rsigma, toggle_sign_mean_ab, 
                                 switch_group_ab, switch_mu_ab_12, switch_rmu_d_12_hold_rsigma,
                                 switch_mu_d_12, switch_sigma_ab_12, switch_rsigma_ab_12_hold_sigma_a,
                                 switch_alpha_12, switch_n_12) {
@@ -481,7 +481,7 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
   #' other agreement parameters
   #' 
   #' @param df_init dataframe of population params
-  #' @param toggle_sign_rmu_d_hold_sigma flag to randomly switch the sign of the difference 
+  #' @param toggle_sign_rmu_d_hold_rsigma flag to randomly switch the sign of the difference 
   #' in means between A and B. So if A is larger than a by some amount, B now 
   #' becomes smaller than A by the same amount
   #' @param toggle_sign_mean_ab flag to randomly switch the sign of the means 
@@ -493,12 +493,6 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
   #' @return df dataframe of pop param sets with switches applied 
   
   df <- df_init
-  # browser();
-  # hist(df$sigma_1d/(df$mu_1a + 0.5* df$mu_1d))
-  # hist(df$sigma_2d/(df$mu_2a + 0.5* df$mu_2d))
-  
-  # browser();
-  
   
   if (switch_rsigma_ab_12_hold_sigma_a) {
     # browser();
@@ -508,12 +502,12 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
     prev_sigma_1a <- df$sigma_1a;   
     prev_sigma_2a <- df$sigma_2a;   
     
-    prev_rsigma_1d <- df$sigma_1d/(0.5*(df$mu_1a + df$mu_1b));
-    prev_rsigma_2d <- df$sigma_2d/(0.5*(df$mu_2a + df$mu_2b));
+    prev_rsigma_1d <- df$sigma_1d/df$mu_1a;
+    prev_rsigma_2d <- df$sigma_2d/df$mu_2a;
     
     # Reassign sigma_d
-    new_sigma_1d <- prev_rsigma_1d * (0.5*(df$mu_2a + df$mu_2b))
-    new_sigma_2d <- prev_rsigma_2d * (0.5*(df$mu_1a + df$mu_1b))
+    new_sigma_1d <- prev_rsigma_1d * df$mu_2a
+    new_sigma_2d <- prev_rsigma_2d * df$mu_1a
     
     
     # Recalculate sigma_b from new rsigma
@@ -647,8 +641,8 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
     orig_rmu_1d <- df$mu_1d/df$mu_1a; orig_rmu_2d <- df$mu_2d/df$mu_2a;  
    
     
-    orig_rsigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2) / (df$mu_1a + 0.5* df$mu_1d)
-    orig_rsigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) / (df$mu_2a + 0.5* df$mu_2d)
+    orig_rsigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2) / df$mu_1a
+    orig_rsigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) / df$mu_2a
     
 
     df$mu_1d[switch_boolean] = orig_rmu_2d[switch_boolean] * df$mu_1a[switch_boolean]
@@ -658,13 +652,13 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
     df$mu_2b[switch_boolean] <- df$mu_2a[switch_boolean] + df$mu_2d[switch_boolean]
     
     # Hold rsigma_d constant by calculating sigma_1b
-    new_sigma_1d <- orig_rsigma_1d * (df$mu_1a + 0.5 * df$mu_1d)
-    new_sigma_2d <- orig_rsigma_2d * (df$mu_2a + 0.5 * df$mu_2d)
+    new_sigma_1d <- orig_rsigma_1d * df$mu_1a
+    new_sigma_2d <- orig_rsigma_2d * df$mu_2a
     new_sigma_1b <- sqrt(new_sigma_1d^2 - df$sigma_1a^2)
     new_sigma_2b <- sqrt(new_sigma_2d^2 - df$sigma_2a^2)
     
-    new_rsigma_1d <- sqrt(df$sigma_1a^2 + new_sigma_1b^2)/(df$mu_1a + 0.5 * df$mu_1d)
-    new_rsigma_2d <- sqrt(df$sigma_2a^2 + new_sigma_2b^2)/(df$mu_2a + 0.5 * df$mu_2d)
+    new_rsigma_1d <- sqrt(df$sigma_1a^2 + new_sigma_1b^2)/df$mu_1a
+    new_rsigma_2d <- sqrt(df$sigma_2a^2 + new_sigma_2b^2)/df$mu_2a
     
     # Change sigma_[1,2]b to that the rsigma is the same
     df$sigma_1b = new_sigma_1b
@@ -674,7 +668,7 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
   } 
   
 
-  if (toggle_sign_rmu_d_hold_sigma) { 
+  if (toggle_sign_rmu_d_hold_rsigma) { 
     # Randomly switch sign of D for both experiments, recalculate B
     # Then recalculate sigma_b so that rsigma_d is the same as before
     # browser();
@@ -685,8 +679,8 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
     orig_mu_1d <- df$mu_1d;  orig_mu_2d <- df$mu_2d;  
     orig_sigma_1b <- df$sigma_1b; orig_sigma_2b <- df$sigma_2b;
     
-    orig_rsigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2) / (df$mu_1a + 0.5* orig_mu_1d)
-    orig_rsigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) / (df$mu_2a + 0.5* orig_mu_2d)
+    orig_rsigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2) / (df$mu_1a)
+    orig_rsigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) / (df$mu_2a)
     
     # Switch sign of mu_d randomly
     df$mu_1d[swith_boolean] =  -1 * orig_mu_1d[swith_boolean]
@@ -713,21 +707,17 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_sigma, toggle_s
     #
     
     # rsigma must stay equal, so sigma_b is adjusted
-    new_sigma_1d <- orig_rsigma_1d * (df$mu_1a + 0.5 * df$mu_1d)
-    new_sigma_2d <- orig_rsigma_2d * (df$mu_2a + 0.5 * df$mu_2d)
+    new_sigma_1d <- orig_rsigma_1d * df$mu_1a
+    new_sigma_2d <- orig_rsigma_2d * df$mu_2a
     new_sigma_1b <- sqrt(new_sigma_1d^2 - df$sigma_1a^2)
     new_sigma_2b <- sqrt(new_sigma_2d^2 - df$sigma_2a^2)
     
-    new_rsigma_1d <- sqrt(df$sigma_1a^2 + new_sigma_1b^2)/(df$mu_1a + 0.5 * df$mu_1d)
-    new_rsigma_2d <- sqrt(df$sigma_2a^2 + new_sigma_2b^2)/(df$mu_2a + 0.5 * df$mu_2d)
+    new_rsigma_1d <- sqrt(df$sigma_1a^2 + new_sigma_1b^2)/(df$mu_1a)
+    new_rsigma_2d <- sqrt(df$sigma_2a^2 + new_sigma_2b^2)/(df$mu_2a)
     
     # Change sigma_[1,2]b to that the rsigma is the same
     df$sigma_1b = new_sigma_1b
     df$sigma_2b = new_sigma_2b
-    
-    # browser()
-    # new_rsigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2) / (df$mu_1a + 0.5 * df$mu_1d)
-    # new_rsigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) / (df$mu_2a + 0.5 * df$mu_2d)
     
   }
   
@@ -812,13 +802,14 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
   }
   df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df","alpha"))
   
-  upper_agreement = toupper(agreement)
+  if (agreement=="ldt") {strength = "HNS"} else {strength = "HES"}
+
   # Plot confidence interval of success rate for each parameter and their agreement
   gg <- ggplot(df_params, aes(x = group,  y = estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
-    ylab(bquote(Frac.~Exp[1]~.(upper_agreement)~Exp[2]~~~~~~~~~~~~phantom("."))) +
+    ylab(bquote(Frac.~Exp[1]~.(strength)~Exp[2]~~~~~~~~~~~~phantom("."))) +
     xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +

@@ -64,7 +64,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = TRUE,
                                    switch_mu_ab_12 = FALSE,
@@ -104,7 +104,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_2a = n_obs, n_2b = n_obs, 
                                    alpha_1 = 0.05, alpha_2 = 0.05,
 
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -144,7 +144,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_2a = n2, n_2b = n2, 
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -186,7 +186,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_2 = 0.05/runif(n_sims, 5, 8),
                                    
 
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -212,9 +212,9 @@ df_unscaled_null[[4]] <-
 # [Near from zero]
 #
 #------------------------------------------------------------------------------
+set.seed(rand.seed+1)
 n1 <- round(runif(n_sims, 6, 10))
 n2 <- round(runif(n_sims, 10, 14))
-set.seed(rand.seed+1)
 gt_colnames = c("is_mudm_1ldt2","is_sigmad_1ldt2", "is_dfdm_1ldt2","is_alpha_1ldt2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
@@ -233,7 +233,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_1 = 0.05/runif(n_sims, 1, 2),
                                    alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = TRUE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
