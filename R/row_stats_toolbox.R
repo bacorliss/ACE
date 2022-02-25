@@ -332,40 +332,40 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
                          "rand"), stat_exclude_list)
   df = data.frame(matrix(ncol = length(stat_list), nrow=n_samples))
   colnames(df) <- stat_list
-  df_ldt <- df[1,]
-  df_lat <- df[1,]
+  df_hnst <- df[1,]
+  df_hest <- df[1,]
   df_name <- df[1,]
   df_pretty <- df[1,]
     
   # 1) Mean of the difference of means
   if (is.element("xbar_dm", stat_list)) {
     df$xbar_dm = rowMeans(x_b) - rowMeans(x_a)
-    df_ldt$xbar_dm <- "<"
-    df_lat$xbar_dm <- ">"
+    df_hnst$xbar_dm <- "<"
+    df_hest$xbar_dm <- ">"
     df_pretty$xbar_dm <- "bar(x)[DM]"
   }
   
   # 2) Rel Means: mean of the difference in means divided by control group mean
   if (is.element("rxbar_dm", stat_list)) {
     df$rxbar_dm <- df$xbar_dm/rowMeans(x_a)
-    df_ldt$rxbar_dm <- "<"
-    df_lat$rxbar_dm <- ">"
+    df_hnst$rxbar_dm <- "<"
+    df_hest$rxbar_dm <- ">"
     df_pretty$rxbar_dm <- "r*bar(x)[DM]"
   }
   
   # 3) Std of the difference in means
   if (is.element("sd_dm", stat_list)) {
     df$sd_dm <- sqrt(rowSds(x_a)^2/n_a + rowSds(x_b)^2/n_b)
-    df_ldt$sd_dm <- "<"
-    df_lat$sd_dm <- "<"
+    df_hnst$sd_dm <- "<"
+    df_hest$sd_dm <- "<"
     df_pretty$sd_dm <- "s[DM]"
   }
   
   # 4) Relative STD: std of difference in means divided by midpoint between group means
   if (is.element("rsd_dm", stat_list)) {
     df$rsd_dm <- df$sd_dm / (rowMeans(x_a) + 0.5 * df$xbar_dm)
-    df_ldt$rsd_dm <- "<"
-    df_lat$rsd_dm <- "<"
+    df_hnst$rsd_dm <- "<"
+    df_hest$rsd_dm <- "<"
     df_pretty$rsd_dm <- "r*s[DM]"
   }
   
@@ -373,8 +373,8 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   if (is.element("bf", stat_list)) {
     df$bf <- row_bayesf_2s(x_a, x_b, paired = FALSE, deltas = deltas/df$sd_dm)
     # Delta is specified in units relative to standard deviation for BF
-    df_ldt$bf <- "<"
-    df_lat$bf <- ">"
+    df_hnst$bf <- "<"
+    df_hest$bf <- ">"
     df_pretty$bf <- "BF"
   }
   
@@ -382,8 +382,8 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   # diff_z_score <- row_zscore_2s(x_b, x_a)
   if (is.element("pvalue", stat_list)) {
     df$pvalue <- row_ttest_2s(x_b, x_a, conf.level = conf.level)
-    df_ldt$pvalue <- ">"
-    df_lat$pvalue <- "<"
+    df_hnst$pvalue <- ">"
+    df_hest$pvalue <- "<"
     df_pretty$pvalue <- "p[N]"
   }
   
@@ -391,56 +391,56 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   if (is.element("tostp", stat_list)) {
     df$tostp <- row_tost_2s(x_b, x_a, deltas = deltas,
                             conf.level = conf.level)
-    df_ldt$tostp <- "<"
-    df_lat$tostp <- ">"
+    df_hnst$tostp <- "<"
+    df_hest$tostp <- ">"
     df_pretty$tostp <- "p[E]"
   }
   
   # 8) Second Generation P value
   if (is.element("p2", stat_list)) {
     df$p2 <- row_sgpv(x_a, x_b, null.los = -deltas, null.his = deltas, conf.level = conf.level)
-    df_ldt$p2 <- ">"
-    df_lat$p2 <- "<"
+    df_hnst$p2 <- ">"
+    df_hest$p2 <- "<"
     df_pretty$p2 <- "p[delta]"
   }
   
   # 8) Cohens D
   if (is.element("cohend", stat_list)) {
     df$cohend <- row_cohend(x_a, x_b)
-    df_ldt$cohend <- "<"
-    df_lat$cohend <- ">"
+    df_hnst$cohend <- "<"
+    df_hest$cohend <- ">"
     df_pretty$cohend <- "Cd"
   }
   
   # 9) most difference in means
   if (is.element("mdm", stat_list)) {
     df$mdm <- row_mdm(x_a, x_b, conf.level = conf.level)
-    df_ldt$mdm <- "<"
-    df_lat$mdm <- ">"
+    df_hnst$mdm <- "<"
+    df_hest$mdm <- ">"
     df_pretty$mdm <- "delta[M]"
   }
   
   # 10) Relative most difference in means
   if (is.element("rmdm", stat_list)) {
     df$rmdm <- row_rmdm(x_a, x_b, conf.level = conf.level) 
-    df_ldt$rmdm <- "<"
-    df_lat$rmdm <- ">"
+    df_hnst$rmdm <- "<"
+    df_hest$rmdm <- ">"
     df_pretty$rmdm <- "r*delta[M]"
   }
   
   # 11) Least Difference in Means
   if (is.element("ldm", stat_list)) {
     df$ldm <- row_ldm(x_a, x_b, conf.level = conf.level)
-    df_ldt$ldm <- "<"
-    df_lat$ldm <- ">"
+    df_hnst$ldm <- "<"
+    df_hest$ldm <- ">"
     df_pretty$ldm <- "delta[L]"
   }
   
   # 12) Relative Least Difference in Means
   if (is.element("rldm", stat_list)) {
     df$rldm <- row_rldm(x_a, x_b, conf.level = conf.level)
-    df_ldt$rldm <- "<"
-    df_lat$rldm <- ">"
+    df_hnst$rldm <- "<"
+    df_hest$rldm <- ">"
     df_pretty$rldm <- "r*delta[L]"
   }
   
@@ -448,16 +448,16 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   if (is.element("rand", stat_list)) {
     df$rand <- rowMeans(matrix(rnorm(n_samples * 50, mean = 0, sd = 1), 
                                nrow = n_samples, ncol = 50))
-    df_ldt$rand <- "<"
-    df_lat$rand <- ">"
+    df_hnst$rand <- "<"
+    df_hest$rand <- ">"
     df_pretty$rand <- "Rnd"
   }
   
   
   # Store attributes within df
   attr(df,"user_attributes") <- c("user_attributes","hat", "varnames", "varnames_pretty")
-  attr(df,"ldt") <- df_ldt
-  attr(df,"lat") <- df_lat
+  attr(df,"hnst") <- df_hnst
+  attr(df,"hest") <- df_hest
   attr(df,"varnames") <- colnames(df)
   attr(df,"varnames_pretty") <- df_pretty
 

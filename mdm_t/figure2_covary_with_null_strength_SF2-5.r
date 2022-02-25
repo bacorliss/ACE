@@ -20,7 +20,7 @@ p_load(readr)
 p_load(gplots)
 # User defined libraries
 source("R/aces.R")
-source("R/agreement_contests.R")
+source("R/strength_risk_assessment.R")
 # Figure parameters
 #-------------------------------------------------------------------------------
 base_dir = "mdm_t"
@@ -34,7 +34,7 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 n_samples = 1e3
 n_obs = 6
 rand.seed = 1
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 parallel_sims = TRUE
 include_bf = TRUE
 delta = 1
@@ -54,7 +54,7 @@ mus_a_vect = mus_d_vect
 mus_b_vect = mus_d_vect + mus_a_vect; n_sims = length(mus_b_vect)
 sigmas_ab_vect = 1
 
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_mu", sep = "")
 df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -68,7 +68,7 @@ df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, r
                                    n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_mu <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_mu <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = TRUE,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -78,7 +78,7 @@ df_esize_mu <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_mu_spearman <- 
   plot_stats_covary_indvar(df = df_esize_mu$df_es, indvar = "mu_1dm",  indvar_pretty = "mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = 1)
+                           fig_path = fig_path,  dir_to_stronger = 1)
 
 
 # Unscaled Sigma: spearman rho of sigma versus abs(mean of each stat)
@@ -87,7 +87,7 @@ set.seed(rand.seed)
 sigmas_ab_vect = seq(10,1,-0.25); n_sims = length(sigmas_ab_vect)
 mus_a_vect = sigmas_ab_vect*10
 mus_b_vect = mus_a_vect;
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_sigma", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -101,7 +101,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_sigma <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_sigma <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "sigma[D]",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -111,7 +111,7 @@ df_esize_sigma <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_sigma_spearman <- 
   plot_stats_covary_indvar(df = df_esize_sigma$df_es, indvar = "sigma_1d", indvar_pretty = "sigma[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = 1)
+                           fig_path = fig_path,  dir_to_stronger = 1)
 
 
 # Unscaled Sample Size:   spearman rho of sigma versus abs(mean of each stat)
@@ -121,7 +121,7 @@ set.seed(rand.seed)
 n_1ab_vect = seq(5, 50,  2); n_sims = length(n_1ab_vect)
 mus_ab_vect = 10
 sigmas_ab_vect = 1
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_df", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_ab_vect, 
@@ -135,7 +135,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_df <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_df <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "df[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -145,7 +145,7 @@ df_esize_df <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_df_spearman <- 
   plot_stats_covary_indvar(df = df_esize_df$df_es, indvar = "df_1d",indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path, dir_to_better = -1)
+                           fig_path = fig_path, dir_to_stronger = -1)
 
 # Unscaled Alpha:   increasing alpha increases agreement
 #------------------------------------------------------------------------------
@@ -153,7 +153,7 @@ set.seed(rand.seed)
 alpha_1 = 0.05/seq(1, 20,1)
 alpha_2 = 0.05/seq(1, 20,1)
 n_sims = length(alpha_1)
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_raw_alpha", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 20, 
@@ -169,7 +169,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                    alpha_2 = alpha_2,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_alpha <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_alpha <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -179,7 +179,7 @@ df_esize_alpha <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_alpha_spearman <- 
   plot_stats_covary_indvar(df = df_esize_alpha$df_es, indvar = "alpha_1",  indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = -1)
+                           fig_path = fig_path,  dir_to_stronger = -1)
 
 
 
@@ -196,7 +196,7 @@ set.seed(rand.seed)
 mus_a_vect =  seq(20, 20*10, 2); n_sims = length(mus_a_vect) 
 mus_b_vect =  mus_a_vect+10
 sigmas_ab_vect = 0.1*mus_a_vect 
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_mu", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                       mus_1a  = mus_a_vect,
@@ -211,7 +211,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
 
-df_esize_rmu <- process_agreement_contest(df_init, gt_colname = gt_colnames,
+df_esize_rmu <- process_strength_contest(df_init, gt_colname = gt_colnames,
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -221,7 +221,7 @@ df_esize_rmu <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_rmu_spearman <-
   plot_stats_covary_indvar(df = df_esize_rmu$df_es, indvar = "rmu_1dm", indvar_pretty = "r*mu[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = 1)
+                           fig_path = fig_path,  dir_to_stronger = 1)
 
 
 # Relative sigma: decreasing rsigma has higher agreement
@@ -230,7 +230,7 @@ set.seed(rand.seed)
 mus_b_vect =  seq(10, 20, 0.5); n_sims = length(mus_b_vect) 
 mus_a_vect = mus_b_vect
 sigmas_ab_vect = 5
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_rsigma", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed, 
                                       mus_1a  = mus_a_vect, 
@@ -244,7 +244,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                       n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
                                       fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                       gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_rsigma <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_rsigma <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                          y_ax_str = "abs(~mu[DM]*phantom(.))",
                                          include_bf = include_bf, parallel_sims = parallel_sims,
                                          fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -254,7 +254,7 @@ df_esize_rsigma <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_rsigma_spearman <- 
   plot_stats_covary_indvar(df = df_esize_rsigma$df_es, indvar = "rsigma_1d", indvar_pretty = "r*sigma[DM]", 
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path, dir_to_better = 1)
+                           fig_path = fig_path, dir_to_stronger = 1)
 
 
 # Relative Sample Size:   increasing df has higher agreement
@@ -265,7 +265,7 @@ n_1ab_vect = seq(44, 100, 2); n_sims = length(n_1ab_vect)
 mus_a_vect = 10
 mus_b_vect = 10
 sigmas_ab_vect = 1
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_df", sep = "")
 df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = mus_a_vect, 
@@ -279,7 +279,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                    n_1a = n_1ab_vect, n_1b = n_1ab_vect, n_2a = 30, n_2b = 30,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_rdf <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_rdf <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "sigma[D]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -289,7 +289,7 @@ df_esize_rdf <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_rdf_spearman <- 
   plot_stats_covary_indvar(df = df_esize_rdf$df_es, indvar = "df_1d", indvar_pretty = "df[D]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = -1)
+                           fig_path = fig_path,  dir_to_stronger = -1)
 # 
 
 # Relative Alpha:   increasing alpha increases agreement
@@ -297,7 +297,7 @@ df_rdf_spearman <-
 set.seed(rand.seed)
 alpha_1 = 0.05/seq(1, 10,0.5)
 n_sims = length(alpha_1)
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_stat_correlation_rel_alpha", sep = "")
 df_init <- generate_population_configs(n_samples = 1e2, n_sims = n_sims, rand.seed = rand.seed, 
                                    mus_1a  = 50, 
@@ -313,7 +313,7 @@ df_init <- generate_population_configs(n_samples = 1e2, n_sims = n_sims, rand.se
                                    alpha_2 = alpha_1,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
-df_esize_ralpha <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_esize_ralpha <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                       y_ax_str = "Alpha[DM]",
                                       include_bf = include_bf, parallel_sims = parallel_sims,
                                       fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -323,7 +323,7 @@ df_esize_ralpha <- process_agreement_contest(df_init, gt_colname = gt_colnames,
 df_ralpha_spearman <- 
   plot_stats_covary_indvar(df = df_esize_ralpha$df_es, indvar = "alpha_1", indvar_pretty = "alpha[DM]",
                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                           fig_path = fig_path,  dir_to_better = -1)
+                           fig_path = fig_path,  dir_to_stronger = -1)
 
 
 

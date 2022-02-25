@@ -19,7 +19,7 @@ p_load(readr)
 p_load(gplots)
 # User defined libraries
 source("R/aces.R")
-source("R/agreement_contests.R")
+source("R/strength_risk_assessment.R")
 
 # Figure parameters
 #-------------------------------------------------------------------------------
@@ -48,7 +48,7 @@ df_unscaled_null = list();
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_mudm_1ldt2"
+gt_colnames = "is_mudm_1hnst2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 20, 
@@ -74,7 +74,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path,gt_colnames=gt_colnames)
-df_unscaled_null[[1]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_unscaled_null[[1]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -87,7 +87,7 @@ df_unscaled_null[[1]] <- process_agreement_contest(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_sigmad_1ldt2" 
+gt_colnames = "is_sigmad_1hnst2" 
 fig_name = paste("F", fig_num, "_2_esize_", "contest_sigma_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -114,7 +114,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                    fig_path = fig_path,gt_colnames=gt_colnames)  
-df_unscaled_null[[2]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_unscaled_null[[2]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -127,7 +127,7 @@ df_unscaled_null[[2]] <- process_agreement_contest(df_init, gt_colname = gt_coln
 n1 <- round(runif(n_sims, 10, 20))
 n2 <- round(runif(n_sims, 20, 30))
 set.seed(rand.seed)
-gt_colnames = "is_dfdm_1ldt2"
+gt_colnames = "is_dfdm_1hnst2"
 fig_name = paste("F", fig_num, "_3_esize_", "contest_df_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -154,7 +154,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
-df_unscaled_null[[3]] <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+df_unscaled_null[[3]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "df[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -167,7 +167,7 @@ df_unscaled_null[[3]] <- process_agreement_contest(df_init, gt_colname = gt_coln
 #
 #------------------------------------------------------------------------------
 set.seed(rand.seed)
-gt_colnames = "is_alpha_1ldt2"
+gt_colnames = "is_alpha_1hnst2"
 fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 10, 
@@ -197,7 +197,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)  
 df_unscaled_null[[4]] <-
-  process_agreement_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
+  process_strength_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, ".tiff",sep = ""),
                             fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
@@ -215,7 +215,7 @@ df_unscaled_null[[4]] <-
 set.seed(rand.seed+1)
 n1 <- round(runif(n_sims, 6, 10))
 n2 <- round(runif(n_sims, 10, 14))
-gt_colnames = c("is_mudm_1ldt2","is_sigmad_1ldt2", "is_dfdm_1ldt2","is_alpha_1ldt2")
+gt_colnames = c("is_mudm_1hnst2","is_sigmad_1hnst2", "is_dfdm_1hnst2","is_alpha_1hnst2")
 fig_name = paste("F", fig_num, "_5_esize_contest_free_near_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
                                    mus_1a  = 40, 
@@ -244,22 +244,22 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    fig_name = paste(fig_name, ".tiff",sep = ""), 
                                    fig_path = fig_path, gt_colnames=gt_colnames)
 df_unscaled_null[[5]] <- 
-  process_agreement_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
+  process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                             fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_null[[6]] <- 
-  process_agreement_contest(df_init, gt_colname = gt_colnames[2],  y_ax_str = "sigma[D]",
+  process_strength_contest(df_init, gt_colname = gt_colnames[2],  y_ax_str = "sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
                             fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_null[[7]] <- 
-  process_agreement_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
+  process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
 df_unscaled_null[[8]] <- 
-  process_agreement_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
+  process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
                             fig_path = fig_path, delta = 1, is_delta_relative = FALSE)

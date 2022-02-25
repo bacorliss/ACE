@@ -85,7 +85,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
-dfs_1a <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_1a <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -115,7 +115,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)  
-dfs_1b <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_1b <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -151,7 +151,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_exp_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)  
-dfs_2a <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_2a <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "sigma[DM]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -183,7 +183,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
-dfs_2b <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_2b <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "sigma[DM]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -217,12 +217,12 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-dfs_3a_mu <- process_agreement_contest(df_init, gt_colname = gt_colnames[1], 
+dfs_3a_mu <- process_strength_contest(df_init, gt_colname = gt_colnames[1], 
                                        y_ax_str = "abs(~mu[DM]*phantom(.))",
                                        include_bf = include_bf, parallel_sims = parallel_sims,
                                        fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                                        fig_path = fig_path)
-dfs_3a_sigma <- process_agreement_contest(df_init, gt_colname = gt_colnames[2], 
+dfs_3a_sigma <- process_strength_contest(df_init, gt_colname = gt_colnames[2], 
                                           y_ax_str = "sigma[DM]",
                                           include_bf = include_bf, parallel_sims = parallel_sims,
                                           fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
@@ -251,12 +251,12 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_sign_mean_d = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-dfs_3b_mu <- process_agreement_contest(df_init, gt_colname = gt_colnames[1], 
+dfs_3b_mu <- process_strength_contest(df_init, gt_colname = gt_colnames[1], 
                                        y_ax_str = "abs(~mu[DM]*phantom(.))",
                                        include_bf = include_bf, parallel_sims = parallel_sims,
                                        fig_name = paste(fig_name, "_mu.tiff",sep = ""),
                                        fig_path = fig_path)
-dfs_3b_sigma <- process_agreement_contest(df_init, gt_colname = gt_colnames[2], 
+dfs_3b_sigma <- process_strength_contest(df_init, gt_colname = gt_colnames[2], 
                                           y_ax_str = "sigma[DM]",
                                           include_bf = include_bf, parallel_sims = parallel_sims,
                                           fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
@@ -298,7 +298,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames)  
-dfs_4a <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_4a <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -332,7 +332,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)  
-dfs_4b <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_4b <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -366,7 +366,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-dfs_5a <- process_agreement_contest(df_init, gt_colname = gt_colnames, 
+dfs_5a <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "r*sigma[DM]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -396,7 +396,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-dfs_5b <- process_agreement_contest(df_init, gt_colname = "is_rsigma_md2gtmd1", 
+dfs_5b <- process_strength_contest(df_init, gt_colname = "is_rsigma_md2gtmd1", 
                                     y_ax_str = "r*sigma[DM]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
@@ -431,12 +431,12 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
-dfs_6a_rmu <- process_agreement_contest(df_init, gt_colname = gt_colnames[1], 
+dfs_6a_rmu <- process_strength_contest(df_init, gt_colname = gt_colnames[1], 
                                         y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                                         include_bf = include_bf, parallel_sims = parallel_sims,
                                         fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                                         fig_path = fig_path)
-dfs_6a_rsigma <- process_agreement_contest(df_init, gt_colname = gt_colnames[2], 
+dfs_6a_rsigma <- process_strength_contest(df_init, gt_colname = gt_colnames[2], 
                                            y_ax_str = "r*sigma[DM]",
                                            include_bf = include_bf, parallel_sims = parallel_sims,
                                            fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
@@ -467,12 +467,12 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_group_ab = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames)
-dfs_6b_rmu <- process_agreement_contest(df_init, gt_colname = gt_colnames[1], 
+dfs_6b_rmu <- process_strength_contest(df_init, gt_colname = gt_colnames[1], 
                                         y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                                         include_bf = include_bf, parallel_sims = parallel_sims,
                                         fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                                         fig_path = fig_path)
-dfs_6b_rsigma <- process_agreement_contest(df_init, gt_colname = gt_colnames[2], 
+dfs_6b_rsigma <- process_strength_contest(df_init, gt_colname = gt_colnames[2], 
                                            y_ax_str = "r*sigma[DM]",
                                            include_bf = include_bf, parallel_sims = parallel_sims,
                                            fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),

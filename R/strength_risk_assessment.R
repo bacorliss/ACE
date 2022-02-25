@@ -1,16 +1,16 @@
 
 
-#' Agreement Contests
-#' To probe how effective candidate statistics are at quantifying agreement 
+#' Strength Contests
+#' To probe how effective candidate statistics are at quantifying null or effect strength 
 #' between study group means. A series of population parameter sets for two 
 #' experiments (Exp 1 and 2) with two groups (control group A & experiment 
-#' group B) are generated, each a row in the dataframe of generated experiment 
+#' group B) are generated, each a row in the data frame of generated experiment 
 #' data. Repeated samples are drawn from the population parameter sets and candidate
 #' statistics are quantified and used to determine whether exp 1 or exp 2 has 
-#' higher agreement.
-#' All three agreement parameters (mu_DM, sigma_D, df_D) can be varied as 
-#' independent variables to determine how effectize candidate statistics are in
-#' quatnifying agreement.
+#' higher strength
+#' All 6 strength parameters (mu_DM, sigma_D, rmu_dm, rsigma_dm, df_D) can be varied as 
+#' independent variables to determine how effective candidate statistics are in
+#' quantifying strength
 
 
 
@@ -71,7 +71,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     
                                     fig_name = "test.tiff",
                                     fig_path = "Figure/",
-                                    agreement = "ldt",
+                                    strength_type = "hnst",
                                     gt_colnames, is_plotted = TRUE,
                                     tol = 1e-15) {
   #' @description Generate simulated experiment data for two experiments with 
@@ -103,7 +103,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   #' @param fig_path path to output figures saved to disk
   #' @param gt_colnames list of columns in df that serves as independent variables
   #'  and serve as groundtruth for determining whether exp 1 or 2 has higher 
-  #'  agreement for each pop. param set.
+  #'  strength for each pop. param set.
   #' @param is_plotted flag to export figures about pop. param sets to disk
   #' @return df dataframe with generated pop. param sets
 
@@ -168,84 +168,84 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                             switch_n_12 = switch_n_12)
   
   # Dataframes that store direction of inequality for each parameter
-  # hat: Exp 1 higher agreement than exp 2
-  df_ldt = data.frame(is_mud_1ldt2 = 0)
-  # hdt: Exp 2 higher disagreement than exp 2
-  df_lat = data.frame(is_mud_1lat2 = 0)
+  # hat: Exp 1 higher null strength than exp 2
+  df_hnst = data.frame(is_mud_1hnst2 = 0)
+  # hdt: Exp 2 higher effect strength than exp 2
+  df_hest = data.frame(is_mud_1hest2 = 0)
   
   # Mean of the difference
   # df$mu_1d <- df$mu_1b - df$mu_1a
   # df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_1ldt2 <-  abs(df$mu_1d) < abs(df$mu_2d)
-  df_ldt$is_mud_1ldt2 <- "lt"
-  df$is_mud_1lat2 <- !df$is_mud_1ldt2
-  df_lat$is_mud_1lat2 <- "gt"
+  df$is_mud_1hnst2 <-  abs(df$mu_1d) < abs(df$mu_2d)
+  df_hnst$is_mud_1hnst2 <- "lt"
+  df$is_mud_1hest2 <- !df$is_mud_1hnst2
+  df_hest$is_mud_1hest2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
   df$sigma_2d <- sqrt(df$sigma_2a^2 + df$sigma_2b^2) 
-  df$is_sigmad_1ldt2 <-  df$sigma_1d < df$sigma_2d
-  df_ldt$is_sigmad_1ldt2 <- "lt"
-  df$is_sigmad_1lat2 <- df$is_sigmad_1ldt2
-  df_lat$is_sigmad_1lat2 <- "lt"
+  df$is_sigmad_1hnst2 <-  df$sigma_1d < df$sigma_2d
+  df_hnst$is_sigmad_1hnst2 <- "lt"
+  df$is_sigmad_1hest2 <- df$is_sigmad_1hnst2
+  df_hest$is_sigmad_1hest2 <- "lt"
   
   # Degrees of freedom of the difference
   df$df_1d <- df$n_1a + df$n_1b - 2
   df$df_2d <- df$n_2a + df$n_2b - 2
-  df$is_dfd_1ldt2 <- df$df_1d > df$df_2d
-  df_ldt$is_dfd_1ldt2 <- "gt"
-  df$is_dfd_1lat2 <- df$is_dfd_1ldt2
-  df_lat$is_dfd_1lat2 <- "gt"
+  df$is_dfd_1hnst2 <- df$df_1d > df$df_2d
+  df_hnst$is_dfd_1hnst2 <- "gt"
+  df$is_dfd_1hest2 <- df$is_dfd_1hnst2
+  df_hest$is_dfd_1hest2 <- "gt"
   
   # Degrees of freedom of the difference in means
-  df$is_dfdm_1ldt2 <- df$df_1d > df$df_2d
-  df_ldt$is_dfdm_1ldt2 <- "gt"
-  df$is_dfdm_1lat2 <- df$is_dfdm_1ldt2
-  df_lat$is_dfdm_1lat2 <- "gt"
+  df$is_dfdm_1hnst2 <- df$df_1d > df$df_2d
+  df_hnst$is_dfdm_1hnst2 <- "gt"
+  df$is_dfdm_1hest2 <- df$is_dfdm_1hnst2
+  df_hest$is_dfdm_1hest2 <- "gt"
   
   # Pooled standard deviation
   df$sigma_1pool <- sqrt( ( (df$n_1a-1)*df$sigma_1a^2 + (df$n_1b-1)*df$sigma_1b^2) /
                             (df$n_1a-1 + df$n_1b -1 )  )
   df$sigma_2pool <- sqrt( ( (df$n_2a-1)*df$sigma_2a^2 + (df$n_2b-1)*df$sigma_2b^2) /
                             (df$n_2a-1 + df$n_2b-1 ))
-  df$is_sigmapool_1ldt2 <- df$sigma_1pool < df$sigma_2pool
-  df_ldt$is_sigmapool_1ldt2 <- "lt"
-  df$is_sigmapool_1lat2 <-  df$is_sigmapool_1ldt2
-  df_lat$is_sigmapool_1lat2 <- "lt"
+  df$is_sigmapool_1hnst2 <- df$sigma_1pool < df$sigma_2pool
+  df_hnst$is_sigmapool_1hnst2 <- "lt"
+  df$is_sigmapool_1hest2 <-  df$is_sigmapool_1hnst2
+  df_hest$is_sigmapool_1hest2 <- "lt"
   
   # Mean and std of difference in means (taken from mean of D since we had the option
   # to invert the sign for D earlier in code)
   df$mu_1dm <- df$mu_1d
   df$mu_2dm <- df$mu_2d
-  df$is_mudm_1ldt2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
-  df_ldt$is_mudm_1ldt2 <- "lt"
-  df$is_mudm_1lat2 <-  !df$is_mudm_1ldt2
-  df_lat$is_mudm_1lat2 <- "gt"
+  df$is_mudm_1hnst2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
+  df_hnst$is_mudm_1hnst2 <- "lt"
+  df$is_mudm_1hest2 <-  !df$is_mudm_1hnst2
+  df_hest$is_mudm_1hest2 <- "gt"
   
   # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/df$n_1a + df$sigma_1b^2/df$n_1b)
   df$sigma_2dm <- sqrt(df$sigma_2a^2/df$n_2a + df$sigma_2b^2/df$n_2b)
-  df$is_sigmadm_1ldt2 <-  df$sigma_1dm < df$sigma_2dm
-  df_ldt$is_sigmadm_1ldt2 <- "lt"
-  df$is_sigmadm_1lat2 <- df$is_sigmadm_1ldt2
-  df_lat$is_sigmadm_1lat2 <- "lt"
+  df$is_sigmadm_1hnst2 <-  df$sigma_1dm < df$sigma_2dm
+  df_hnst$is_sigmadm_1hnst2 <- "lt"
+  df$is_sigmadm_1hest2 <- df$is_sigmadm_1hnst2
+  df_hest$is_sigmadm_1hest2 <- "lt"
   
   # ALPHA: significance level
-  # Higher significance level, higher agreement
-  df$is_alpha_1ldt2     <- df$alpha_1 > df$alpha_2
-  df_ldt$is_alpha_1ldt2 <- "gt"
-  # Higher significance level, higher disagreement
-  df$is_alpha_1lat2     <- df$alpha_1 > df$alpha_2
-  df_lat$is_alpha_1lat2 <- "gt" 
+  # Higher significance level, higher null strength
+  df$is_alpha_1hnst2     <- df$alpha_1 > df$alpha_2
+  df_hnst$is_alpha_1hnst2 <- "gt"
+  # Higher significance level, higher effect strength
+  df$is_alpha_1hest2     <- df$alpha_1 > df$alpha_2
+  df_hest$is_alpha_1hest2 <- "gt" 
   
   # Critical t value of difference in means
   df$tstat_1dm <- df$mu_1dm / df$sigma_1dm
   df$tstat_2dm <- df$mu_2dm / df$sigma_2dm
-  df$is_tstatdm_1ldt2 <- df$tstat_1dm < df$tstat_2dm
-  df_ldt$is_tstatdm_1ldt2 <- "lt"
-  df$is_tstatdm_1lat2 <- df$tstat_1dm > df$tstat_2dm
-  df_lat$is_tstatdm_1lat2 <- "gt"
+  df$is_tstatdm_1hnst2 <- df$tstat_1dm < df$tstat_2dm
+  df_hnst$is_tstatdm_1hnst2 <- "lt"
+  df$is_tstatdm_1hest2 <- df$tstat_1dm > df$tstat_2dm
+  df_hest$is_tstatdm_1hest2 <- "gt"
   # Critical t value for population parameter set
   df$tcrit_1dm <- qt(1-df$alpha_1, df$n_1a + df$n_1b - 2, lower.tail = TRUE)
   df$tcrit_2dm <- qt(1-df$alpha_2, df$n_2a + df$n_2b - 2, lower.tail = TRUE)
@@ -262,10 +262,10 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Statistics of difference of means distribution 
   df$rmu_1dm <- df$mu_1dm / df$mu_1a
   df$rmu_2dm <- df$mu_2dm / df$mu_2a
-  df$is_rmudm_1ldt2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
-  df_ldt$is_rmudm_1ldt2 <- "lt"
-  df$is_rmudm_1lat2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
-  df_lat$is_rmudm_1lat2 <- "gt"
+  df$is_rmudm_1hnst2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) + tol < 0
+  df_hnst$is_rmudm_1hnst2 <- "lt"
+  df$is_rmudm_1hest2 <-  abs(df$rmu_1dm) - abs(df$rmu_2dm) - tol > 0
+  df_hest$is_rmudm_1hest2 <- "gt"
   
   # Relative sigma of difference
   # browser()
@@ -273,26 +273,26 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a)
   # df$rsigma_1d <- df$sigma_1d / abs(df$mu_1a + df$mu_1d/2)
   # df$rsigma_2d <- df$sigma_2d / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmad_1ldt2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
-  df_ldt$is_rsigmad_1ldt2 <- "lt"
-  df$is_rsigmad_1lat2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
-  df_lat$is_rsigmad_1lat2 <- "lt"
+  df$is_rsigmad_1hnst2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
+  df_hnst$is_rsigmad_1hnst2 <- "lt"
+  df$is_rsigmad_1hest2 <-  df$rsigma_1d - df$rsigma_2d + tol < 0
+  df_hest$is_rsigmad_1hest2 <- "lt"
   
   # Relative Pooled Sigma
   df$rsigma_1pool <- df$sigma_1pool / abs(df$mu_1a + df$mu_1d/2)
   df$rsigma_2pool <- df$sigma_2pool / abs(df$mu_2a + df$mu_2d/2)
-  df$is_rsigmapool_1ldt2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
-  df_ldt$is_rsigmapool_1ldt2 <- "lt"
-  df$is_rsigmapool_1lat2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
-  df_lat$is_rsigmapool_1lat2 <- "lt"
+  df$is_rsigmapool_1hnst2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
+  df_hnst$is_rsigmapool_1hnst2 <- "lt"
+  df$is_rsigmapool_1hest2 <-  df$rsigma_1pool - df$rsigma_2pool + tol < 0
+  df_hest$is_rsigmapool_1hest2 <- "lt"
   
   # sigma of the difference of means distribution
   df$rsigma_1dm <- df$sigma_1dm / abs(df$mu_1a)
   df$rsigma_2dm <- df$sigma_2dm / abs(df$mu_2a)
-  df$is_rsigmadm_1ldt2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
-  df_ldt$is_rsigmadm_1ldt2 <- "lt"
-  df$is_rsigmadm_1lat2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
-  df_lat$is_rsigmadm_1lat2 <- "lt"
+  df$is_rsigmadm_1hnst2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
+  df_hnst$is_rsigmadm_1hnst2 <- "lt"
+  df$is_rsigmadm_1hest2 <- df$rsigma_1dm - df$rsigma_2dm + tol < 0
+  df_hest$is_rsigmadm_1hest2 <- "lt"
   
   # Population parameter differences
   df$mean_mud_2m1 <- df$mu_2dm - df$mu_1dm
@@ -308,14 +308,14 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   #                            sig.level = df$alpha_2, power = NULL,
   #                            alternative = "two.sided")$power
   
-  attr(df,"df_ldt") <- df_ldt
-  attr(df,"df_lat") <- df_lat
+  attr(df,"df_hnst") <- df_hnst
+  attr(df,"df_hest") <- df_hest
   
   # browser();
   # Plot generated population parameters
   if (is_plotted){
     plot_population_configs(df, fig_name = fig_name, fig_path = fig_path, 
-                           gt_colnames = gt_colnames, agreement = agreement)
+                           gt_colnames = gt_colnames, strength_type = strength_type)
   } else {
     
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
@@ -326,7 +326,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                      Value = c(df$mu_1dm, df$sigma_1d, df$rmu_1dm, df$rsigma_1d, df$df_1d,df$alpha_1)
     )
     df_runs$param <- factor(df_runs$param, levels = c("mu[DM]", "sigma[D]", "r*mu[DM]","r*sigma[D]","df[D]","alpha[DM]"))
-    # Plot facet of each agreement parameter over series
+    # Plot facet of each strength measure over series
     gg <- ggplot(data = df_runs, aes(x = Series, y = Value)) +
       geom_line() +
       facet_wrap(vars(param), nrow=3,ncol=2,scales="free_y",labeller=label_parsed) +
@@ -476,9 +476,9 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_rsigma, toggle_
                                 switch_mu_d_12, switch_sigma_ab_12, switch_rsigma_ab_12_hold_sigma_a,
                                 switch_alpha_12, switch_n_12) {
   #' @description Apply various switches/alterations to group assignment of 
-  #' pop. param sets at random. These alterations allow the agreement parameters 
+  #' pop. param sets at random. These alterations allow the strength measures 
   #' to be probed in an independent fashion by averaging out the effects of all 
-  #' other agreement parameters
+  #' other strength measures
   #' 
   #' @param df_init dataframe of population params
   #' @param toggle_sign_rmu_d_hold_rsigma flag to randomly switch the sign of the difference 
@@ -727,18 +727,18 @@ pop_configs_switches <- function(df_init, toggle_sign_rmu_d_hold_rsigma, toggle_
 }
 
 
-plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agreement){
+plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, strength_type){
   #' @description plots characterizing selection of pop. params across simulations.
-  #' 1) Plot fraction of pop param sets with exp 1 higher dis/agreement than 
+  #' 1) Plot fraction of pop param sets with exp 1 higher strength than 
   #' experiment 2 according to each candidate statistic, and test for non random
-  #'  correlation between agreement parameters.
+  #'  correlation between strength parameters.
   #' 2) Plot histogram of mu[DM]/sigma[DM] to visualize whether selected pop. 
   #' params fall within null or critical region (threshold ~2.5 stds from mean).
   #'
   #' @param df_init initial dataframe of pop params, each row is a set
   #' @param gt_colnames list of columns in df that serves as independent variables
   #'  and serve as groundtruth for determining whether exp 1 or 2 has higher 
-  #'  agreement for each pop. param set.
+  #'  strength for each pop. param set.
   #' @param fig_name
   #' @param fig_path path to output figures saved to disk
   #' 
@@ -747,9 +747,9 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
   save(list = ls(all.names = TRUE), file = "temp/plot_population_configs.RData",envir = environment())
   # load(file = "temp/plot_population_configs.RData")
   
-  # Output csv of agreement of input parameters to each individual input parameter
+  # Output csv of strength of input parameters to each individual input parameter
   param_fields = paste(c("is_mudm_1","is_rmudm_1","is_sigmad_1", "is_rsigmad_1",
-                         "is_dfdm_1", "is_alpha_1"), agreement,"2",sep="")
+                         "is_dfdm_1", "is_alpha_1"), strength_type,"2",sep="")
 
 
   # bv_gt_colnames <- sapply(gt_colnames, function(x) any(x==param_fields))
@@ -802,14 +802,12 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, agre
   }
   df_params$group <- factor(df_params$group, levels = c("mu", "rmu", "sigma", "rsigma", "df","alpha"))
   
-  if (agreement=="ldt") {strength = "HNS"} else {strength = "HES"}
-
   # Plot confidence interval of success rate for each parameter and their agreement
   gg <- ggplot(df_params, aes(x = group,  y = estimate)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey",linetype="dashed") +
     geom_linerange(aes(ymin = lci, ymax = uci), size = 0.5) +
     geom_point(size = 1.25, fill = "white", shape = 1) + 
-    ylab(bquote(Frac.~Exp[1]~.(strength)~Exp[2]~~~~~~~~~~~~phantom("."))) +
+    ylab(bquote(Frac.~Exp[1]~.(toupper(strength_type))~Exp[2]~~~~~~~~~~~~phantom("."))) +
     xlab("Groundtruth") +
     theme_classic(base_size = 8) +
     scale_y_continuous(labels = scales::number_format(accuracy = 0.1)) +
@@ -874,7 +872,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
                                 rand.seed = 0, include_bf = TRUE, 
                                 parallel_sims = TRUE,  stat_exclude_list = NULL,
-                                agreement = "ldt", delta, is_delta_relative = FALSE) {
+                                strength_type = "hnst", delta, is_delta_relative = FALSE) {
   #' @description Given a data frame of pop. params and input data for each 
   #' experiment group, quantify mean values and comparison error of various 
   #' candidate statistics over repeated samples.
@@ -911,7 +909,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         tempMatrix <- quantify_population_config(df[n,], include_bf, rand.seed = rand.seed+n,
                                                parallelize_bf = FALSE,
                                                stat_exclude_list = stat_exclude_list,
-                                               agreement = agreement, delta = delta,
+                                               strength_type = strength_type, delta = delta,
                                                is_delta_relative = is_delta_relative) 
         tempMatrix
       }
@@ -925,7 +923,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
         df_list[[n]] <- quantify_population_config(df_in[n,], include_bf, rand.seed = rand.seed+n, 
                                             parallelize_bf = FALSE, 
                                             stat_exclude_list = stat_exclude_list,
-                                            agreement = agreement, delta = delta,
+                                            strength_type = strength_type, delta = delta,
                                             is_delta_relative = is_delta_relative) 
       }
       df <- bind_rows(df_list)
@@ -944,7 +942,7 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
 
 
 quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE, stat_exclude_list = NULL, agreement = "ldt", delta, is_delta_relative = FALSE) {
+                                      parallelize_bf = FALSE, stat_exclude_list = NULL, strength_type = "hnst", delta, is_delta_relative = FALSE) {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
   #' 
@@ -957,7 +955,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   #' 
   #' @return df_out output dataframe with a single row, with pop. params and the 
   #' mean and std of each candidate statistic across samples along with their 
-  #' comparison error for determining higher agreement.
+  #' comparison error for determining higher strength.
   
   save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
   # load(file = "temp/quantify_population_config.RData")
@@ -1018,14 +1016,15 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   # Use decision rules that are defined in row_stats_toolbox, stored as attributes 
   # to dfs_1 and dfs_2
   for (i in seq_along(stat_list)) {
-    # Determine if exp 1 has lower disagreement than (ldt) than exp 2
+  
+    # Determine if exp 1 has high null strength than exp 2
     # Candidates that returns NaNs are automatically designated as a wrong designation
-    dfc[[paste("fract_", stat_list[i], "_1",agreement, "2", sep='')]] <- 
-      sum(match.fun(attr(dfs_1, agreement)[[stat_list[i]]])
+    dfc[[paste("fract_", stat_list[i], "_1",strength_type, "2", sep='')]] <- 
+      sum(match.fun(attr(dfs_1, strength_type)[[stat_list[i]]])
           (abs(dfs_1[[stat_list[i]]]), 
             abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
     # Calculate different of effect size between experiments
-    dfc[[paste("mean_diff_", stat_list[i], "_1",agreement,"2", sep='')]] <-
+    dfc[[paste("mean_diff_", stat_list[i], "_1",strength_type,"2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
       abs(dfc[[paste("exp1_mean_", stat_list[i],sep='')]])
   }
@@ -1033,7 +1032,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
 
   df_out <- cbind(df, dfc)
   
-  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1",agreement, "2", sep='')]]))
+  if (any(is.nan(data.matrix(df_out))) || is.nan(dfc[[paste("fract_", stat_list[i], "_1",strength_type, "2", sep='')]]))
     { save(list = ls(all.names = TRUE),
     file = "temp/quantify_population_config.RData",envir = environment())}
   
@@ -1061,7 +1060,7 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
 }
 
 
-tidy_agreement_contest <- function (df, gt_colname, var_prefix, long_format = TRUE,
+tidy_strength_contest <- function (df, gt_colname, var_prefix, long_format = TRUE,
                                    ref_colname = NULL) {
   #' @description Converts comparison error rates for all candidate statistics 
   #' from wide format to long format. 
@@ -1073,8 +1072,8 @@ tidy_agreement_contest <- function (df, gt_colname, var_prefix, long_format = TR
   #' 
   #' @param df input data
   #' @param gt_colname column names in df that serves as independent variable
-  #'  and groundtruth for determining whether exp 1 or 2 has higher 
-  #'  agreement for each pop. param set.
+  #'  and ground truth for determining whether exp 1 or 2 has higher 
+  #'  strength for each pop. param set.
   #' @param var_prefix
   #' @param long_format flag to convert comparison error to long format
   #' @param ref_colname string of column name for candidate statistics that is a
@@ -1083,8 +1082,8 @@ tidy_agreement_contest <- function (df, gt_colname, var_prefix, long_format = TR
   #' 
   #' @return df_tidy tidy (long) version of input dataframe
   
-  save(list = ls(all.names = TRUE), file = "temp/tidy_agreement_contest.RData",envir = environment())
-  # # load(file = "temp/tidy_agreement_contest.RData")
+  save(list = ls(all.names = TRUE), file = "temp/tidy_strength_contest.RData",envir = environment())
+  # # load(file = "temp/tidy_strength_contest.RData")
   
   # Check if gt_colname exists
   if (length(grep(gt_colname, names(df))) == 0) stop("gt_colname does not exist in dataframe")
@@ -1171,8 +1170,7 @@ pretty_stat_labels<- function(df, var_prefix) {
 }
 
 
-plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str, 
-                                   compare_string = "Lesser") {
+plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str) {
   #' @description Plot comparison error rates for candidates effect size statistics
   #' 
   #' @param df_pretty dataframe of comparison error rates in long pretty format
@@ -1180,8 +1178,6 @@ plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str,
   #' @param fig_path path to output figures saved to disk
   #' @param y_ax_str String denoting independent variable for comparison error plot. 
   #' Either mu[DM], sigma[D], or df[D].
-  #' @param compare_string String to describe direction to higher agreement, either
-  #'  "Lesser" or "Higher"
   #' 
   #' @return no return, exports figures to disk
   
@@ -1267,7 +1263,7 @@ plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str,
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Statistic") +
-    ylab(parse(text=paste("Error~Rate~(~",compare_string,"~phantom(.)*", y_ax_str,
+    ylab(parse(text=paste("Error~Rate~(~","Greater","~phantom(.)*", y_ax_str,
                           "*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
@@ -1320,17 +1316,17 @@ plot_mean_t_ratio_samples <- function(df_init, fig_path,fig_name) {
   
 }
 
-process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
+process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
                                       parallel_sims = TRUE, is_plotted = TRUE, 
                                       stat_exclude_list= c("ldm", "rldm"),
-                                      agreement = "ldt", delta, is_delta_relative) {
+                                      strength_type = "hnst", delta, is_delta_relative) {
   #' @description 
   #' 
   #' @param df_init dataframe of population param sets by row
   #' @param gt_colname column names in df that serves as independent variable
   #'  and groundtruth for determining whether exp 1 or 2 has higher 
-  #'  agreement for each pop. param set.
+  #'  strength for each pop. param set.
   #' @param out_path path to export data files
   #' @param y_ax_str pretty format of independent variable
   #' @param fig_path path to export figures
@@ -1345,8 +1341,8 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
   #' 
   #' @return all_dfs a named list of all dataframes for each of the processing steps
   
-  save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
-  # load(file = "temp/process_agreement_contest.RData")
+  save(list = ls(all.names = TRUE), file = "temp/process_strength_contest.RData",envir = environment())
+  # load(file = "temp/process_strength_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
   
@@ -1358,23 +1354,22 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
                                       data_file_name = paste(fig_name,".rds",sep = ""),
                                       include_bf = include_bf,parallel_sims = parallel_sims,
                                       stat_exclude_list=stat_exclude_list,
-                                      agreement = agreement, delta = delta,
+                                      strength_type = strength_type, delta = delta,
                                       is_delta_relative = is_delta_relative)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
-  df_tidy <- tidy_agreement_contest(df = df_es, gt_colname = gt_colname,
+  df_tidy <- tidy_strength_contest(df = df_es, gt_colname = gt_colname,
                                     var_prefix = var_prefix,long_format = TRUE,
                                     ref_colname = NULL)
   df_pretty <- pretty_stat_labels(df = df_tidy, var_prefix = var_prefix)
   
   # Plot effect size results
   if (is_plotted) {
-    df_compare_string <- tibble(lt="Lesser", gt = "Greater")
+    # df_compare_string <- tibble(lt="Lesser", gt = "Greater")
  
     df_plotted <- 
-      plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path, 
-                             compare_string = df_compare_string[[attr(df_init,paste("df_",agreement,sep=""))[[gt_colname]]]],
+      plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path,
                              y_ax_str = y_ax_str)
     
     plot_mean_t_ratio_samples(df = df_es, fig_path = fig_path, fig_name = paste("t-ratio_", fig_name, sep=""))
@@ -1389,7 +1384,7 @@ process_agreement_contest <- function(df_init, gt_colname, y_ax_str, out_path = 
   all_dfs[[3]] <- df_pretty; 
   if (exists("df_plotted")) {all_dfs[[4]] <- df_plotted; }
   
-  # save(list = ls(all.names = TRUE), file = "temp/process_agreement_contest.RData",envir = environment())
+  # save(list = ls(all.names = TRUE), file = "temp/process_strength_contest.RData",envir = environment())
   
   # Some candidate stats may return NaNs, visualize wist histogram of fraction 
   # of NaN samples across simulations
@@ -1437,17 +1432,17 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
 }
 
 plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_path,
-                                     dir_to_better=1, alpha = 0.05) {
+                                     dir_to_stronger=1, alpha = 0.05) {
   #' @description Plot mean values across samples of candidate statistics versus 
   #' a swept independent variable, and calculates correlation with spearman rho.
   #' 
   #' @param df input dataframe of processed pop. params (returned from 
-  #' process_agreement_contest)
-  #' @param indvar string of the column name dscribing the indepedent variable, 
-  #' will be one of the agreement parameters
+  #' process_strength_contest)
+  #' @param indvar string of the column name describing the independent variable, 
+  #' will be one of the strength measures
   #' @param fig_name base name of exported figure
   #' @param fig_path path of eported figure
-  #' @param dir_to_better which direction leads to higher agreements (+1,-1)
+  #' @param dir_to_stronger which direction leads to higher strength (+1,-1)
   #' @param alpha confidence level
   #' 
   #' @return df_mean_stat dataframe of spearman correlation and regression of each 
@@ -1503,7 +1498,7 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     # scale_y_continuous(breaks = NULL)+
     theme_classic(base_size=8) + 
     theme(strip.text.x = element_text( margin = margin( b = 1, t = 1) ))
-  if (dir_to_better==1) {
+  if (dir_to_stronger==1) {
     gg <- gg + scale_x_reverse(breaks=round(seq(min(df_means2[[indvar]]), max(df_means2[[indvar]]), 
      (max(df_means2[[indvar]]) - min(df_means2[[indvar]]))),2) )
   }else {
@@ -1540,7 +1535,7 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
     if (length(unique((abs(df_sub$mean_value)))) > 1) {
       # Spearman correlation
       tryCatch({
-      ci_spearman = ci_cor(x = abs(df_sub[[indvar]])*-dir_to_better, 
+      ci_spearman = ci_cor(x = abs(df_sub[[indvar]])*-dir_to_stronger, 
                           y = abs(df_sub$mean_value), R = 1e5,
                           method = "spearman", type = "bootstrap", boot_type = "basic", 
                           probs = c(alpha/(2*length(exp1_mean_vars)), 
@@ -1564,7 +1559,7 @@ plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_pa
       df_mean_stat$spearman_rho_high[n] <- 0
     }
     # Linear regression
-    fit <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_better,
+    fit <- lm(y2 ~ y1, data = tibble(y1 = abs(df_sub[[indvar]])*-dir_to_stronger,
                                          y2 = abs(df_sub$mean_value)))
     conf_int <- confint(fit, "y1", level = 1-0.05/length(exp1_mean_vars))
     df_mean_stat$slope[n] = fit$coefficients[2]
