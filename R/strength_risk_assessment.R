@@ -37,7 +37,7 @@ source("R/aces.R")
 
 # Parse all functions in file for parallel processing using user functions
 row_stats_toolbox_fun <- parse_functions_source("R/row_stats_toolbox.R")
-mdm_functions <- parse_functions_source("R/aces.R")
+aces_functions <- parse_functions_source("R/aces.R")
 
 
 # Default distribution for population parameters for Exp 1 {a,b}, Exp 2 {a,b}
@@ -870,9 +870,10 @@ plot_population_configs <- function(df_init, gt_colnames,fig_name,fig_path, stre
 
 quantify_population_configs <- function(df_in, overwrite = TRUE,
                                 out_path = "temp/", data_file_name,
-                                rand.seed = 0, include_bf = TRUE, 
+                                rand.seed = 0, 
                                 parallel_sims = TRUE,  stat_exclude_list = NULL,
-                                strength_type = "hnst", delta, is_delta_relative = FALSE) {
+                                strength_type = "hnst", delta, is_delta_relative = FALSE,
+                                use_pseudo_samples = use_pseudo_samples) {
   #' @description Given a data frame of pop. params and input data for each 
   #' experiment group, quantify mean values and comparison error of various 
   #' candidate statistics over repeated samples.
@@ -881,17 +882,17 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
   #' @param out_path path to export data file to disk storing results
   #' @param data_file_name filename of exported datafile storing results
   #' @param rand.seed seed for random number generation
-  #' @param include_bf flag to include bayes factor in calculation (extremely slow)
   #' @param parallel_sims flag to parallelize simulation across CPU cores (recommended)
   #' 
   #' @return df dataframe with pop params and comparison error rates of each candidate statistics.
   
   # Initialize output data frame
   n_sims = dim(df_in)[1]
-  df <- df_in
+  # df <- df_in
   
-  # save(list = ls(all.names = TRUE), file = "temp/quantify_population_configs.RData",envir = environment())
-  # # load(file = "temp/quantify_population_configs.RData")
+  save(list = ls(all.names = TRUE), file = "temp/quantify_population_configs.RData",envir = environment())
+  # load(file = "temp/quantify_population_configs.RData")
+
   
   # Only perform simulations if results not saved to disk
   if (!file.exists(paste(out_path,'/',data_file_name,sep="")) | overwrite) {
@@ -903,14 +904,14 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
       
       df <- foreach(n = 1:n_sims, .combine = rbind, .packages = 
                       c("BayesFactor","TOSTER", "sgpv"),
-                .export = c(row_stats_toolbox_fun, mdm_functions,
+                .export = c(row_stats_toolbox_fun, aces_functions,
                             "quantify_population_config")) %dopar% {
         #calling a function
-        tempMatrix <- quantify_population_config(df[n,], include_bf, rand.seed = rand.seed+n,
-                                               parallelize_bf = FALSE,
+        tempMatrix <- quantify_population_config(df_in[n,], rand.seed = rand.seed,
                                                stat_exclude_list = stat_exclude_list,
                                                strength_type = strength_type, delta = delta,
-                                               is_delta_relative = is_delta_relative) 
+                                               is_delta_relative = is_delta_relative,
+                                               use_pseudo_samples = use_pseudo_samples) 
         tempMatrix
       }
       #stop cluster
@@ -920,11 +921,11 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
       # Process effect sizes serially and bind rows into one dataframe
       for (n in seq(1,n_sims)) {
         print(n)
-        df_list[[n]] <- quantify_population_config(df_in[n,], include_bf, rand.seed = rand.seed+n, 
-                                            parallelize_bf = FALSE, 
+        df_list[[n]] <- quantify_population_config(df_in[n,], rand.seed = rand.seed, 
                                             stat_exclude_list = stat_exclude_list,
                                             strength_type = strength_type, delta = delta,
-                                            is_delta_relative = is_delta_relative) 
+                                            is_delta_relative = is_delta_relative,
+                                            use_pseudo_samples = use_pseudo_samples) 
       }
       df <- bind_rows(df_list)
     }
@@ -941,13 +942,14 @@ quantify_population_configs <- function(df_in, overwrite = TRUE,
 }
 
 
-quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0, 
-                                      parallelize_bf = FALSE, stat_exclude_list = NULL, strength_type = "hnst", delta, is_delta_relative = FALSE) {
+quantify_population_config <- function(df, rand.seed = 0, 
+                                      parallelize_bf = FALSE, stat_exclude_list = NULL, 
+                                      strength_type = "hnst", delta, is_delta_relative = FALSE,
+                                      use_pseudo_samples = FALSE) {
   #' @description Quantifies mean and comparison error of various candidate 
   #' statistics across repeated samples specified by input population parameters
   #' 
   #' @param df input dataframe with a single row
-  #' @param include_bf flag whether to include bayes factor in calculation
   #' @param rand.seed seed for random number generation
   #' @param parallelize_bf  flag to parallize calculation of bayes factor 
   #' (not recommended since each pop. param set is already parallelized 
@@ -963,26 +965,45 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
   if (dim(df)[1] != 1) stop("Need to input a single row of df")
   set.seed(rand.seed)
   
-  # sprintf("%.3f+-")
+ 
+  
+  # Pseudo sampling
+  # Since we are comparing repeated pairs of samples from two experiments, we 
+  # can generate a small number of samples from both experiemnts and then compare
+  # them in a pairwise fashion. Pseudo_indices are the index from each series of samples
+  if (use_pseudo_samples) {
+    tot_samples <- df$n_samples
+    # Calculate minimum number of n_actual_samples needed to get total samples
+    df$n_actual_samples <- ceiling(sqrt(df$n_samples))
+    
+    all_pseudo_sample_indices <- expand.grid(exp_1 = seq(1,df$n_actual_samples,1), exp_2 = seq(1,df$n_actual_samples,1))
+    if (dim(all_pseudo_sample_indices)[1]<df$n_samples) {stop("not enough pseudo samples generated")}
+    row_pseudo_indicies <- sample.int(dim(all_pseudo_sample_indices)[1], tot_samples, replace = FALSE)
+    pseudo_indicies <- all_pseudo_sample_indices[row_pseudo_indicies,]
+
+  }else{
+    tot_samples <- df$n_samples
+    df$n_actual_samples <- df$n_samples
+    pseudo_indicies = data.frame(exp_1 = seq(1,df$n_actual_samples,1), exp_2 = seq(1,df$n_actual_samples,1))
+  }
+  
+
   
   # Use Exp 1 and 2 coefficients to generate data from normalized base data
-  x_1a = matrix(rnorm(df$n_samples * df$n_1a, mean = df$mu_1a, 
-                      sd = df$sigma_1a), nrow = df$n_samples, 
+  x_1a = matrix(rnorm(df$n_actual_samples * df$n_1a, mean = df$mu_1a, 
+                      sd = df$sigma_1a), nrow = df$n_actual_samples, 
                 ncol = df$n_1a)
-  x_1b = matrix(rnorm(df$n_samples * df$n_1b, mean = df$mu_1b, 
-                      sd = df$sigma_1b), nrow = df$n_samples, 
+  x_1b = matrix(rnorm(df$n_actual_samples * df$n_1b, mean = df$mu_1b, 
+                      sd = df$sigma_1b), nrow = df$n_actual_samples, 
                 ncol = df$n_1b)
   
-  x_2a = matrix(rnorm(df$n_samples * df$n_2a, mean = df$mu_2a, 
-                      sd = df$sigma_2a), nrow = df$n_samples, 
+  x_2a = matrix(rnorm(df$n_actual_samples * df$n_2a, mean = df$mu_2a, 
+                      sd = df$sigma_2a), nrow = df$n_actual_samples, 
                 ncol = df$n_2a)
-  x_2b = matrix(rnorm(df$n_samples * df$n_2b, mean = df$mu_2b, 
-                      sd = df$sigma_2b), nrow = df$n_samples, 
+  x_2b = matrix(rnorm(df$n_actual_samples * df$n_2b, mean = df$mu_2b, 
+                      sd = df$sigma_2b), nrow = df$n_actual_samples, 
                 ncol = df$n_2b)
   
-  
-  # Caculate delta or relative delta
-  # if (is_delta_relative) { deltas = df$mu_1a * delta}
 
   # Calculate effect sizes for both experiments
   dfs_1 <- 
@@ -993,6 +1014,8 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
                               delta = delta, is_delta_relative = is_delta_relative,
                                      stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
   stat_list <- colnames(dfs_1)
+  
+  
   
   
   # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
@@ -1021,8 +1044,8 @@ quantify_population_config <- function(df, include_bf = FALSE, rand.seed = 0,
     # Candidates that returns NaNs are automatically designated as a wrong designation
     dfc[[paste("fract_", stat_list[i], "_1",strength_type, "2", sep='')]] <- 
       sum(match.fun(attr(dfs_1, strength_type)[[stat_list[i]]])
-          (abs(dfs_1[[stat_list[i]]]), 
-            abs(dfs_2[[stat_list[i]]])), na.rm = TRUE) / df$n_samples
+          (abs(dfs_1[[stat_list[i]]])[pseudo_indicies[,1]], 
+            abs(dfs_2[[stat_list[i]]])[pseudo_indicies[,2]]), na.rm = TRUE) / df$n_samples
     # Calculate different of effect size between experiments
     dfc[[paste("mean_diff_", stat_list[i], "_1",strength_type,"2", sep='')]] <-
       abs(dfc[[paste("exp2_mean_", stat_list[i],sep='')]]) -
@@ -1317,10 +1340,11 @@ plot_mean_t_ratio_samples <- function(df_init, fig_path,fig_name) {
 }
 
 process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
-                                      fig_name, fig_path, var_prefix = "fract",include_bf = TRUE,
+                                      fig_name, fig_path, var_prefix = "fract",
                                       parallel_sims = TRUE, is_plotted = TRUE, 
                                       stat_exclude_list= c("ldm", "rldm"),
-                                      strength_type = "hnst", delta, is_delta_relative) {
+                                      strength_type = "hnst", delta, is_delta_relative,
+                                     use_pseudo_samples = FALSE) {
   #' @description 
   #' 
   #' @param df_init dataframe of population param sets by row
@@ -1333,7 +1357,6 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   #' @param fig_name filename of figure exported to disk
   #' @param fig_path path to output figures saved to disk
   #' @param var_prefix string suffix to identify the columns that should use
-  #' @param include_bf flag to include bayes factor in calculation (extremely slow)
   #' @param parallel_sims flat to process simulation (pop param sets) in parallel
   #' @param is_plotted flag whether results should be plotted and exported to disk
   #' @param stat_exclude_list list of candidate statistics to excluide in the 
@@ -1352,10 +1375,11 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   # Quantify effect sizes in untidy matrix
   df_es <- quantify_population_configs(df = df_init,overwrite = TRUE, out_path = out_path,
                                       data_file_name = paste(fig_name,".rds",sep = ""),
-                                      include_bf = include_bf,parallel_sims = parallel_sims,
+                                      parallel_sims = parallel_sims,
                                       stat_exclude_list=stat_exclude_list,
                                       strength_type = strength_type, delta = delta,
-                                      is_delta_relative = is_delta_relative)
+                                      is_delta_relative = is_delta_relative,
+                                      use_pseudo_samples = use_pseudo_samples)
   
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
@@ -1397,7 +1421,7 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
 
 plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name = fig_name, fig_path = fig_path) {
   
-  # save(list = ls(all.names = TRUE), file = "temp/plot_nincluded_sampless.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/plot_nincluded_sampless.RData",envir = environment())
   # load(file = "temp/plot_nincluded_sampless.RData")
   
   
@@ -1405,8 +1429,8 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
   matched_vars <- grep(var_prefix,colnames(df), perl=TRUE, value=TRUE)
   
   
-  df_nins <- df %>% pivot_longer(matched_vars, names_to = "variable", values_to = "count") %>% select(variable, count, n_samples)
-  df_nins$count_prc = 1-df_nins$count/df_nins$n_samples
+  df_nins <- df %>% pivot_longer(matched_vars, names_to = "variable", values_to = "count") %>% select(variable, count, n_actual_samples)
+  df_nins$count_prc = 1-df_nins$count/df_nins$n_actual_samples
   # df_nins$variable <- sapply(df_nins$variable, function(x) {substring(x,17, nchar(x))})
   df_nins$variable <- as.factor(df_nins$variable)
   levels(df_nins$variable) <- as.factor(attr(df,"varnames_pretty") )

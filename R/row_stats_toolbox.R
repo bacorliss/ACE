@@ -245,6 +245,7 @@ row_sgpv <- function(m_c, m_e,  null.los, null.his, conf.level){
 
 row_tost_2s <- function (m_c, m_e, deltas = NULL, conf.level = 0.95) {
 
+  # browser()
   n1 <- dim(m_c)[2]
   n2 <- dim(m_e)[2] 
   s1 <- rowSds(m_c)
@@ -317,14 +318,16 @@ quantify_row_stats <- function(x_a, x_b, parallelize_bf = FALSE,
   #' 
   #' @return dataframe of mean and standard deviation for each effect size statistic
   
+  # save(list = ls(all.names = TRUE), file = "temp/quantify_row_stats.RData",envir = environment())
+  # load(file = "temp/quantify_row_stats.RData")
+  
   n_a = dim(x_a)[2]
   n_b = dim(x_b)[2]
   n_samples = dim(x_a)[1]
   df_d = n_a + n_b - 2
 
   # Deltas defines distance from zero in unscaled or relative units
-  if (is_delta_relative) {deltas = delta*rowMeans(x_a)}
-  else { deltas = rep(delta,n_a)}
+  if (is_delta_relative) {deltas = delta*rowMeans(x_a)} else { deltas = rep(delta, n_samples)}
   
   # Initialize data frames so that only included stats are columns
   stat_list <- setdiff(c("xbar_dm", "rxbar_dm", "sd_dm", "rsd_dm", "bf", "pvalue",

@@ -35,7 +35,7 @@ n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
 rand.seed = 1
-
+use_pseudo_samples = FALSE
 parallel_sims = TRUE
 include_bf = TRUE
 scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
@@ -53,37 +53,38 @@ set.seed(rand.seed)
 gt_colnames = "is_mudm_1hest2"
 fig_name = paste("F", fig_num, "_1_esize_contest_mu_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = 2, 
-                                   mus_1ao  = runif(n_sims, 1, 3), 
-                                   sigmas_1ao = 2,
-                                   mus_2a  = 300, 
-                                   sigmas_2a = 2,
-                                   mus_2ao  = runif(n_sims, 3, 5), 
-                                   sigmas_2ao = 2,
-                                   
-                                   n_1a = n_obs, n_1b = n_obs,
-                                   n_2a = n_obs, n_2b = n_obs,
-                                   alpha_1 = 0.05, alpha_2 = 0.05,
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = FALSE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = TRUE,
-                                   switch_sigma_ab_12 = FALSE,
-                                   switch_alpha_12 = FALSE,
-                                   switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path,gt_colnames=gt_colnames,
-                                   agreement = "lat")
+                                       mus_1a  = 10, 
+                                       sigmas_1a = 2, 
+                                       mus_1ao  = runif(n_sims, 1, 3), 
+                                       sigmas_1ao = 2,
+                                       mus_2a  = 300, 
+                                       sigmas_2a = 2,
+                                       mus_2ao  = runif(n_sims, 3, 5), 
+                                       sigmas_2ao = 2,
+                                       
+                                       n_1a = n_obs, n_1b = n_obs,
+                                       n_2a = n_obs, n_2b = n_obs,
+                                       alpha_1 = 0.05, alpha_2 = 0.05,
+                                       
+                                       toggle_sign_rmu_d_hold_rsigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = TRUE,
+                                       switch_sigma_ab_12 = FALSE,
+                                       switch_alpha_12 = FALSE,
+                                       switch_n_12 = FALSE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                       fig_path = fig_path,gt_colnames=gt_colnames,
+                                       strength = "hest" )
 df_unscaled_pos[[1]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                            y_ax_str = "abs(~mu[DM]*phantom(.))",
-                            include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
-                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           y_ax_str = "abs(~mu[DM]*phantom(.))",
+                           parallel_sims = parallel_sims, #parallel_sims,
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = FALSE)
 
 
 
@@ -97,38 +98,39 @@ set.seed(rand.seed)
 gt_colnames = "is_sigmad_1hest2" 
 fig_name = paste("F", fig_num, "_2_esize_", "_2_esize_contest_sigma_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = 0.5,
-                                   mus_1ao  = seq(0.7, 1, n_sims), 
-                                   sigmas_1ao = runif(n_sims, 0.4, 1),
-                                   
-                                   mus_2a  = 100, 
-                                   sigmas_2a = 0.5,
-                                   mus_2ao  = seq(0.7, 1, n_sims),
-                                   sigmas_2ao = runif(n_sims, 0.9, 1.8),
-                                   
-                                   n_1a = n_obs, n_1b = n_obs,
-                                   n_2a = n_obs, n_2b = n_obs, 
-                                   alpha_1 = 0.05, alpha_2 = 0.05,
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = FALSE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = FALSE,
-                                   switch_sigma_ab_12 = TRUE,
-                                   switch_alpha_12 = FALSE,
-                                   switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""),
-                                   fig_path = fig_path,gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                       mus_1a  = 10, 
+                                       sigmas_1a = 0.5,
+                                       mus_1ao  = seq(0.7, 1, n_sims), 
+                                       sigmas_1ao = runif(n_sims, 0.4, 1),
+                                       
+                                       mus_2a  = 100, 
+                                       sigmas_2a = 0.5,
+                                       mus_2ao  = seq(0.7, 1, n_sims),
+                                       sigmas_2ao = runif(n_sims, 0.9, 1.8),
+                                       
+                                       n_1a = n_obs, n_1b = n_obs,
+                                       n_2a = n_obs, n_2b = n_obs, 
+                                       alpha_1 = 0.05, alpha_2 = 0.05,
+                                       
+                                       toggle_sign_rmu_d_hold_rsigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = FALSE,
+                                       switch_sigma_ab_12 = TRUE,
+                                       switch_alpha_12 = FALSE,
+                                       switch_n_12 = FALSE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""),
+                                       fig_path = fig_path,gt_colnames=gt_colnames,
+                                       strength = "hest" )  
 df_unscaled_pos[[2]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                                                   y_ax_str = "sigma[D]",
-                                                   include_bf = include_bf, parallel_sims = parallel_sims,
-                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path, stat_exclude_list = NULL,
-                                                   agreement = "lat")
+                           y_ax_str = "sigma[D]",
+                           parallel_sims = parallel_sims,
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -143,37 +145,39 @@ set.seed(rand.seed)
 gt_colnames = "is_dfdm_1hest2"
 fig_name = paste("F", fig_num, "_3_esize_contest_df_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = 1,
-                                   mus_1ao  = seq(1.2,3,length.out = n_sims),
-                                   sigmas_1ao = 1,
-                                   
-                                   mus_2a  = 100, 
-                                   sigmas_2a = 1,
-                                   mus_2ao  = seq(1.2,3,length.out = n_sims),
-                                   sigmas_2ao = 1,
-                                   
-                                   n_1a = n1, n_1b = n1,
-                                   n_2a = n2, n_2b = n2, 
-                                   alpha_1 = 0.05, alpha_2 = 0.05,
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = FALSE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = FALSE,
-                                   switch_sigma_ab_12 = FALSE,
-                                   switch_alpha_12 = FALSE,
-                                   switch_n_12 = TRUE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path, gt_colnames=gt_colnames,
-                                   agreement = "lat") 
-df_unscaled_pos[[3]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
-                                                   y_ax_str = "df[D]",
-                                                   include_bf = include_bf, parallel_sims = TRUE,
-                                                   fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path, stat_exclude_list = NULL,
-                                                   agreement = "lat")
+                                       mus_1a  = 10, 
+                                       sigmas_1a = 1,
+                                       mus_1ao  = seq(1.2,3,length.out = n_sims),
+                                       sigmas_1ao = 1,
+                                       
+                                       mus_2a  = 100, 
+                                       sigmas_2a = 1,
+                                       mus_2ao  = seq(1.2,3,length.out = n_sims),
+                                       sigmas_2ao = 1,
+                                       
+                                       n_1a = n1, n_1b = n1,
+                                       n_2a = n2, n_2b = n2, 
+                                       alpha_1 = 0.05, alpha_2 = 0.05,
+                                       
+                                       toggle_sign_rmu_d_hold_rsigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = FALSE,
+                                       switch_sigma_ab_12 = FALSE,
+                                       switch_alpha_12 = FALSE,
+                                       switch_n_12 = TRUE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                       fig_path = fig_path, gt_colnames=gt_colnames,
+                                       strength = "hest" ) 
+df_unscaled_pos[[3]] <- 
+  process_strength_contest(df_init, gt_colname = gt_colnames, 
+                           y_ax_str = "df[D]",
+                           parallel_sims = TRUE,
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -193,39 +197,40 @@ set.seed(rand.seed)
 gt_colnames = "is_alpha_1hest2"
 fig_name = paste("F", fig_num, "_4_esize_", "contest_alpha_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = .1,
-                                   mus_1ao  = seq(.6, 1.5,length.out = n_sims), 
-                                   sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
-                                   
-                                   mus_2a  = 500, 
-                                   sigmas_2a = .1,
-                                   mus_2ao  = seq(.6, 1.5,length.out = n_sims),
-                                   sigmas_2ao = 1,#seq(2,12,length.out = n_sims),
-                                   
-                                   n_1a = 30, n_1b = 30,
-                                   n_2a = 30, n_2b = 30, 
-                                   alpha_1 = 0.05/runif(n_sims, 1, 2),
-                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
-                                   
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = FALSE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = FALSE,
-                                   switch_sigma_ab_12 = FALSE,
-                                   switch_alpha_12 = TRUE,
-                                   switch_n_12 = FALSE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), 
-                                   fig_path = fig_path, gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                       mus_1a  = 10, 
+                                       sigmas_1a = .1,
+                                       mus_1ao  = seq(.6, 1.5,length.out = n_sims), 
+                                       sigmas_1ao = 1,#seq(2,12,length.out = n_sims),
+                                       
+                                       mus_2a  = 500, 
+                                       sigmas_2a = .1,
+                                       mus_2ao  = seq(.6, 1.5,length.out = n_sims),
+                                       sigmas_2ao = 1,#seq(2,12,length.out = n_sims),
+                                       
+                                       n_1a = 30, n_1b = 30,
+                                       n_2a = 30, n_2b = 30, 
+                                       alpha_1 = 0.05/runif(n_sims, 1, 2),
+                                       alpha_2 = 0.05/runif(n_sims, 5, 10),
+                                       
+                                       
+                                       toggle_sign_rmu_d_hold_rsigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = FALSE,
+                                       switch_sigma_ab_12 = FALSE,
+                                       switch_alpha_12 = TRUE,
+                                       switch_n_12 = FALSE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""), 
+                                       fig_path = fig_path, gt_colnames=gt_colnames,
+                                       strength = "hest" )  
 df_unscaled_pos[[4]] <-
   process_strength_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
-                            include_bf = include_bf, parallel_sims = parallel_sims, 
-                            fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           parallel_sims = parallel_sims, 
+                           fig_name = paste(fig_name, ".tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -248,56 +253,60 @@ n2 <- round(runif(n_sims, 15, 30))
 gt_colnames = c("is_mudm_1hest2","is_sigmad_1hest2", "is_dfdm_1hest2","is_alpha_1hest2")
 fig_name = paste("F", fig_num, "_4_esize_contest_free_far_zero", sep = "")
 df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.seed=rand.seed, 
-                                   mus_1a  = 10, 
-                                   sigmas_1a = 1, 
-                                   mus_1ao  = runif(n_sims, 3.8, 5), 
-                                   sigmas_1ao = runif(n_sims, 1, 1.75),
-                                   
-                                   mus_2a  = 100,
-                                   sigmas_2a = 1,
-                                   mus_2ao  = runif(n_sims, 4.5, 6), 
-                                   sigmas_2ao = runif(n_sims, 2.25, 3),
-                                   
-                                   n_1a = n1, n_1b = n1,
-                                   n_2a = n2, n_2b = n2,
-                                   alpha_1 = 0.05/runif(n_sims, 1, 2),
-                                   alpha_2 = 0.05/runif(n_sims, 5, 10),
-                                   
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
-                                   toggle_sign_mean_ab = FALSE,
-                                   switch_group_ab = FALSE,
-                                   switch_mu_ab_12 = FALSE,
-                                   switch_mu_d_12 = TRUE,
-                                   switch_sigma_ab_12 = TRUE,
-                                   switch_alpha_12 = TRUE,
-                                   switch_n_12 = TRUE,
-                                   fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
-                                   gt_colnames=gt_colnames,
-                                   agreement = "lat")
+                                       mus_1a  = 10, 
+                                       sigmas_1a = 1, 
+                                       mus_1ao  = runif(n_sims, 3.8, 5), 
+                                       sigmas_1ao = runif(n_sims, 1, 1.75),
+                                       
+                                       mus_2a  = 100,
+                                       sigmas_2a = 1,
+                                       mus_2ao  = runif(n_sims, 4.5, 6), 
+                                       sigmas_2ao = runif(n_sims, 2.25, 3),
+                                       
+                                       n_1a = n1, n_1b = n1,
+                                       n_2a = n2, n_2b = n2,
+                                       alpha_1 = 0.05/runif(n_sims, 1, 2),
+                                       alpha_2 = 0.05/runif(n_sims, 5, 10),
+                                       
+                                       toggle_sign_rmu_d_hold_rsigma = FALSE,
+                                       toggle_sign_mean_ab = FALSE,
+                                       switch_group_ab = FALSE,
+                                       switch_mu_ab_12 = FALSE,
+                                       switch_mu_d_12 = TRUE,
+                                       switch_sigma_ab_12 = TRUE,
+                                       switch_alpha_12 = TRUE,
+                                       switch_n_12 = TRUE,
+                                       fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
+                                       gt_colnames=gt_colnames,
+                                       strength = "hest")
 df_unscaled_pos[[5]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
-                            fig_name = paste(fig_name, "_mu.tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           parallel_sims = parallel_sims,
+                           fig_name = paste(fig_name, "_mu.tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_pos[[6]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "sigma[D]",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
-                            fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           parallel_sims = parallel_sims,
+                           fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_pos[[7]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
-                            fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           parallel_sims = parallel_sims,
+                           fig_name = paste(fig_name, "_df.tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_pos[[8]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
-                            include_bf = include_bf, parallel_sims = parallel_sims, 
-                            fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
-                            fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                           parallel_sims = parallel_sims, 
+                           fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
+                           fig_path = fig_path, stat_exclude_list = NULL,
+                           strength = "hest", delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 dir.create(paste(base_dir, "/temp/",sep=""),recursive = TRUE,showWarnings = FALSE)

@@ -64,12 +64,12 @@ if (!file.exists(file.path(data_path, "df_unscaled_crit.RDS"))) {
 
 if (!file.exists(file.path(data_path, "df_unscaled_pos.RDS"))) {
   print("SFig 9: unscaled risk assessment positive change critical region")
-  source(file.path(base_dir, "sfigure9_pos_unscaled_risk_assessment_crit.R"))
+  source(file.path(getwd(), base_dir, "sfigure9_pos_unscaled_risk_assessment_crit.R"))
 } else {load(file = file.path(data_path, "df_unscaled_pos.RDS"))}
 
 if (!file.exists(file.path(data_path, "df_unscaled_neg.RDS"))) {
   print("SFig 10: unscaled risk assessment negative change critical region")
-  source(file.path(base_dir, "sfigure10_neg_unscaled_risk_assessment_crit.R"))
+  source(file.path(getwd(), base_dir, "sfigure10_neg_unscaled_risk_assessment_crit.R"))
 } else {load(file = file.path(data_path, "df_unscaled_neg.RDS"))}
 
 fig_num = "2" 
@@ -118,10 +118,19 @@ dev.off()
 
 # Export summary stats for relative scale data
 #-------------------------------------------------------------------------------
+
+if (!file.exists(file.path(data_path, "df_relative_pos.RDS"))) {
+  print("SFig 11: relative agreement contest crit")
+  source(file.path(getwd(), base_dir, "sfigure12_pos_rel_risk_assessment_crit.R"))
+} else {load(file = file.path(data_path, "df_relative_pos.RDS"))}
+
+
 if (!file.exists(file.path(data_path, "df_relative_neg.RDS"))) {
   print("SFig 11: relative agreement contest crit")
-  source(file.path(base_dir, "sfigure11_relative_agreement_contest_crit.R"))
+  source(file.path(getwd(), base_dir, "sfigure11_neg_rel_risk_assessment_crit.R"))
   } else {load(file = file.path(data_path, "df_relative_neg.RDS"))}
+
+
 
 fig_num = "2" 
 

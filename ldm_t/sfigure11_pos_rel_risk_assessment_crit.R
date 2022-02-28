@@ -37,7 +37,7 @@ n_sims = 1e3
 n_samples = 1e2
 n_obs = 50
 rand.seed = 1
-
+use_pseudo_samples = FALSE
 parallel_sims = TRUE
 include_bf = TRUE
 rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
@@ -67,7 +67,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -78,13 +78,14 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                   strength = "hest")  
 df_relative_pos[[1]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "abs(~r*mu[DM]*phantom(.))",
-                                    include_bf = include_bf, parallel_sims = parallel_sims,
+                                    parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, stat_exclude_list = NULL,
-                                    agreement = "lat")
+                                    strength = "hest", delta = .1, is_delta_relative = TRUE,
+                                    use_pseudo_samples = use_pseudo_samples )
 
 
 
@@ -110,7 +111,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_2a = n_obs, n_2b = n_obs,
                                    alpha_1 = 0.05, alpha_2 = 0.05,
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -122,13 +123,14 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                   strength = "hest")  
 df_relative_pos[[2]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "r*sigma[D]",
-                                    include_bf = include_bf, parallel_sims = parallel_sims,
+                                    parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
                                     fig_path = fig_path, stat_exclude_list = NULL,
-                                    agreement = "lat")
+                                    strength = "hest", delta = .1, is_delta_relative = TRUE,
+                                    use_pseudo_samples = use_pseudo_samples )
 
 
 # Contest 3: lower df_pool
@@ -153,7 +155,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    n_1a = n1, n_1b = n1,
                                    n_2a = n2, n_2b = n2,
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -164,13 +166,14 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                   strength = "hest")  
 df_relative_pos[[3]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]", 
-                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path, stat_exclude_list = NULL,
-                                                   agreement = "lat")
+                                                   strength = "hest", delta = .1, is_delta_relative = TRUE,
+                                                 use_pseudo_samples = use_pseudo_samples )
 
 
 
@@ -197,7 +200,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_1 = 0.05/runif(n_sims, 1, 2),
                                    alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -208,13 +211,14 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames,
-                                   agreement = "lat")   
+                                   strength = "hest" )   
 df_relative_pos[[4]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "alpha[DM]",
-                                                   include_bf = include_bf, parallel_sims = parallel_sims,
+                                                   parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
                                                    fig_path = fig_path, stat_exclude_list = NULL,
-                                                   agreement = "lat")
+                                                   strength = "hest", delta = .1, is_delta_relative = TRUE,
+                                                 use_pseudo_samples = use_pseudo_samples )
 
 
 
@@ -242,7 +246,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    alpha_1 = 0.05/runif(n_sims, 1, 2),
                                    alpha_2 = 0.05/runif(n_sims, 5, 10),
                                    
-                                   toggle_sign_rmu_d_hold_sigma = FALSE,
+                                   toggle_sign_rmu_d_hold_rsigma = FALSE,
                                    toggle_sign_mean_ab = FALSE,
                                    switch_group_ab = FALSE,
                                    switch_mu_ab_12 = FALSE,
@@ -254,31 +258,35 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames,
-                                   agreement = "lat")  
+                                   strength = "hest")  
 df_relative_pos[[5]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                            strength = "hest", delta = .1, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples )
 df_relative_pos[[6]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "r*sigma[D]",
-                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                            strength = "hest", delta = .1, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples )
 df_relative_pos[[7]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]", 
-                            include_bf = include_bf, parallel_sims = parallel_sims,
+                            parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                            strength = "hest", delta = .1, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples )
 df_relative_pos[[8]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
-                            include_bf = include_bf, parallel_sims = parallel_sims, 
+                            parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
                             fig_path = fig_path, stat_exclude_list = NULL,
-                            agreement = "lat")
+                            strength = "hest", delta = .1, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples )
 
 
 
