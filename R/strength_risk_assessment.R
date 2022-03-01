@@ -44,7 +44,7 @@ aces_functions <- parse_functions_source("R/aces.R")
 generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
-                                    mus_2a, sigmas_2a,
+                                    mus_2a= NA, sigmas_2a= NA,
                                     # Experiment group pop. parameters
                                     mus_1b = NA, sigmas_1b = NA, 
                                     mus_2b = NA, sigmas_2b = NA,
@@ -55,7 +55,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     rmus_1d = NA, rsigmas_1d = NA,
                                     rmus_2d = NA, rsigmas_2d = NA,
                                     
-                                    n_1a, n_1b, n_2a, n_2b,
+                                    n_1a = NA, n_1b = NA, n_2a = NA, n_2b = NA,
                                     alpha_1 = 0.05, alpha_2 = 0.05,
                             
                                     toggle_sign_rmu_d_hold_rsigma = FALSE,
@@ -122,10 +122,14 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Record some parameter values for simulations
   set.seed(rand.seed)
   
-  # browser();
+  is_single_exp = !(is.na(mus_2a) && is.na(mus_2b) && is.na(sigmas_1a) && 
+                            is.na(sigmas_1b) && is.na(n_2a) && is.na(n_2b))
+  
+  #    (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(rmus_1d,rmus_2d))))
   
   # If offset from A groups (ao) specified, calculate params for B and D
-  if (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(rmus_1d,rmus_2d)))) {
+  if ( any(is.na(mus_1b)) || (any(is.na(mus_2b)) && !is_single_exp) &
+       any(is.na(rmus_1d)) || (any(is.na(rmus_2d)) && !is_single_exp)) {
     df_init <- 
       pop_configs_from_aoffset( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
@@ -136,7 +140,8 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                alpha_1 = alpha_1, alpha_2 = alpha_2) 
     
     # If relative offset groups specified, calculate params for B and D
-  } else if (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(mus_1ao, mus_2ao)))) {
+  } else if ( any(is.na(mus_1b)) || (any(is.na(mus_2b)) && !is_single_exp) &
+              any(is.na(mus_1ao)) || (any(is.na(mus_2ao)) && !is_single_exp)) {
     df_init <- 
       pop_configs_from_rmu_sigma( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
@@ -317,6 +322,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
     plot_population_configs(df, fig_name = fig_name, fig_path = fig_path, 
                            gt_colnames = gt_colnames, strength_type = strength_type)
   } else {
+    # browser();
     
     # Plot values of of mu, rmu, sigma, rsigma of d and b over simulations, and df
     df_runs = tibble(Series = rep(seq(1,dim(df)[1],1),6),
@@ -989,32 +995,37 @@ quantify_population_config <- function(df, rand.seed = 0,
   
 
   
-  # Use Exp 1 and 2 coefficients to generate data from normalized base data
+  # Generate samples and quantify candidate statistics for experiment 1
   x_1a = matrix(rnorm(df$n_actual_samples * df$n_1a, mean = df$mu_1a, 
                       sd = df$sigma_1a), nrow = df$n_actual_samples, 
                 ncol = df$n_1a)
   x_1b = matrix(rnorm(df$n_actual_samples * df$n_1b, mean = df$mu_1b, 
                       sd = df$sigma_1b), nrow = df$n_actual_samples, 
                 ncol = df$n_1b)
+  dfs_1 <- 
+    quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+                       delta = delta, is_delta_relative = is_delta_relative,
+                       stat_exclude_list = stat_exclude_list, 
+                       conf.level = 1 - df$alpha_1)
+  stat_list <- colnames(dfs_1)
   
+  
+  # Generate samples and quantify candidate statistics for experiment 1
+  if (!is.na(df$mu_2a)) {
   x_2a = matrix(rnorm(df$n_actual_samples * df$n_2a, mean = df$mu_2a, 
                       sd = df$sigma_2a), nrow = df$n_actual_samples, 
                 ncol = df$n_2a)
   x_2b = matrix(rnorm(df$n_actual_samples * df$n_2b, mean = df$mu_2b, 
                       sd = df$sigma_2b), nrow = df$n_actual_samples, 
                 ncol = df$n_2b)
-  
-
-  # Calculate effect sizes for both experiments
-  dfs_1 <- 
-    quantify_row_stats(x_a = x_1a, x_b = x_1b, parallelize_bf = FALSE, 
+  dfs_2 <- 
+    quantify_row_stats(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
                        delta = delta, is_delta_relative = is_delta_relative,
-                                     stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_1)
-  dfs_2 <- quantify_row_stats(x_a = x_2a, x_b = x_2b, parallelize_bf = FALSE, 
-                              delta = delta, is_delta_relative = is_delta_relative,
-                                     stat_exclude_list = stat_exclude_list, conf.level = 1 - df$alpha_2)
-  stat_list <- colnames(dfs_1)
-  
+                       stat_exclude_list = stat_exclude_list, 
+                       conf.level = 1 - df$alpha_2)
+  } else {
+    dfs_2 <- dfs_1
+  }
   
   
   
@@ -1069,11 +1080,13 @@ quantify_population_config <- function(df, rand.seed = 0,
   # t-ratio to measure
   t_scores_1 <- row_tscore_2s(x_1a, x_1b)
   t_crits_1 <- qt(p = df$alpha_1, df = df$n_1a + df$n_1b -1, lower.tail = TRUE) 
+  df_out$exp1_t_ratio_mean <- mean(t_scores_1/t_crits_1)
+  
+  if (!is.na(df$mu_2a)) {
   t_scores_2 <- row_tscore_2s(x_2a, x_2b)
   t_crits_2 <- qt(p = df$alpha_2, df = df$n_2a + df$n_2b - 1, lower.tail = TRUE) 
-  df_out$exp1_t_ratio_mean <- mean(t_scores_1/t_crits_1)
   df_out$exp2_t_ratio_mean <- mean(t_scores_2/t_crits_2)
-
+  }
   
   # browser()
   # save(list = ls(all.names = TRUE), file = "temp/quantify_population_config.RData",envir = environment())
@@ -1381,6 +1394,9 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
                                       is_delta_relative = is_delta_relative,
                                       use_pseudo_samples = use_pseudo_samples)
   
+  is_single_exp = any(is.na(df_es$mu_2a)) || any(is.na(df_es$mu_2b))
+  
+  if (!is_single_exp) {
   
   # Tidy matrix by subtracting ground truth and normalizing to a reference variable if necessary
   df_tidy <- tidy_strength_contest(df = df_es, gt_colname = gt_colname,
@@ -1398,6 +1414,8 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
     
     plot_mean_t_ratio_samples(df = df_es, fig_path = fig_path, fig_name = paste("t-ratio_", fig_name, sep=""))
       
+  }
+  } else {df_tidy <- NULL; df_pretty = NULL; df_plotted = NULL;
   }
   
   # Package dataframes throughout processing into single list for return
@@ -1456,7 +1474,7 @@ plot_nincluded_samples<- function(df = df_es, var_prefix = "nincluded",fig_name 
 }
 
 plot_stats_covary_indvar <- function(df, indvar, indvar_pretty, fig_name, fig_path,
-                                     dir_to_stronger=1, alpha = 0.05) {
+                                     dir_to_stronger = 1, alpha = 0.05) {
   #' @description Plot mean values across samples of candidate statistics versus 
   #' a swept independent variable, and calculates correlation with spearman rho.
   #' 

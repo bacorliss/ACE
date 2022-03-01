@@ -31,9 +31,10 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 # A simulation is a set of samples with a fixed set of parameters
 # Parameters are randomly chosen
 n_sims = 1e3
-n_samples = 1e2
+n_samples = 1e3
 n_obs = 50
 rand.seed = 1
+use_pseudo_samples = TRUE
 parallel_sims = TRUE
 include_bf = TRUE
 rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,
@@ -87,7 +88,8 @@ df_relative_null[[1]] <-
                             y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -125,11 +127,13 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-df_relative_null[[2]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
+df_relative_null[[2]] <- 
+  process_strength_contest(df_init, gt_colname = gt_colnames, 
                                     y_ax_str = "r*sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                                    fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                                    use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -169,11 +173,13 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = TRUE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames=gt_colnames) 
-df_relative_null[[3]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
+df_relative_null[[3]] <- 
+  process_strength_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "df[D]", 
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                                                  use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -211,11 +217,13 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                    switch_n_12 = FALSE,
                                    fig_name = paste(fig_name, ".tiff",sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames)  
-df_relative_null[[4]] <- process_strength_contest(df_init, gt_colname = gt_colnames, 
+df_relative_null[[4]] <- 
+  process_strength_contest(df_init, gt_colname = gt_colnames, 
                                                    y_ax_str = "alpha[DM]",
                                                    include_bf = include_bf, parallel_sims = parallel_sims,
                                                    fig_name = paste(fig_name, ".tiff",sep = ""),
-                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                                                   fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                                                  use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -260,22 +268,26 @@ df_relative_null[[5]] <-
   process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
-                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_relative_null[[6]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "r*sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
-                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_relative_null[[7]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]", 
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_relative_null[[8]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
-                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE)
+                            fig_path = fig_path, delta = delta, is_delta_relative = TRUE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 

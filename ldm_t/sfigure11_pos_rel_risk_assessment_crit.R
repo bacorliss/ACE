@@ -34,10 +34,10 @@ dir.create(fig_path, showWarnings = FALSE, recursive = TRUE)
 # 
 #-------------------------------------------------------------------------------
 n_sims = 1e3
-n_samples = 1e2
+n_samples = 1e3
 n_obs = 50
 rand.seed = 1
-use_pseudo_samples = FALSE
+use_pseudo_samples = TRUE
 parallel_sims = TRUE
 include_bf = TRUE
 rscale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,

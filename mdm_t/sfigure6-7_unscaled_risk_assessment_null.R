@@ -32,9 +32,10 @@ fig_path = paste(base_dir, "/figure/SF",fig_num, "/",sep="")
 # Simulation parameters
 #-------------------------------------------------------------------------------
 n_sims = 1e3
-n_samples = 1e2
+n_samples = 1e3
 n_obs = 50
 rand.seed = 1
+use_pseudo_samples = TRUE
 parallel_sims = TRUE
 include_bf = TRUE
 scale_contest_path = paste(base_dir, "/figure/SF", fig_num, "/SF", fig_num,"_scale_contest_results.csv",sep="")
@@ -78,7 +79,8 @@ df_unscaled_null[[1]] <- process_strength_contest(df_init, gt_colname = gt_colna
                                     y_ax_str = "abs(~mu[DM]*phantom(.))",
                                     include_bf = include_bf, parallel_sims = parallel_sims, #parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                                    use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -118,7 +120,8 @@ df_unscaled_null[[2]] <- process_strength_contest(df_init, gt_colname = gt_colna
                                     y_ax_str = "sigma[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                                    use_pseudo_samples = use_pseudo_samples)
 
 
 # Contest 3) Higher df_pool
@@ -158,7 +161,8 @@ df_unscaled_null[[3]] <- process_strength_contest(df_init, gt_colname = gt_colna
                                     y_ax_str = "df[D]",
                                     include_bf = include_bf, parallel_sims = parallel_sims,
                                     fig_name = paste(fig_name, ".tiff",sep = ""),
-                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                                    fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                                    use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -200,7 +204,8 @@ df_unscaled_null[[4]] <-
   process_strength_contest(df_init, gt_colname = gt_colnames, y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, ".tiff",sep = ""),
-                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
@@ -247,22 +252,26 @@ df_unscaled_null[[5]] <-
   process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~mu[DM]*phantom(.))",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_mu.tiff",sep = ""),
-                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_null[[6]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[2],  y_ax_str = "sigma[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_sigma.tiff",sep = ""),
-                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_null[[7]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]",
                             include_bf = include_bf, parallel_sims = parallel_sims,
                             fig_name = paste(fig_name, "_df.tiff",sep = ""),
-                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 df_unscaled_null[[8]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
                             include_bf = include_bf, parallel_sims = parallel_sims, 
                             fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
-                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE)
+                            fig_path = fig_path, delta = 1, is_delta_relative = FALSE,
+                           use_pseudo_samples = use_pseudo_samples)
 
 
 
