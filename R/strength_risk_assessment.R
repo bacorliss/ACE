@@ -107,7 +107,8 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   #' @param is_plotted flag to export figures about pop. param sets to disk
   #' @return df dataframe with generated pop. param sets
 
-  save(list = ls(all.names = TRUE), file = "temp/generate_population_configs.RData",envir = environment())
+  save(list = ls(all.names = TRUE), file = "temp/generate_population_configs.RData",
+       envir = environment())
   # load(file = "temp/generate_population_configs.RData")
   
   
@@ -122,13 +123,13 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Record some parameter values for simulations
   set.seed(rand.seed)
   
-  is_single_exp = !(is.na(mus_2a) && is.na(mus_2b) && is.na(sigmas_1a) && 
-                            is.na(sigmas_1b) && is.na(n_2a) && is.na(n_2b))
+  # Test if input configurations are only for experiment 1 (single experiment setup)
+  is_single_exp = (is.na(mus_2a) && is.na(sigmas_2a) && is.na(n_2a) )
   
   #    (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(rmus_1d,rmus_2d))))
   
   # If offset from A groups (ao) specified, calculate params for B and D
-  if ( any(is.na(mus_1b)) || (any(is.na(mus_2b)) && !is_single_exp) &
+  if ( any(is.na(mus_1b))  || (any(is.na(mus_2b))  && !is_single_exp) &
        any(is.na(rmus_1d)) || (any(is.na(rmus_2d)) && !is_single_exp)) {
     df_init <- 
       pop_configs_from_aoffset( n_samples = n_samples, n_sims= n_sims,
@@ -174,18 +175,18 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   
   # Dataframes that store direction of inequality for each parameter
   # hat: Exp 1 higher null strength than exp 2
-  df_hnst = data.frame(is_mud_1hnst2 = 0)
+  df_hnst = data.frame(is_mudm_1hnst2 = 0)
   # hdt: Exp 2 higher effect strength than exp 2
-  df_hest = data.frame(is_mud_1hest2 = 0)
+  df_hest = data.frame(is_mudm_1hest2 = 0)
   
   # Mean of the difference
   # df$mu_1d <- df$mu_1b - df$mu_1a
   # df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mud_1hnst2 <-  abs(df$mu_1d) < abs(df$mu_2d)
-  df_hnst$is_mud_1hnst2 <- "lt"
-  df$is_mud_1hest2 <- !df$is_mud_1hnst2
-  df_hest$is_mud_1hest2 <- "gt"
+  df$is_mudm_1hnst2 <-  abs(df$mu_1d) < abs(df$mu_2d)
+  df_hnst$is_mudm_1hnst2 <- "lt"
+  df$is_mudm_1hest2 <- !df$is_mudm_1hnst2
+  df_hest$is_mudm_1hest2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
@@ -1381,6 +1382,9 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   # load(file = "temp/process_strength_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
+  
+  
+  use_pseudo_samples = FALSE
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))

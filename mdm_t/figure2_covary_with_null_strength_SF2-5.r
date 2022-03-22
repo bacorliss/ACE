@@ -61,7 +61,12 @@ df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, r
                                    sigmas_1a = sigmas_ab_vect, 
                                    mus_1b  = mus_b_vect, 
                                    sigmas_1b = sigmas_ab_vect,
-                                   n_1a = n_obs, n_1b = n_obs,
+                                   mus_2a  = rep(10,n_sims), 
+                                   sigmas_2a = 1, 
+                                   mus_2b  = rep(10,n_sims),  
+                                   sigmas_2b = 1,
+                                   n_1a = n_obs, n_1b = n_obs, n_2a = n_obs, n_2b = n_obs,
+                                   # n_1a = n_obs, n_1b = n_obs,
                                    fig_name = paste(fig_name, ".tiff", sep = ""), fig_path = fig_path,
                                    gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize_mu <- process_strength_contest(df_init, gt_colname = gt_colnames, 
