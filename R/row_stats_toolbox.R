@@ -195,8 +195,9 @@ row_bayesf_2s <- function(m_c, m_e, deltas = NULL, paired = FALSE) {
   
   wrap_fun <-  function(x1,x2, nullInterval)   
     {extractBF(ttestBF(x = x1,  y = x2, nullInterval = nullInterval, paired  = paired), onlybf = TRUE)}[1]
-  capture.output(type="message",bfx <- sapply(1:dim(m_c)[1], function(i) 
-    wrap_fun(m_c[i,], m_e[i,], c(-deltas[i],deltas[i]))))
+  capture.output(type="message",
+                 bfx <- sapply(1:dim(m_c)[1], function(i) 
+                   wrap_fun(m_c[i,], m_e[i,], c(-deltas[i],deltas[i]))))
   
   return(bfx)
 }
@@ -253,7 +254,7 @@ row_tost_2s <- function (m_c, m_e, deltas = NULL, conf.level = 0.95) {
   s_dm <- sqrt( ((n1-1)*s1^2 + (n2-1)*s2^2) / (n1+n2-2) * (1/n1 + 1/n2) )
 
   # If only one delta specified, make it delta for all rows
-  if (length(deltas)==1) {deltas <- rep(deltas, dim(m_c)[2])}
+  if (length(deltas)==1) {deltas <- rep(deltas, dim(m_c)[1])}
   # Deltas define lower and upper bound for each sample
   lo_bounds <- -deltas
   hi_bounds <- deltas
