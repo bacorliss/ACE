@@ -46,6 +46,10 @@ add_underline <- function(cells,lwd){
 
 
 
+# Input arguments
+n_samples = 1E3
+use_pseudo_samples = TRUE
+
 # Export summary stats for unscaled data
 #-------------------------------------------------------------------------------
 

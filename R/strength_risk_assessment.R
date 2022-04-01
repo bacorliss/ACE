@@ -109,9 +109,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
 
   save(list = ls(all.names = TRUE), file = "temp/generate_population_configs.RData",
        envir = environment())
-  # load(file = "temp/generate_population_configs.RData")
-  
-  
+
   # Expand any singleton pop param arguments replicate to number of simulations
   input_args <- formalArgs(generate_population_configs)
   pargs <-grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
@@ -123,14 +121,18 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   # Record some parameter values for simulations
   set.seed(rand.seed)
   
-  # Test if input configurations are only for experiment 1 (single experiment setup)
-  is_single_exp = (is.na(mus_2a) && is.na(sigmas_2a) && is.na(n_2a) )
+  # Check that group 1A specified fully
+  if (any(is.na(mus_1a) || is.na(sigmas_1a) || is.na(n_1a))) {
+    stop("Group 1A not specified, must include: mus_1a, sigma_1a, n_1a")}
+
+  # # Test if input configurations are only for experiment 1 (single experiment setup)
+  # is_single_exp = (is.na(mus_2a) && is.na(sigmas_2a) && is.na(n_2a) )
   
-  #    (any(is.na(c(mus_1b,mus_2b))) & any(is.na(c(rmus_1d,rmus_2d))))
-  
-  # If offset from A groups (ao) specified, calculate params for B and D
-  if ( any(is.na(mus_1b))  || (any(is.na(mus_2b))  && !is_single_exp) &
-       any(is.na(rmus_1d)) || (any(is.na(rmus_2d)) && !is_single_exp)) {
+  # If have AO values, fill in B and D
+  if ( all(!is.na(mus_1ao) && !is.na(mus_2ao) && !is.na(sigmas_1ao) && !is.na(sigmas_2ao))) 
+    {
+    # Specified:  mus_xa, sigma_xa, mus_xao, sigma_xao
+    # Calculated: mus_xb, sigma_xb, mus_xd, sigma_xd 
     df_init <- 
       pop_configs_from_aoffset( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
@@ -141,8 +143,11 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                alpha_1 = alpha_1, alpha_2 = alpha_2) 
     
     # If relative offset groups specified, calculate params for B and D
-  } else if ( any(is.na(mus_1b)) || (any(is.na(mus_2b)) && !is_single_exp) &
-              any(is.na(mus_1ao)) || (any(is.na(mus_2ao)) && !is_single_exp)) {
+  } else if ( all(!is.na(rmus_1d) && !is.na(rmus_2d) && !is.na(rsigmas_1d) && !is.na(rsigmas_2d)))
+   {
+    # Specified:  mus_xa, sigma_xa, rmus_xd, rsigma_xd
+    # Calculated: mus_xb, sigma_xb, mus_xd, sigma_xd 
+    
     df_init <- 
       pop_configs_from_rmu_sigma( n_samples = n_samples, n_sims= n_sims,
                                mus_1a = mus_1a, sigmas_1a = sigmas_1a,  
@@ -152,8 +157,11 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b, 
                                alpha_1 = alpha_1, alpha_2 = alpha_2) 
     
-    # If group b specified, calculate params for D
+    
   } else {
+    # Specified: mus_xa, sigma_xa, mus_xb, sigma_x_b
+    # Calculated: mus_xd, sigma_xd
+    # Single experiments (only experiment 1) are processed here
     df_init   <- 
       pop_configs_from_ab( n_samples = n_samples, n_sims = n_sims, 
                           mus_1a = mus_1a, sigmas_1a = sigmas_1a,  mus_2a = mus_2a, sigmas_2a = sigmas_2a,
@@ -161,6 +169,7 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
                           n_1a = n_1a, n_2a = n_2a, n_1b = n_1b, n_2b = n_2b, 
                           alpha_1 = alpha_1, alpha_2 = alpha_2) 
   }
+  
   # Switch params between groups/experiments if specified with flags
   df <- pop_configs_switches(df = df_init, toggle_sign_rmu_d_hold_rsigma = toggle_sign_rmu_d_hold_rsigma, 
                             toggle_sign_mean_ab = toggle_sign_mean_ab, 
@@ -1382,9 +1391,6 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   # load(file = "temp/process_strength_contest.RData")
   dir.create(file.path(getwd(),out_path), showWarnings = FALSE)
   dir.create(file.path(getwd(),fig_path), showWarnings = FALSE)
-  
-  
-  use_pseudo_samples = FALSE
   
   # Display ground truth fraction of E2>E1
   print(sprintf("%s (TRUE): %i", gt_colname, sum(df_init[[gt_colname]])))
