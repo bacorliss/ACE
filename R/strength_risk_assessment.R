@@ -44,7 +44,7 @@ aces_functions <- parse_functions_source("R/aces.R")
 generate_population_configs <- function(n_samples, n_sims, rand.seed,
                                     # Control group pop. parameters
                                     mus_1a, sigmas_1a, 
-                                    mus_2a= NA, sigmas_2a= NA,
+                                    mus_2a = NA, sigmas_2a = NA,
                                     # Experiment group pop. parameters
                                     mus_1b = NA, sigmas_1b = NA, 
                                     mus_2b = NA, sigmas_2b = NA,
@@ -109,15 +109,24 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
 
   save(list = ls(all.names = TRUE), file = "temp/generate_population_configs.RData",
        envir = environment())
-
+  # load(file = "temp/generate_population_configs.RData")
+  
   # Expand any singleton pop param arguments replicate to number of simulations
   input_args <- formalArgs(generate_population_configs)
-  pargs <-grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
+  pargs <- grep("(^mus)|(^sigmas)|(^alpha)|(^n_\\d)", input_args, value=TRUE)
   # For any pop param not equal in length to n_sims, expand
   for (n in seq_along(pargs)) {
     if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
   }
 
+  # TEST code to test if the one experiment setup worked the same as 2
+  # exp1_vars = grep("(^mus_1)|(^sigmas_1)|(^alpha_1)|(^n_1)", input_args, value=TRUE)
+  # exp2_vars = grep("(^mus_2)|(^sigmas_2)|(^alpha_2)|(^n_2)", input_args, value=TRUE)
+  # for (n in seq_along(exp1_vars)) {
+  #   assign(exp2_vars[n], eval(as.name(exp1_vars[n])))
+  # }
+ 
+  
   # Record some parameter values for simulations
   set.seed(rand.seed)
   

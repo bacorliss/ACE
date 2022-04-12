@@ -115,14 +115,13 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_cs
     geom_pointrange(size = .4, aes(ymin = rcred_bound_lo, ymax = rcred_bound_hi)) + 
     geom_hline(yintercept=0, size = .5) +
     geom_hline(yintercept = rel_delta, color = "#00B050") + geom_hline(yintercept = -rel_delta, color = "#00B050") +
-    ylab( parse(text=paste("Cred.~Int.~of~r.mu[DM]"))) + xlab("Study #") +
+    ylab( parse(text=paste("Cred.~Int.~of~r*mu[DM]"))) + xlab("Study #") +
     theme_classic(base_size=8) +
     coord_cartesian(ylim=c(-1.5, 1.5))
   print(gg)
   save_plot(paste(out_path, "/rcredint_", out_csv_name, ".tiff",sep=""),
             gg, ncol = 1, nrow = 1, base_height = 2, base_width = 6.5, dpi = 600)
   
-
   
   # Export results to disk
   write.csv(df_stat, paste(out_path,"/", out_csv_name,sep=""))
