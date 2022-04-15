@@ -10,7 +10,7 @@
 
 
 mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
-                        plot=FALSE, relative = FALSE, sharedVar=FALSE){
+                        plot=FALSE, relative = FALSE, sharedVar=FALSE, rand.seed = NA){
   #' @description calculates the (raw/relative) most difference in means, a 
   #' statistic that estimates the largest absolute difference in means supported
   #' by the data. Uses credibility interval.
@@ -36,6 +36,8 @@ mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
 
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
+  if (!is.na(rand.seed)) {set.seed(rand.seed)}
+  
   xbar <- mean(x)
   ybar <- mean(y)
   s2x <- var(x)
@@ -85,7 +87,7 @@ mdm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
 
 
 ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.level), 
-                        plot=FALSE, relative = FALSE, sharedVar=FALSE, keepSign = TRUE){
+                        plot=FALSE, relative = FALSE, sharedVar=FALSE, keepSign = TRUE, rand.seed = NA){
   #' @description calculates the (raw/relative) least difference in means, a 
   #' statistic that estimates the smallest difference in means supported by the 
   #' data. Uses credibility interval.
@@ -108,6 +110,8 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
   
   # save(list = ls(all.names = TRUE), file = "temp/mdm_credint.RData",envir = environment())
   # load(file = "temp/mdm_credint.RData")
+  if (!is.na(rand.seed)) {set.seed(rand.seed)}
+  
   xbar <- mean(x)
   ybar <- mean(y)
   s2x <- var(x)
@@ -171,9 +175,10 @@ ldm_credint <- function(x, y, conf.level = 0.95, num_param_sims = 250/(1-conf.le
 
 
 credint <- function(x,y, conf.level= 0.95, num_param_sims = 250/(1-conf.level), 
-                    sharedVar=FALSE, relative = FALSE) {
+                    sharedVar=FALSE, relative = FALSE, rand.seed = NA) {
   # x control group
   # y experiment group
+  if (!is.na(rand.seed)) {set.seed(rand.seed)}
   
   xbar <- mean(x)
   ybar <- mean(y)

@@ -18,26 +18,31 @@ parse_fract <- function(s) {
   } else {y=as.numeric(x)}; return(y)
 }
 
-compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_csv_name, rel_delta) {
+compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, 
+                                    out_csv_name, rel_delta,
+                                    rel_delta_sign = c(-1,1), rylim=c(-1.5, 1.5), 
+                                    rand.seed = 0, delta_color = "#00B050") {
   #' Compute stats from data frame, one from each row, based on mean,std, and n 
   #' from each group
   #' #
-
+  # rel_delta_sign 3 way flag (0 both signs, -1, +1)
   # Load xlsx at specified sheet and remove empty rows
   raw_df <- read_excel(xlsx_path, sheet = xlsx_sheet_name, skip = 1)
   df <- raw_df[-seq(min(which(is.na(raw_df$sX))), dim(raw_df)[1], 1),]
   
   
   
-  save(list = ls(all.names = TRUE), file = "temp/calc_stats.RData",envir = environment())
-  # load(file = "temp/calc_stats.RData")
+  save(list = ls(all.names = TRUE), file = "temp/compute_stats_from_xlsx.RData",
+       envir = environment())
+  # load(file = "temp/compute_stats_from_xlsx.RData")
   
   
   df_stat = data.frame(
     x = factor(seq(1,dim(df)[1], 1)),
     rmdm = rep(0,dim(df)[1]), 
-    mdm_ov_xbar = rep(0,dim(df)[1]),
     mdm = rep(0,dim(df)[1]), 
+    rldm = rep(0,dim(df)[1]), 
+    ldm = rep(0,dim(df)[1]), 
     cd = rep(0,dim(df)[1]),
     p_nhst = rep(0,dim(df)[1]), 
     p_equiv = rep(0,dim(df)[1]), 
@@ -70,11 +75,18 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_cs
     df_stat$p_nhst[n] <- t.test(xa, xb, conf.level = 
                                   1 - alpha_dm)$p.value
     df_stat$mdm[n] <- row_mdm(xa, xb, conf.level = 
-                                1 - alpha_dm)
-    df_stat$rmdm[n] <- 
-      row_rmdm(m_c = xa, m_e = xb, conf.level = 1 - alpha_dm)
+                                1 - alpha_dm, rand.seed = rand.seed)
+    df_stat$rmdm[n] <- row_rmdm(m_c = xa, m_e = xb, conf.level = 
+                                  1 - alpha_dm, rand.seed = rand.seed)
     
-    df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbar_str]][n])
+    df_stat$ldm[n] <- row_ldm(xa, xb, conf.level = 
+                                1 - alpha_dm, rand.seed = rand.seed)
+    df_stat$rldm[n] <- 
+      row_rldm(m_c = xa, m_e = xb, conf.level = 
+                 1 - alpha_dm, rand.seed = rand.seed)
+    
+    
+    # df_stat$mdm_ov_xbar[n] <- df_stat$mdm[n] / as.double(df[[xbar_str]][n])
     
     df_stat$p_equiv[n] <- row_tost_2s(xa, xb, deltas = rel_delta*mean(xa), 
                                       conf.level = 1 - alpha_dm)
@@ -83,8 +95,10 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_cs
     df_stat$p_2nd[n] <- row_sgpv(xa, xb, -rel_delta * mean(xa), rel_delta * mean(xa),conf.level = 1 - alpha_dm)
     
     
-    bounds <- credint(c(xa), c(xb), conf.level = 1 - alpha_dm, relative = FALSE)
-    rbounds <- credint(c(xa), c(xb), conf.level = 1 - alpha_dm, relative = TRUE)
+    bounds <- credint(c(xa), c(xb), conf.level = 1 - alpha_dm, relative = FALSE, 
+                      rand.seed = rand.seed)
+    rbounds <- credint(c(xa), c(xb), conf.level = 1 - 2*alpha_dm, relative = TRUE, 
+                       rand.seed = rand.seed)
     wtt <- t.test(xb,xa, var.equal = FALSE, conf.level = 1 - alpha_dm)
     df_stat$cred_bound_lo[n]  <- bounds[1]
     df_stat$cred_bound_hi[n]  <- bounds[2]
@@ -94,14 +108,11 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_cs
     df_stat$rcred_bound_hi[n]  <- rbounds[2]
     df_stat$rxbar_dm[n] <- (mean(xb) - mean(xa))/mean(xa)
   }
-  
-  
-  
-  
+  print(df_stat)
   
   # plot unscaled credible intervals
   gg = ggplot(data = df_stat, aes(x=x, y = xbar_dm)) +
-    geom_pointrange(size = .4, aes(ymin = cred_bound_lo, ymax = cred_bound_hi)) + 
+    geom_pointrange(size = .75, fatten = 1.5, aes(ymin = cred_bound_lo, ymax = cred_bound_hi)) + 
     geom_hline(yintercept=0, size = .5) +
     ylab( parse(text=paste("Cred.~Int.~of~mu[DM]"))) + xlab("Study #") +
     theme_classic(base_size=8)
@@ -112,12 +123,12 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path, out_cs
   
   # plot relative confidence intervals
   gg = ggplot(data = df_stat, aes(x=x, y = rxbar_dm)) +
-    geom_pointrange(size = .4, aes(ymin = rcred_bound_lo, ymax = rcred_bound_hi)) + 
+    geom_pointrange(size = .75, fatten = 1.5,  aes(ymin = rcred_bound_lo, ymax = rcred_bound_hi)) + 
     geom_hline(yintercept=0, size = .5) +
-    geom_hline(yintercept = rel_delta, color = "#00B050") + geom_hline(yintercept = -rel_delta, color = "#00B050") +
+    geom_hline(yintercept = rel_delta * rel_delta_sign, color = delta_color) + 
     ylab( parse(text=paste("Cred.~Int.~of~r*mu[DM]"))) + xlab("Study #") +
     theme_classic(base_size=8) +
-    coord_cartesian(ylim=c(-1.5, 1.5))
+    coord_cartesian(ylim=rylim)
   print(gg)
   save_plot(paste(out_path, "/rcredint_", out_csv_name, ".tiff",sep=""),
             gg, ncol = 1, nrow = 1, base_height = 2, base_width = 6.5, dpi = 600)

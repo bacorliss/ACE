@@ -119,14 +119,6 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
     if (length(get(pargs[n]))==1) assign(pargs[n], rep(get(pargs[n]),n_sims))
   }
 
-  # TEST code to test if the one experiment setup worked the same as 2
-  # exp1_vars = grep("(^mus_1)|(^sigmas_1)|(^alpha_1)|(^n_1)", input_args, value=TRUE)
-  # exp2_vars = grep("(^mus_2)|(^sigmas_2)|(^alpha_2)|(^n_2)", input_args, value=TRUE)
-  # for (n in seq_along(exp1_vars)) {
-  #   assign(exp2_vars[n], eval(as.name(exp1_vars[n])))
-  # }
- 
-  
   # Record some parameter values for simulations
   set.seed(rand.seed)
   

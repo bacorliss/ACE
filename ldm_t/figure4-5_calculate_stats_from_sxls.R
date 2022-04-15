@@ -14,12 +14,14 @@ dir.create(fig_path, showWarnings = FALSE)
 
 # Total CHolesterol, crit Results
 df_stat_chol_crit <- compute_stats_from_xlsx("ldm_t/applied_examples.xlsx", "Chol Crit", 
-                                fig_path,"chol_crit.csv", rel_delta = 0.3)
+                                fig_path,"chol_crit.csv", rel_delta = 0.20, rel_delta_sign = -1, rylim = c(-1., 0),
+                                delta_color = "#0070C0")
 
 
 
 # Plaque Size, Null Results
 df_stat_plaq_crit <- compute_stats_from_xlsx("ldm_t/applied_examples.xlsx","Plaque Crit", 
-                                fig_path,"plaq_crit.csv", rel_delta = 0.4)
+                                fig_path,"plaq_crit.csv", rel_delta = 0.25, rel_delta_sign = -1, rylim = c(-1.25,0),
+                                delta_color = "#0070C0")
 
 

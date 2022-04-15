@@ -22,7 +22,6 @@ df_stat_chol_crit <- compute_stats_from_xlsx("mdm_t/applied_examples.xlsx", "Cho
 df_stat_plaq_null <- compute_stats_from_xlsx("mdm_t/applied_examples.xlsx","Plaque Null", 
                                              fig_path,"plaq_null.csv", rel_delta = 0.4)
 
-
 # Plaque Size, Crit Results
 df_stat_plaq_crit <- compute_stats_from_xlsx("mdm_t/applied_examples.xlsx","Plaque Crit",
                                              fig_path,"plaq_crit.csv", rel_delta = 0.4)

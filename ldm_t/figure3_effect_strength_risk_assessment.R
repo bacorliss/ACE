@@ -20,8 +20,8 @@ data_path <- paste(getwd(),'/', base_dir,"/temp", sep="")
 dir.create(data_path, showWarnings = FALSE, recursive = TRUE)
 
 
-fig_height_inch <- 3
-fig_width_inch <- 6.5
+fig_height_inch <- 2.5
+fig_width_inch <- 6.25
 
 # Heatmap formatting
 #------------------------------------------------------------------------
@@ -80,7 +80,7 @@ scale_scores_sig <- !sapply(dfs_unscaled, function(x) x$df_plotted$is_mean_0.5)
 # Zero color to white for fields that are not statistically significant
 zeroed_scale_scores <- scale_scores
 zeroed_scale_scores[!scale_scores_sig] <- 0
-png(paste(sum_fig_path, "/F", fig_num, "__risk_assessment_unscaled_agreement.png",sep=""),    
+png(paste(sum_fig_path, "/F", fig_num, "_risk_assessment_unscaled_agreement.png",sep=""),    
     width = fig_width_inch*300, height = fig_height_inch*300, res = 300, pointsize = 8)  
 heatmap.2(zeroed_scale_scores, trace = "none", dendrogram = "none", key = FALSE,
           add.expr = {add_underline(scale_scores_sig,1.5);}, 

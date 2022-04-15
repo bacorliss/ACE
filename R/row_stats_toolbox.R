@@ -130,15 +130,15 @@ row_ci_mean_2s_zdist <-function(m_c,m_e, conf.level=0.95) {
   return(ci)
 }
 
-row_mdm <- function(m_c, m_e, conf.level) {
+row_mdm <- function(m_c, m_e, conf.level, rand.seed = NA) {
   mdm <- sapply(1:dim(m_c)[1], function(i)  mdm_credint(m_e[i,], m_c[i,],
-          conf.level = conf.level, relative = FALSE))
+          conf.level = conf.level, relative = FALSE, rand.seed = rand.seed))
 
   return(mdm)
 }
 
 
-row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95) {
+row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95, rand.seed = NA) {
   #' @description calculates relative mdm row by row given a matrix of control 
   #' samples and experiment samples (limitation: samples must have same sample 
   #' size within groups). m_c and m_e must have same number of rows (samples), but 
@@ -149,22 +149,24 @@ row_rmdm <- function(m_c, m_e, mdms = NULL, conf.level = 0.95) {
   #' 
   #' @return vector of rmdm values, one for each row of m_c and m_e
     rmdms <-  sapply(1:dim(m_c)[1], function(i)
-      mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+      mdm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level,
+                  relative = TRUE, rand.seed = rand.seed))
   return(rmdms)
 }
 
-row_ldm <- function(m_c, m_e, conf.level) {
+row_ldm <- function(m_c, m_e, conf.level, rand.seed = NA) {
   # browser()
   ldm <- sapply(1:dim(m_c)[1], function(i)  
-    ldm_credint(m_e[i,], m_c[i,], conf.level = conf.level, relative = FALSE))
-  
+    ldm_credint(m_e[i,], m_c[i,], conf.level = conf.level, relative = FALSE, 
+                rand.seed = rand.seed))
   return(ldm)
 }
 
-row_rldm <- function(m_c, m_e, conf.level = 0.95) {
+row_rldm <- function(m_c, m_e, conf.level = 0.95, rand.seed = NA) {
   # browser()
   rldms <-  sapply(1:dim(m_c)[1], function(i)
-    ldm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, relative = TRUE))
+    ldm_credint(x = m_e[i,], y = m_c[i,], conf.level = conf.level, 
+                relative = TRUE, rand.seed = rand.seed))
   return(rldms)
 }
 
