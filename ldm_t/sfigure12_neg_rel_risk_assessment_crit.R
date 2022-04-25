@@ -85,7 +85,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                        strength = "hest")  
 df_relative_neg[[1]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "abs(~r*mu[DM]*phantom(.))",
+                           measure_pretty_str = "abs(~r*mu[DM]*phantom(.))",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
@@ -131,7 +131,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                        strength = "hest")  
 df_relative_neg[[2]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "r*sigma[D]",
+                           measure_pretty_str = "r*sigma[D]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
@@ -175,7 +175,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                        strength = "hest")  
 df_relative_neg[[3]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "df[D]", 
+                           measure_pretty_str = "df[D]", 
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
@@ -221,7 +221,7 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                        strength = "hest")   
 df_relative_neg[[4]] <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "alpha[DM]",
+                           measure_pretty_str = "alpha[DM]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
@@ -268,28 +268,28 @@ df_init <- generate_population_configs(n_samples=n_samples, n_sims=n_sims, rand.
                                        gt_colnames=gt_colnames,
                                        strength = "hest")  
 df_relative_neg[[5]] <- 
-  process_strength_contest(df_init, gt_colname = gt_colnames[1], y_ax_str = "abs(~r*mu[DM]*phantom(.))",
+  process_strength_contest(df_init, gt_colname = gt_colnames[1], measure_pretty_str = "abs(~r*mu[DM]*phantom(.))",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, "_rmu.tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
                            strength = "hest", delta = .1, is_delta_relative = TRUE,
                            use_pseudo_samples = use_pseudo_samples)
 df_relative_neg[[6]] <- 
-  process_strength_contest(df_init, gt_colname = gt_colnames[2], y_ax_str = "r*sigma[D]",
+  process_strength_contest(df_init, gt_colname = gt_colnames[2], measure_pretty_str = "r*sigma[D]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, "_rsigma.tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
                            strength = "hest", delta = .1, is_delta_relative = TRUE,
                            use_pseudo_samples = use_pseudo_samples)
 df_relative_neg[[7]] <- 
-  process_strength_contest(df_init, gt_colname = gt_colnames[3], y_ax_str = "df[D]", 
+  process_strength_contest(df_init, gt_colname = gt_colnames[3], measure_pretty_str = "df[D]", 
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, "_df.tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,
                            strength = "hest", delta = .1, is_delta_relative = TRUE,
                            use_pseudo_samples = use_pseudo_samples)
 df_relative_neg[[8]] <- 
-  process_strength_contest(df_init, gt_colname = gt_colnames[4], y_ax_str = "alpha[DM]",
+  process_strength_contest(df_init, gt_colname = gt_colnames[4], measure_pretty_str = "alpha[DM]",
                            parallel_sims = parallel_sims, 
                            fig_name = paste(fig_name, "_alpha.tiff",sep = ""),
                            fig_path = fig_path, stat_exclude_list = NULL,

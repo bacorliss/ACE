@@ -39,18 +39,19 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path,
   
   df_stat = data.frame(
     x = factor(seq(1,dim(df)[1], 1)),
-    rmdm = rep(0,dim(df)[1]), 
-    mdm = rep(0,dim(df)[1]), 
-    rldm = rep(0,dim(df)[1]), 
-    ldm = rep(0,dim(df)[1]), 
+    rmdm = rep(0,dim(df)[1]), mdm = rep(0,dim(df)[1]), 
+    rldm = rep(0,dim(df)[1]), ldm = rep(0,dim(df)[1]), 
     cd = rep(0,dim(df)[1]),
     p_nhst = rep(0,dim(df)[1]), 
     p_equiv = rep(0,dim(df)[1]), 
     p_2nd = rep(0,dim(df)[1]), 
     bf = rep(0,dim(df)[1]),
     xbar_dm = rep(0,dim(df)[1]), rxbar_dm = rep(0,dim(df)[1]),
-    cred_bound_lo = rep(0,dim(df)[1]),  cred_bound_hi = rep(0,dim(df)[1]), 
-    rcred_bound_lo = rep(0,dim(df)[1]), rcred_bound_hi = rep(0,dim(df)[1]))
+    cred_bound_lo = rep(0,dim(df)[1]),  cred_bound_hi = rep(0,dim(df)[1]),
+    cred_bound_lo_ovc = rep(0,dim(df)[1]),  cred_bound_hi_ovc = rep(0,dim(df)[1]), 
+    rcred_bound_lo = rep(0,dim(df)[1]), rcred_bound_hi = rep(0,dim(df)[1])
+    )
+  
   xbar_str = paste("x","\U00AF",sep="")
   ybar_str = paste("y","\U00AF",sep="")
   alphadm_str = paste("\U03B1","DM",sep="")
@@ -103,6 +104,10 @@ compute_stats_from_xlsx <- function(xlsx_path, xlsx_sheet_name, out_path,
     df_stat$cred_bound_lo[n]  <- bounds[1]
     df_stat$cred_bound_hi[n]  <- bounds[2]
     df_stat$xbar_dm[n] <- (mean(xb) - mean(xa))
+    
+    
+    df_stat$cred_bound_lo_ovc[n]  <- bounds[1]/mean(xa)
+    df_stat$cred_bound_hi_ovc[n]  <- bounds[2]/mean(xa)
     
     df_stat$rcred_bound_lo[n]  <- rbounds[1]
     df_stat$rcred_bound_hi[n]  <- rbounds[2]

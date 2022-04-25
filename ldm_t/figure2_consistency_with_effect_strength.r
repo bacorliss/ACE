@@ -65,7 +65,7 @@ df_init <- generate_population_configs(n_samples = n_samples, n_sims = n_sims, r
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "abs(~mu[DM]*phantom(.))",
+                           measure_pretty_str = "abs(~mu[DM]*phantom(.))",
                            parallel_sims = TRUE,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -95,7 +95,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "sigma[D]",
+                           measure_pretty_str = "sigma[D]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -126,7 +126,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "df[D]",
+                           measure_pretty_str = "df[D]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -157,7 +157,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "Alpha[DM]",
+                           measure_pretty_str = "Alpha[DM]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -196,7 +196,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
 
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames,
-                           y_ax_str = "abs(~mu[DM]*phantom(.))",
+                           measure_pretty_str = "abs(~mu[DM]*phantom(.))",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -226,7 +226,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed,
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "abs(~mu[DM]*phantom(.))",
+                           measure_pretty_str = "abs(~mu[DM]*phantom(.))",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -258,7 +258,7 @@ df_init <- generate_population_configs(n_samples, n_sims = n_sims, rand.seed = r
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <- 
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "sigma[D]",
+                           measure_pretty_str = "sigma[D]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,
@@ -289,7 +289,7 @@ df_init <- generate_population_configs(n_samples = 1e2, n_sims = n_sims, rand.se
                                        gt_colnames = gt_colnames, is_plotted = FALSE)
 df_esize <-
   process_strength_contest(df_init, gt_colname = gt_colnames, 
-                           y_ax_str = "Alpha[DM]",
+                           measure_pretty_str = "Alpha[DM]",
                            parallel_sims = parallel_sims,
                            fig_name = paste(fig_name, ".tiff",sep = ""),
                            fig_path = fig_path, is_plotted = FALSE,

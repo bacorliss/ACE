@@ -190,13 +190,23 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df_hest = data.frame(is_mudm_1hest2 = 0)
   
   # Mean of the difference
+  
+  # Mean and std of difference in means (taken from mean of D since we had the option
+  # to invert the sign for D earlier in code)
+  df$mu_1dm <- df$mu_1d
+  df$mu_2dm <- df$mu_2d
+  df$is_mudm_1hnst2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
+  df_hnst$is_mudm_1hnst2 <- "lt"
+  df$is_mudm_1hest2 <-  !df$is_mudm_1hnst2
+  df_hest$is_mudm_1hest2 <- "gt"
+  
   # df$mu_1d <- df$mu_1b - df$mu_1a
   # df$mu_2d <- df$mu_2b - df$mu_2a
   # Is: Exp2 mu[d] > Exp1 mu[d]
-  df$is_mudm_1hnst2 <-  abs(df$mu_1d) < abs(df$mu_2d)
-  df_hnst$is_mudm_1hnst2 <- "lt"
-  df$is_mudm_1hest2 <- !df$is_mudm_1hnst2
-  df_hest$is_mudm_1hest2 <- "gt"
+  # df$is_mudm_1hnst2 <-  abs(df$mu_1d) < abs(df$mu_2d)
+  # df_hnst$is_mudm_1hnst2 <- "lt"
+  # df$is_mudm_1hest2 <- !df$is_mudm_1hnst2
+  # df_hest$is_mudm_1hest2 <- "gt"
   
   # STD of the difference
   df$sigma_1d <- sqrt(df$sigma_1a^2 + df$sigma_1b^2)
@@ -230,14 +240,6 @@ generate_population_configs <- function(n_samples, n_sims, rand.seed,
   df$is_sigmapool_1hest2 <-  df$is_sigmapool_1hnst2
   df_hest$is_sigmapool_1hest2 <- "lt"
   
-  # Mean and std of difference in means (taken from mean of D since we had the option
-  # to invert the sign for D earlier in code)
-  df$mu_1dm <- df$mu_1d
-  df$mu_2dm <- df$mu_2d
-  df$is_mudm_1hnst2 <-  abs(df$mu_1dm) < abs(df$mu_2dm)
-  df_hnst$is_mudm_1hnst2 <- "lt"
-  df$is_mudm_1hest2 <-  !df$is_mudm_1hnst2
-  df_hest$is_mudm_1hest2 <- "gt"
   
   # STD of the difference in means
   df$sigma_1dm <- sqrt(df$sigma_1a^2/df$n_1a + df$sigma_1b^2/df$n_1b)
@@ -1304,14 +1306,14 @@ plot_comparison_error <- function(df_pretty, fig_name, fig_path, y_ax_str) {
   sig_colors[df_result$bs_ci_mean_lower>0.5 & df_result$bs_ci_mean_upper>0.5] = 
     rgb(255, 0, 0,maxColorValue = 255)
 
+  
   # Basic violin plot
   p <- ggplot(df_result, aes(x=name,  y=mean, group=name)) +
     geom_hline(yintercept = 0.5, size=0.5, color="grey") +
     geom_linerange(aes(ymin = bs_ci_mean_lower, ymax = bs_ci_mean_upper), size = 0.5) +
     geom_point(size=1,fill="white", shape = 1) + 
     xlab("Statistic") +
-    ylab(parse(text=paste("Error~Rate~(~","Greater","~phantom(.)*", y_ax_str,
-                          "*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)"))) +
+    ylab(parse(text= y_ax_str)) +
     scale_x_discrete(labels = parse(text = levels(df_pretty$name))) +
     expand_limits(y = c(0,1.1)) +
     geom_text(y = 1.07+siff_vjust, aes(label = sig_labels), 
@@ -1363,7 +1365,7 @@ plot_mean_t_ratio_samples <- function(df_init, fig_path,fig_name) {
   
 }
 
-process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = paste(fig_path, "/temp",sep=''),
+process_strength_contest <- function(df_init, gt_colname, measure_pretty_str, out_path = paste(fig_path, "/temp",sep=''),
                                       fig_name, fig_path, var_prefix = "fract",
                                       parallel_sims = TRUE, is_plotted = TRUE, 
                                       stat_exclude_list= c("ldm", "rldm"),
@@ -1376,7 +1378,7 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   #'  and groundtruth for determining whether exp 1 or 2 has higher 
   #'  strength for each pop. param set.
   #' @param out_path path to export data files
-  #' @param y_ax_str pretty format of independent variable
+  #' @param measure_pretty_str pretty format of independent variable
   #' @param fig_path path to export figures
   #' @param fig_name filename of figure exported to disk
   #' @param fig_path path to output figures saved to disk
@@ -1419,6 +1421,13 @@ process_strength_contest <- function(df_init, gt_colname, y_ax_str, out_path = p
   if (is_plotted) {
     # df_compare_string <- tibble(lt="Lesser", gt = "Greater")
  
+
+    df_inequality <- tibble("gt"="Greater", "lt"="Lesser")
+    inequality_str <- df_inequality[[attr(df_init,paste('df_',strength_type,sep=''))[[gt_colname]]]]
+    
+    y_ax_str <- paste("Error~Rate~(~",inequality_str,"~phantom(.)*", measure_pretty_str,
+          "*phantom(.))~phantom(.)~phantom(.)~phantom(.)~phantom(.)")
+    
     df_plotted <- 
       plot_comparison_error(df = df_pretty, fig_name = fig_name, fig_path = fig_path,
                              y_ax_str = y_ax_str)
